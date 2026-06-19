@@ -1,4 +1,4 @@
-# nimda
+# NimdaClaw
 
 `nimda` is the workspace root. The app is split by framework and feature tabs
 across code, config, and data.

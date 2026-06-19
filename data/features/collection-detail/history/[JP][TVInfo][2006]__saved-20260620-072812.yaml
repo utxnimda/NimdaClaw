@@ -48,9 +48,7 @@
       collectioned:
       - press_format: R2Jraw
         press_group: '----'
-        press_path: 落語天女おゆい_DVDRip
       markers: []
-      path: Y:\落語天女おゆい
   - type: country
     data: japan
   - type: name
