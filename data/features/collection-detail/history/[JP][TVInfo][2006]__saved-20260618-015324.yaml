@@ -1,0 +1,1382 @@
+- attributes:
+  - type: date
+    data:
+      start: '20060103'
+      end: '20060328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 鍵姫物語 永久アリス輪舞曲
+- attributes:
+  - type: date
+    data:
+      start: '20060104'
+      end: '20060322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: あまえないでよっ!! 喝!!
+- attributes:
+  - type: date
+    data:
+      start: '20060105'
+      end: '20060331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 落語天女おゆい
+- attributes:
+  - type: date
+    data:
+      start: '20060106'
+      end: '20060616'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Fate／Stay Night
+- attributes:
+  - type: date
+    data:
+      start: '20060108'
+      end: '20060326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: MM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: よみがえる空 -Rescue Wings-
+- attributes:
+  - type: date
+    data:
+      start: '20060111'
+      end: '20060329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+      - press_format: 540p
+        press_group: HKGX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: かしまし 〜ガール・ミーツ・ガール〜
+- attributes:
+  - type: date
+    data:
+      start: '20060112'
+      end: '20060323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 怪 〜ayakashi〜
+- attributes:
+  - type: date
+    data:
+      start: '20060112'
+      end: '20060223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 半分の月がのぼる空
+- attributes:
+  - type: date
+    data:
+      start: '20060202'
+      end: '20060330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: びんちょうタン
+- attributes:
+  - type: date
+    data:
+      start: '20060202'
+      end: '20060330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Rec
+- attributes:
+  - type: date
+    data:
+      start: '20060225'
+      end: '20060812'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Ergo Proxy
+- attributes:
+  - type: date
+    data:
+      start: '20060302'
+      end: '20060406'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: しにがみのバラッド。
+- attributes:
+  - type: date
+    data:
+      start: '20060401'
+      end: '20060624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Soul Link
+- attributes:
+  - type: date
+    data:
+      start: '20060402'
+      end: '20060702'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 涼宮ハルヒの憂鬱
+- attributes:
+  - type: date
+    data:
+      start: '20060402'
+      end: '20060924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Aria The Natural
+- attributes:
+  - type: date
+    data:
+      start: '20060402'
+      end: '20060924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 720p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: School Rumble 二学期
+- attributes:
+  - type: date
+    data:
+      start: '20060403'
+      end: '20060619'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: WLGO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Girl's High
+- attributes:
+  - type: date
+    data:
+      start: '20060403'
+      end: '20060925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANK
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: うたわれるもの
+- attributes:
+  - type: date
+    data:
+      start: '20060403'
+      end: '20060925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Simoun
+- attributes:
+  - type: date
+    data:
+      start: '20060403'
+      end: '20060925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: U2
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Strawberry Panic
+- attributes:
+  - type: date
+    data:
+      start: '20060403'
+      end: '20070326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 妖逆門
+- attributes:
+  - type: date
+    data:
+      start: '20060404'
+      end: '20060620'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: YS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 錬金3級まじかる？ぽか～ん
+- attributes:
+  - type: date
+    data:
+      start: '20060404'
+      end: '20060905'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: FSKY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ガラスの艦隊
+- attributes:
+  - type: date
+    data:
+      start: '20060404'
+      end: '20060926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Air Gear
+- attributes:
+  - type: date
+    data:
+      start: '20060404'
+      end: '20060926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひぐらしのなく頃に
+- attributes:
+  - type: date
+    data:
+      start: '20060404'
+      end: '20100325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 銀魂
+- attributes:
+  - type: date
+    data:
+      start: '20060405'
+      end: '20060920'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      - press_format: DVDRIP
+        press_group: LV1
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Witch Blade
+- attributes:
+  - type: date
+    data:
+      start: '20060405'
+      end: '20060927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: DVDRip
+        press_group: HKG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: いぬかみっ!
+- attributes:
+  - type: date
+    data:
+      start: '20060406'
+      end: '20060914'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ああっ女神さまっ それぞれの翼
+- attributes:
+  - type: date
+    data:
+      start: '20060406'
+      end: '20060928'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Zegapain
+- attributes:
+  - type: date
+    data:
+      start: '20060406'
+      end: '20061021'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+      - press_format: DVDRIP
+        press_group: CASO
+      - press_format: 480p
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: xxxHolic
+- attributes:
+  - type: date
+    data:
+      start: '20060407'
+      end: '20060630'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: TX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 西の善き魔女 Astraea Testament
+- attributes:
+  - type: date
+    data:
+      start: '20060408'
+      end: '20060624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 夢使い
+- attributes:
+  - type: date
+    data:
+      start: '20060408'
+      end: '20060624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Black Lagoon
+- attributes:
+  - type: date
+    data:
+      start: '20060409'
+      end: '20060702'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひまわりっ!
+- attributes:
+  - type: date
+    data:
+      start: '20060410'
+      end: '20060904'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Black Jack 21
+- attributes:
+  - type: date
+    data:
+      start: '20060412'
+      end: '20060719'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 姫様ご用心
+- attributes:
+  - type: date
+    data:
+      start: '20060413'
+      end: '20060612'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DMHY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 獣王星
+- attributes:
+  - type: date
+    data:
+      start: '20060413'
+      end: '20060713'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 360p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 砂沙美☆魔法少女クラブ 1
+- attributes:
+  - type: date
+    data:
+      start: '20060413'
+      end: '20061026'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: The Third 〜蒼い瞳の少女〜
+- attributes:
+  - type: date
+    data:
+      start: '20060429'
+      end: '20061104'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 翼・Chronicle 2
+- attributes:
+  - type: date
+    data:
+      start: '20060515'
+      end: '20060619'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CASO
+      - press_format: 400p
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 蟲師
+- attributes:
+  - type: date
+    data:
+      start: '20060518'
+      end: '20060810'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 神様家族
+- attributes:
+  - type: date
+    data:
+      start: '20060518'
+      end: '20060817'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 機神咆吼デモンベイン
+- attributes:
+  - type: date
+    data:
+      start: '20060629'
+      end: '20060914'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Honey And Clove 2
+- attributes:
+  - type: date
+    data:
+      start: '20060629'
+      end: '20060914'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HQR
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 貧乏姉妹物語
+- attributes:
+  - type: date
+    data:
+      start: '20060701'
+      end: '20060916'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: つよきす Cool×Sweet
+- attributes:
+  - type: date
+    data:
+      start: '20060702'
+      end: '20060924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ゼロの使い魔
+- attributes:
+  - type: date
+    data:
+      start: '20060708'
+      end: '20060930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: HKG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: となグラ!
+- attributes:
+  - type: date
+    data:
+      start: '20060709'
+      end: '20061217'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 720p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: NHKにようこそ！
+- attributes:
+  - type: date
+    data:
+      start: '20060805'
+      end: '20061028'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ギャグマンガ日和2
+- attributes:
+  - type: date
+    data:
+      start: '20060908'
+      end: '20060908'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 Seven Days Rhapsody
+- attributes:
+  - type: date
+    data:
+      start: '20061002'
+      end: '20070326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ときめきメモリアル Only Love
+- attributes:
+  - type: date
+    data:
+      start: '20061002'
+      end: '20061218'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Black Lagoon The Second Barrage
+- attributes:
+  - type: date
+    data:
+      start: '20061002'
+      end: '20061218'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: AME
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: らぶドル ~Lovely Idol~
+- attributes:
+  - type: date
+    data:
+      start: '20061003'
+      end: '20070327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Ghost Hunt
+- attributes:
+  - type: date
+    data:
+      start: '20061003'
+      end: '20070111'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 480p
+        press_group: WOLF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 砂沙美☆魔法少女クラブ 2
+- attributes:
+  - type: date
+    data:
+      start: '20061003'
+      end: '20070626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Death Note
+- attributes:
+  - type: date
+    data:
+      start: '20061003'
+      end: '20080930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: D.Gray-Man
+- attributes:
+  - type: date
+    data:
+      start: '20061004'
+      end: '20070314'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Red Garden
+- attributes:
+  - type: date
+    data:
+      start: '20061004'
+      end: '20070328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ネギま！？
+- attributes:
+  - type: date
+    data:
+      start: '20061004'
+      end: '20070328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HQR
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 武装錬金
+- attributes:
+  - type: date
+    data:
+      start: '20061004'
+      end: '20061220'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: KH
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 夜明け前より瑠璃色な
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20061221'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: あさっての方向。
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20061221'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Gift ~Eternal Rainbow~
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20070315'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MW
+      - press_format: BDRip
+        press_group: FL
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Kanon
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20070329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: YS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Code Geass 反逆のルルーシュ
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20070315'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: すもももももも ～地上最強のヨメ～
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20061221'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Happiness!
+- attributes:
+  - type: date
+    data:
+      start: '20061005'
+      end: '20070329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 護くんに女神の祝福を!
+- attributes:
+  - type: date
+    data:
+      start: '20061006'
+      end: '20061222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: くじびき♥Unbalance
+- attributes:
+  - type: date
+    data:
+      start: '20061007'
+      end: '20061224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 乙女はお姉さまに恋してる
+- attributes:
+  - type: date
+    data:
+      start: '20061007'
+      end: '20100925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 家庭教師 Hitman Reborn!
+- attributes:
+  - type: date
+    data:
+      start: '20061007'
+      end: '20070407'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+      - press_format: DVDRip
+        press_group: U2
+      - press_format: 720p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 地獄少女 二籠
+- attributes:
+  - type: date
+    data:
+      start: '20061007'
+      end: '20070929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 史上最強の弟子ケンイチ
+- attributes:
+  - type: date
+    data:
+      start: '20061014'
+      end: '20061230'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: KWK
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Bartender
+- attributes:
+  - type: date
+    data:
+      start: '20061016'
+      end: '20080211'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+      - press_format: 576p
+        press_group: SKT
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 結界師
+- attributes:
+  - type: date
+    data:
+      start: '20061223'
+      end: '20061224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CASO
+      - press_format: DVDRip
+        press_group: CASO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Rozen Maiden Ouverture

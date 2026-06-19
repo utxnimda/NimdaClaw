@@ -1,0 +1,18 @@
+# 条目模型见 tv-jp.yaml（节选）。
+- attributes:
+    - type: date
+      data:
+        start: "20150101"
+        end: "20150301"
+    - type: collection-type
+      data:
+        domain: animation
+        release_type: tv
+        collectioned:
+          - press_format: "-BDRip"
+            press_group: JSUM
+        markers: []
+    - type: country
+      data: japan
+    - type: name
+      data: "示例"

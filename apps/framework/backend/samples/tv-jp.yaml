@@ -1,0 +1,31 @@
+# 日本 TV 数据（JP TVInfo）结构化条目参考 — YAML 根为「作品数组」。
+# 枚举约束与扩展 meta 见同目录 ``tv-jp-symbol-table.yaml``（``jp_tv.symbol_table``）。
+# 每条仅含 attributes；顺序约定：date → collection-type → country → name。
+#
+# date: 档期 data.start / data.end（YYYYMMDD）。
+#
+# collection-type.data：``domain``（大类码）；``release_type``（tv/ova/movie…）；``collectioned``；``markers``；可选 ``continuations``。
+#
+# country: 国家 slug（数据默认 japan）。
+#
+# name: 作品标题（管道符右侧）。
+
+- attributes:
+    - type: date
+      data:
+        start: "20150101"
+        end: "20150301"
+    - type: collection-type
+      data:
+        domain: animation
+        release_type: tv
+        collectioned:
+        - press_format: "BDRip"
+          press_group: "JSUM"
+        - press_format: "720p"
+          press_group: "CKCS"
+        markers: ["music", "subs"]
+    - type: country
+      data: japan
+    - type: name
+      data: "作品标题"

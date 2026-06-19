@@ -1,0 +1,10 @@
+# JP TV 浏览兜底配置（仅当未找到 ``config/features/collection-detail/config.yaml`` 时使用）。
+# 用户应在 nimda/config/features/collection-detail 目录手动维护正式配置；请勿依赖自动生成。
+# 必需：paths.filesystem_root = 数据 YAML 所在目录（通常 …/data/features/collection-detail/db）。
+# 服务端会加载该目录下全部 *.yaml 并聚合展示；正式工作区保存前先写入 data/features/collection-detail/history/。
+# 可选根级 ``enum`` / 各数据 ``browse``：表格下拉与列头等。
+
+version: 1
+
+paths:
+  filesystem_root: ""

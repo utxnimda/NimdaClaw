@@ -1,0 +1,9 @@
+REM GENRE 空战魔导师候补生的教官
+
+[150729][VTZL-97] 空戦魔導士候補生の教官 OP「D.O.B.」／野水いおり (wav+dvd+log+bk)
+[150729][VTCL-35204] 空戦魔導士候補生の教官 OP「D.O.B.」／野水いおり
+[150729][VTCL-35205] 空戦魔導士候補生の教官 ED「ハレルヤ」／La La Larks (wav+log+bk)
+[150925][KAXA-7271] 空戦魔導士候補生の教官 Original Sound Track 1 (bin)
+[151030][KAXA-7272] 空戦魔導士候補生の教官 Original Sound Track 2 (bin)
+
+	

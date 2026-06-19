@@ -1,0 +1,45 @@
+# tv-jp 符号表示例：约束 country / domain / release_type / markers 及压制相关字段的合法 slug。
+# 与 ``work_catalog_yaml.jp_tv.symbol_table.builtin_tv_jp_symbol_table()`` 合并使用：
+#   merged_tv_jp_symbol_table(extra_path=本文件) 会在内置 kinds 上叠加本文件中的 values / meta。
+#
+# 根结构：
+#   version: 可选整数，默认 1
+#   kinds: 对象，键为 kind_id（如 country、press_format）
+#     每个 kind：
+#       label / description：可选人类可读说明
+#       meta: 可选对象，类比枚举/类型的扩展字段
+#       values: 对象，键为合法 code（slug）
+#         每项可为简短字符串（仅作 description），或对象 { description?, extra?: {...} }
+#         ``extra`` 也可用别名 ``extend``；用于 taxonomy 路径、别名等任意键。
+
+version: 1
+kinds:
+  # 与内置合并：可增其它国家 slug
+  country:
+    meta:
+      doc: country 属性的 data 必须为下列 code 之一
+    values:
+      testland:
+        description: 示例扩展国家（冒烟用）
+        extra:
+          taxonomy_dir: TestLand
+
+  # Constraint press format/group slugs declared as press_format / press_group kinds.
+  press_format:
+    label: "Press format（collection-type.collectioned[].press_format）"
+    description: bracket 对 [格式][组] 中的格式 slug
+    meta: {}
+    values:
+      bluray:
+        description: Blu-ray
+        extra: { short: BD }
+      web:
+        description: Web 源
+  press_group:
+    label: "Release group（collection-type.collectioned[].press_group）"
+    meta: {}
+    values:
+      group-a:
+        description: 示例组 A
+      group-b:
+        description: 示例组 B

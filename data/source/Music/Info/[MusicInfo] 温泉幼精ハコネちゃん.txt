@@ -1,0 +1,4 @@
+REM GENRE ÎÂÈªÓ×¾«
+
+[151021][POCE-1430] ÎÂÈªÓ×¾«¥Ï¥³¥Í¤Á¤ã¤ó OP¡¸¥Ï¥³¥Í¥Ï¥³¥¤¥ê¥à¥¹¥á¡¹£¯Petit Milady
+[151021][POCE-9414] ÎÂÈªÓ×¾«¥Ï¥³¥Í¤Á¤ã¤ó OP¡¸¥Ï¥³¥Í¥Ï¥³¥¤¥ê¥à¥¹¥á¡¹£¯Petit Milady (wav+log+bk)

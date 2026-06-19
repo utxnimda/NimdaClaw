@@ -1,0 +1,11 @@
+# nimda app shell configuration.
+version: 1
+
+app:
+  features:
+    - id: collection-detail
+      label: 作品数据
+      order: 10
+    - id: collection-info
+      label: 收集情况
+      order: 20

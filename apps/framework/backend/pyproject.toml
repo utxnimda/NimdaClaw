@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "work-catalog-yaml"
+version = "1.0.0"
+description = "Parse flat or JP TV catalog YAML and materialize / export"
+requires-python = ">=3.10"
+dependencies = ["ruamel.yaml>=0.18"]
+
+[project.optional-dependencies]
+web = [
+    "starlette>=0.37",
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.27",
+]
+
+[project.scripts]
+work-catalog = "work_catalog_yaml.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["work_catalog_yaml*"]
+
+[tool.setuptools.package-data]
+"work_catalog_yaml.jp_tv" = [
+    "browse_config.default.yaml",
+]

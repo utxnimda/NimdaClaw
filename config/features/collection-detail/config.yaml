@@ -1,0 +1,90 @@
+# collection-detail feature configuration.
+version: 1
+
+paths:
+  filesystem_root: "E:/Project/nimda/data/features/collection-detail/db"
+  media_root: "E:/LinkVideo/[ACG] Japan"
+  resource_roots:
+  - Z:\
+  - Y:\
+  - V:\Japan
+  - U:\
+  - T:\
+  - S:\
+  resource_excludes:
+    'Z:\':
+    - $recycle
+    'Y:\':
+    - $recycle
+    'V:\Japan':
+    - $recycle
+    'U:\':
+    - $recycle
+    'T:\':
+    - $recycle
+    'S:\':
+    - $recycle
+  shortcut_root: "E:/LinkVideo/[ACG] Japan/Finish"
+
+link_index:
+  layout_levels:
+  - "{year_label}"
+  - "{date_range_label} {name}"
+  shortcut_name: "{press_format}{press_group_suffix}"
+  overwrite_shortcuts: true
+  scan_max_depth: 4
+  scan_max_dirs: 2000
+
+enum:
+- name: press_format
+  desc: 压制格式
+  values:
+  - 720p
+  - 1080p
+  - BDRip
+- name: press_group
+  desc: 压制组
+  values:
+  - JSUM
+  - CKCS
+  - VCB
+- name: markers
+  desc: 收集标记
+  values:
+  - value: music
+    desc: 音乐
+  - value: subs
+    desc: 字幕
+- name: country
+  desc: 国家
+  values:
+  - value: japan
+    desc: 日本
+  - value: china
+    desc: 中国
+  - value: korea
+    desc: 韩国
+  - value: usa
+    desc: 美国
+  - value: uk
+    desc: 英国
+- name: domain
+  desc: 归类
+  values:
+  - value: animation
+    desc: 动画
+  - value: game
+    desc: 游戏
+  - value: music
+    desc: 音乐
+  - value: image
+    desc: 图片
+- name: release_type
+  desc: 发行类型
+  values:
+  - value: tv
+    desc: TV
+  - value: ova
+    desc: OVA
+  - value: movie
+    desc: Movie

@@ -1,0 +1,49 @@
+其他地方导入标签: 
+[画集]
+
+[A]: Artist    作者                    
+[劇毒少女(Ke-ta)]                     [Gekidoku Shoujo(Ke-ta)]             
+[こぶいち]                            [Kobuichi]                        
+[Kantoku]
+[Trueblue(Any)]
+[H2SO4]
+[宮坂なこ]                            [Miyasaka Nako]
+[焦げました(タコ焼き)]
+[Moco Chouchou(ひさまくまこ)]         [Moco Chouchou(Hisama Kumako)]
+[Sem;Colon(蜜キング)]                 [Sem;Colon(Mitsu King)]
+[和錆] -                              [Wasabi]
+[てぃんかーべる(てぃんくる)]          [Tinkerbell(Tinkle)]
+[出席番号26(にろ)]                    [Shusseki Bangou 26(Niro)]   
+[るび様を崇める会(るび様)]            [Rubi-Sama Wo Agameru Kai(Rubi-Sama)]
+[Arneb(ヲリ)]　                       [Arneb(Wori)]
+[Tony]
+[鬼月あるちゅ]
+[ニュートンの林檎(戌角柾)]            [Newton No Ringo(Inuzumi Masaki)]
+
+[D]: Date      日期
+
+[M]: Magazine  杂志
+[電撃姫]
+[電撃萌王]
+[電撃こどもの萌王] 
+[娘Type]
+[Megami]
+[Newtype]
+
+[O]: Other     其他
+[東方]
+[秋季例大祭]
+
+[S]: Shop       商店
+[K-Books]
+
+Gallery: 画集
+Afterschool Of The 5th Year
+Island Of Horizon
+Brown Sugar
+膝上靴下本
+プリン海ヨーグルト
+T2 Art Works
+Udon-Ya
+
+

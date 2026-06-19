@@ -1,0 +1,1403 @@
+- attributes:
+  - type: date
+    data:
+      start: '20070104'
+      end: '20070628'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+        press_path: Saint October_R2Jraw
+      - press_format: 480p
+        press_group: CK
+        press_path: Saint October_480p
+      markers: []
+      path: S:\Saint October
+  - type: country
+    data: japan
+  - type: name
+    data: Saint October
+- attributes:
+  - type: date
+    data:
+      start: '20070106'
+      end: '20070630'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Major 3
+- attributes:
+  - type: date
+    data:
+      start: '20070107'
+      end: '20070401'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+        press_path: ひまわりっ!!_DVDRip
+      markers: []
+      path: Y:\ひまわりっ!
+  - type: country
+    data: japan
+  - type: name
+    data: ひまわりっ!!
+- attributes:
+  - type: date
+    data:
+      start: '20070107'
+      end: '20070325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CASO
+        press_path: がくえんゆーとぴあ まなびストレート!_BDRip
+      - press_format: 720p
+        press_group: CASO
+        press_path: がくえんゆーとぴあ まなびストレート!_720p
+      markers: []
+      path: S:\がくえんゆーとぴあ まなびストレート!
+  - type: country
+    data: japan
+  - type: name
+    data: がくえんゆーとぴあ まなびストレート!
+- attributes:
+  - type: date
+    data:
+      start: '20070107'
+      end: '20070325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+        press_path: Shuffle! Memories_DVDRip
+      - press_format: 720p
+        press_group: '----'
+        press_path: Shuffle! Memories_720p
+      markers: []
+      path: S:\Shuffle!
+  - type: country
+    data: japan
+  - type: name
+    data: Shuffle! Memories
+- attributes:
+  - type: date
+    data:
+      start: '20070107'
+      end: '20070325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 400p
+        press_group: '----'
+        press_path: Master of Epic The Animation Age_400p
+      markers: []
+      path: Y:\Master of Epic The Animation Age
+  - type: country
+    data: japan
+  - type: name
+    data: Master Of Epic The Animation Age
+- attributes:
+  - type: date
+    data:
+      start: '20070111'
+      end: '20070329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+        press_path: Venus Versus Virus_DVDRip
+      - press_format: 480p
+        press_group: HKG
+        press_path: Venus Versus Virus_480p
+      markers: []
+      path: Y:\Venus Versus Virus
+  - type: country
+    data: japan
+  - type: name
+    data: Venus Versus Virus
+- attributes:
+  - type: date
+    data:
+      start: '20070111'
+      end: '20070329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: RF
+        press_path: ひだまりスケッチ_BDRip(RF)
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: ひだまりスケッチ_DVDRip
+      markers: []
+      path: S:\ひだまりスケッチ
+  - type: country
+    data: japan
+  - type: name
+    data: ひだまりスケッチ
+- attributes:
+  - type: date
+    data:
+      start: '20070113'
+      end: '20070314'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+        press_path: 月面兎兵器ミーナ_R2Jraw
+      - press_format: DVDRip
+        press_group: CSX2
+        press_path: 月面兎兵器ミーナ_DVDRip
+      markers: []
+      path: Y:\月面兎兵器ミーナ
+  - type: country
+    data: japan
+  - type: name
+    data: 月面兎兵器ミーナ
+- attributes:
+  - type: date
+    data:
+      start: '20070119'
+      end: '20074020'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+        press_path: 東京魔人學園剣風帖 龖_DVDRip
+      markers: []
+      path: Y:\東京魔人學園剣風帖
+  - type: country
+    data: japan
+  - type: name
+    data: 東京魔人學園剣風帖 龖
+- attributes:
+  - type: date
+    data:
+      start: '20070221'
+      end: '20070517'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: PD
+        press_path: Rocket Girls_DVDRip
+      markers: []
+      path: Y:\Rocket Girls
+  - type: country
+    data: japan
+  - type: name
+    data: Rocket Girls
+- attributes:
+  - type: date
+    data:
+      start: '20070226'
+      end: '20070514'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ALK
+        press_path: 一騎当千 Dragon Destiny_BDRip
+      - press_format: DVDRip
+        press_group: DMZJ
+        press_path: 一騎当千 Dragon Destiny_DVDRip
+      markers: []
+      path: S:\一騎当千
+  - type: country
+    data: japan
+  - type: name
+    data: 一騎当千 Dragon Destiny
+- attributes:
+  - type: date
+    data:
+      start: '20070401'
+      end: '20070923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+        press_path: 魔法少女リリカルなのはStrikerS_DVDRip
+      - press_format: BDRip
+        press_group: FL
+        press_path: 魔法少女リリカルなのはStrikerS_BDRip
+      markers: []
+      path: V:\Japan\魔法少女リリカルなのは
+  - type: country
+    data: japan
+  - type: name
+    data: 魔法少女リリカルなのはStrikerS
+- attributes:
+  - type: date
+    data:
+      start: '20070401'
+      end: '20070930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: RF
+        press_path: 瀬戸の花嫁_BDRip
+      markers: []
+      path: S:\瀬戸の花嫁
+  - type: country
+    data: japan
+  - type: name
+    data: 瀬戸の花嫁
+- attributes:
+  - type: date
+    data:
+      start: '20070401'
+      end: '20070930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: U2
+        press_path: 天元突破グレンラガン_BDRip
+      - press_format: R2Jaw
+        press_group: X2
+      markers: []
+      path: Y:\天元突破 グレンラガン
+  - type: country
+    data: japan
+  - type: name
+    data: 天元突破 グレンラガン
+- attributes:
+  - type: date
+    data:
+      start: '20070401'
+      end: '20080330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CASO
+        press_path: ハヤテのごとく!_720p
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: ハヤテのごとく!_DVDRip
+      - press_format: BDRip
+        press_group: VCB
+        press_path: ハヤテのごとく!_BDRip
+      markers: []
+      path: V:\Japan\ハヤテのごとく!
+  - type: country
+    data: japan
+  - type: name
+    data: ハヤテのごとく!
+- attributes:
+  - type: date
+    data:
+      start: '20070402'
+      end: '20070924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+        press_path: Idolm@ster Xenoglossia_DVDRip
+      markers: []
+      path: S:\The Idolm@ster
+  - type: country
+    data: japan
+  - type: name
+    data: Idolm@ster Xenoglossia
+- attributes:
+  - type: date
+    data:
+      start: '20070402'
+      end: '20070924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: エル・カザド_DVDRip
+      markers: []
+      path: Z:\エル・カザド
+  - type: country
+    data: japan
+  - type: name
+    data: エル・カザド
+- attributes:
+  - type: date
+    data:
+      start: '20070402'
+      end: '20070924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+        press_path: 桃華月憚_DVDRip
+      markers: []
+      path: Y:\桃華月憚
+  - type: country
+    data: japan
+  - type: name
+    data: 桃華月憚
+- attributes:
+  - type: date
+    data:
+      start: '20070403'
+      end: '20070619'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: WLGO
+        press_path: 神曲奏界 Polyphonica_DVDRip
+      markers: []
+      path: S:\神曲奏界 Polyphonica
+  - type: country
+    data: japan
+  - type: name
+    data: 神曲奏界 Polyphonica
+- attributes:
+  - type: date
+    data:
+      start: '20070403'
+      end: '20070626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ウエルベールの物語 〜Sisters of Wellber〜
+- attributes:
+  - type: date
+    data:
+      start: '20070403'
+      end: '20070626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKG
+        press_path: この青空に約束を- ~ようこそつぐみ寮へ~_DVDRip
+      - press_format: 480p
+        press_group: CK
+        press_path: この青空に約束を- ~ようこそつぐみ寮へ~_480p
+      markers: []
+      path: S:\この青空に約束を
+  - type: country
+    data: japan
+  - type: name
+    data: この青空に約束を- ~ようこそつぐみ寮へ~
+- attributes:
+  - type: date
+    data:
+      start: '20070403'
+      end: '20070925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Over Drive
+- attributes:
+  - type: date
+    data:
+      start: '20070403'
+      end: '20070925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: QTS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: キスダム -Engage Planet-
+- attributes:
+  - type: date
+    data:
+      start: '20070404'
+      end: '20070926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ながされて藍蘭島_BDRip
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: ながされて藍蘭島_DVDRip
+      markers: []
+      path: Y:\ながされて藍蘭島
+  - type: country
+    data: japan
+  - type: name
+    data: ながされて藍蘭島
+- attributes:
+  - type: date
+    data:
+      start: '20070405'
+      end: '20070927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Darker Than Black -黒の契約者-_BDRip
+      markers: []
+      path: S:\Darker Than Black
+  - type: country
+    data: japan
+  - type: name
+    data: Darker Than Black -黒の契約者-
+- attributes:
+  - type: date
+    data:
+      start: '20070406'
+      end: '20080226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: FL
+        press_path: Sola_BDRip(FL)
+      - press_format: 720p
+        press_group: CK
+        press_path: Sola_720p
+      markers: []
+      path: S:\Sola
+  - type: country
+    data: japan
+  - type: name
+    data: Sola
+- attributes:
+  - type: date
+    data:
+      start: '20070407'
+      end: '20070929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+        press_path: 精霊の守り人_BDRip
+      - press_format: DVDRip
+        press_group: DMZJ
+        press_path: 精霊の守り人_DVDRip
+      markers: []
+      path: Y:\精霊の守り人
+  - type: country
+    data: japan
+  - type: name
+    data: 精霊の守り人
+- attributes:
+  - type: date
+    data:
+      start: '20070407'
+      end: '20070929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: WLGO
+      - press_format: 720p
+        press_group: TX
+        press_path: ラブ★コン_720p
+      markers: []
+      path: Y:\ラブ★コン
+  - type: country
+    data: japan
+  - type: name
+    data: ラブ★コン
+- attributes:
+  - type: date
+    data:
+      start: '20070408'
+      end: '20070916'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CSIG
+        press_path: らき☆すた_BDRip
+      markers: []
+      path: Y:\らき☆すた
+  - type: country
+    data: japan
+  - type: name
+    data: らき☆すた
+- attributes:
+  - type: date
+    data:
+      start: '20070408'
+      end: '20070930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ぼくらの_BDRip
+      markers: []
+      path: Y:\ぼくらの
+  - type: country
+    data: japan
+  - type: name
+    data: ぼくらの
+- attributes:
+  - type: date
+    data:
+      start: '20070412'
+      end: '20070920'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+        press_path: 風のスティグマ_DVDRip
+      markers: []
+      path: Y:\風のスティグマ
+  - type: country
+    data: japan
+  - type: name
+    data: 風のスティグマ
+- attributes:
+  - type: date
+    data:
+      start: '20070412'
+      end: '20070927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: おおきく振りかぶって_BDRip
+      - press_format: 720p
+        press_group: KAMI
+        press_path: おおきく振りかぶって_720p
+      markers: []
+      path: S:\おおきく振りかぶって
+  - type: country
+    data: japan
+  - type: name
+    data: おおきく振りかぶって
+- attributes:
+  - type: date
+    data:
+      start: '20070412'
+      end: '20070927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CSIG
+        press_path: 怪物王女_DVDRip
+      markers: []
+      path: Z:\怪物王女
+  - type: country
+    data: japan
+  - type: name
+    data: 怪物王女
+- attributes:
+  - type: date
+    data:
+      start: '20070512'
+      end: '20071201'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+        press_path: 電脳コイル_BDRip
+      - press_format: BDRip
+        press_group: NK
+        press_path: 電脳コイル_BDRip(NK)
+      markers: []
+      path: S:\電脳コイル
+  - type: country
+    data: japan
+  - type: name
+    data: 電脳コイル
+- attributes:
+  - type: date
+    data:
+      start: '20070702'
+      end: '20070917'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ななついろ★ドロップス_BDRip
+      - press_format: DVDRip
+        press_group: CK
+        press_path: ななついろ★ドロップス_DVDRip
+      markers: []
+      path: Y:\ななついろ★ドロップス
+  - type: country
+    data: japan
+  - type: name
+    data: ななついろ★ドロップス
+- attributes:
+  - type: date
+    data:
+      start: '20070703'
+      end: '20070918'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: CK
+        press_path: ドージンワーク_480p
+      markers: []
+      path: Z:\ドージンワーク
+  - type: country
+    data: japan
+  - type: name
+    data: ドージンワーク
+- attributes:
+  - type: date
+    data:
+      start: '20070705'
+      end: '20071004'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: ムシウタ_DVDRip
+      markers: []
+      path: Z:\ムシウタ
+  - type: country
+    data: japan
+  - type: name
+    data: ムシウタ
+- attributes:
+  - type: date
+    data:
+      start: '20070705'
+      end: '20071217'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ひぐらしのなく頃に解_BDRip
+      - press_format: DVDRip
+        press_group: CSIG
+        press_path: ひぐらしのなく頃に解_DVDRip
+      markers: []
+      path: S:\ひぐらしのなく頃に
+  - type: country
+    data: japan
+  - type: name
+    data: ひぐらしのなく頃に解
+- attributes:
+  - type: date
+    data:
+      start: '20070705'
+      end: '20071227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CKCS
+        press_path: Sky Girls_DVDRip
+      markers: []
+      path: S:\Sky Girls
+  - type: country
+    data: japan
+  - type: name
+    data: Sky Girls
+- attributes:
+  - type: date
+    data:
+      start: '20070707'
+      end: '20070922'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+        press_path: さよなら絶望先生_BDRip
+      - press_format: 576p
+        press_group: CASO
+        press_path: さよなら絶望先生_576p
+      markers: []
+      path: S:\さよなら絶望先生
+  - type: country
+    data: japan
+  - type: name
+    data: さよなら絶望先生
+- attributes:
+  - type: date
+    data:
+      start: '20070708'
+      end: '20070923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+        press_path: ゼロの使い魔 ~双月の騎士~_BDRip
+      markers: []
+      path: Y:\ゼロの使い魔
+  - type: country
+    data: japan
+  - type: name
+    data: ゼロの使い魔 ~双月の騎士~
+- attributes:
+  - type: date
+    data:
+      start: '20070708'
+      end: '20070923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: もえたん_BDRip
+      - press_format: 1080p
+        press_group: '----'
+        press_path: もえたん_1080p
+      markers: []
+      path: S:\もえたん
+  - type: country
+    data: japan
+  - type: name
+    data: もえたん
+- attributes:
+  - type: date
+    data:
+      start: '20070726'
+      end: '20071101'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: KAMI
+        press_path: Baccano! -バッカーノ-_BDRip
+      markers: []
+      path: S:\Baccano! -バッカーノ-
+  - type: country
+    data: japan
+  - type: name
+    data: Baccano! -バッカーノ-
+- attributes:
+  - type: date
+    data:
+      start: '20070727'
+      end: '20070727'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ルパン三世 霧のエリューシヴ_BDRip
+      markers: []
+      path: T:\ルパン三世
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 霧のエリューシヴ
+- attributes:
+  - type: date
+    data:
+      start: '20070727'
+      end: '20071012'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+        press_path: 東京魔人學園剣風帖 龖 第弐幕_DVDRip
+      markers: []
+      path: Y:\東京魔人學園剣風帖
+  - type: country
+    data: japan
+  - type: name
+    data: 東京魔人學園剣風帖 龖 第弐幕
+- attributes:
+  - type: date
+    data:
+      start: '20070909'
+      end: '20070909'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ポケモン不思議のダンジョン 時の探検隊・闇の探検隊
+- attributes:
+  - type: date
+    data:
+      start: '20071001'
+      end: '20071224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: Sketch Book 〜Full Color's〜_DVDRip
+      - press_format: 720p
+        press_group: CASO
+        press_path: Sketch Book 〜Full Color's〜_720p
+      markers: []
+      path: S:\Sketch Book 〜Full Color's〜
+  - type: country
+    data: japan
+  - type: name
+    data: Sketch Book 〜Full Color's〜
+- attributes:
+  - type: date
+    data:
+      start: '20071001'
+      end: '20080116'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: D.C.II_BDRip
+      - press_format: 720p
+        press_group: CKFL
+        press_path: D.C.II_720p
+      markers: []
+      path: V:\Japan\D.C
+  - type: country
+    data: japan
+  - type: name
+    data: D.C.II
+- attributes:
+  - type: date
+    data:
+      start: '20071001'
+      end: '20080331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CSIG
+        press_path: Bamboo Blade_DVDRip
+      markers: []
+      path: S:\Bamboo Blade
+  - type: country
+    data: japan
+  - type: name
+    data: Bamboo Blade
+- attributes:
+  - type: date
+    data:
+      start: '20071002'
+      end: '20071225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+        press_path: Night Wizard The Animation_DVDRip
+      markers: []
+      path: Y:\Night Wizard
+  - type: country
+    data: japan
+  - type: name
+    data: Night Wizard The Animation
+- attributes:
+  - type: date
+    data:
+      start: '20071002'
+      end: '20071225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMHY
+        press_path: Blue Drop ～天使達の戯曲～_DVDRip
+      markers: []
+      path: S:\Blue Drop ～天使達の戯曲～
+  - type: country
+    data: japan
+  - type: name
+    data: Blue Drop ～天使達の戯曲～
+- attributes:
+  - type: date
+    data:
+      start: '20071002'
+      end: '20071225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+        press_path: Myself ; Yourself_DVDRip
+      markers: []
+      path: S:\Myself ; Yourself
+  - type: country
+    data: japan
+  - type: name
+    data: Myself ; Yourself
+- attributes:
+  - type: date
+    data:
+      start: '20071002'
+      end: '20080325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: AI
+        press_path: 魔人探偵脳噛ネウロ_DVDRip
+      markers: []
+      path: S:\魔人探偵脳噛ネウロ
+  - type: country
+    data: japan
+  - type: name
+    data: 魔人探偵脳噛ネウロ
+- attributes:
+  - type: date
+    data:
+      start: '20071003'
+      end: '20071219'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ご愁傷さま二ノ宮くん_BDRip
+      - press_format: DVDRip
+        press_group: HKG
+        press_path: ご愁傷さま二ノ宮くん_DVDRip
+      markers: []
+      path: S:\ご愁傷さま二ノ宮くん
+  - type: country
+    data: japan
+  - type: name
+    data: ご愁傷さま二ノ宮くん
+- attributes:
+  - type: date
+    data:
+      start: '20071004'
+      end: '20080327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: PHI
+        press_path: 灼眼のシャナII_BDRip
+      - press_format: DVDRip
+        press_group: CKJY
+        press_path: 灼眼のシャナII_DVDRip
+      - press_format: 720p
+        press_group: CKJY
+        press_path: 灼眼のシャナII_720p
+      markers: []
+      path: V:\Japan\灼眼のシャナ
+  - type: country
+    data: japan
+  - type: name
+    data: 灼眼のシャナII
+- attributes:
+  - type: date
+    data:
+      start: '20071004'
+      end: '20080327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: PHI
+        press_path: Clannad_BDRip(PHI)
+      - press_format: BDRip
+        press_group: CK
+      - press_format: BDRip
+        press_group: MA
+      - press_format: 720p
+        press_group: CK
+        press_path: Clannad_720p
+      markers: []
+      path: T:\Clannad
+  - type: country
+    data: japan
+  - type: name
+    data: Clannad
+- attributes:
+  - type: date
+    data:
+      start: '20071004'
+      end: '20080327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 逮捕しちゃうぞ フルスロットル
+- attributes:
+  - type: date
+    data:
+      start: '20071006'
+      end: '20080316'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: キミキス Pure Rouge_DVDRip
+      markers: []
+      path: S:\キミキス
+  - type: country
+    data: japan
+  - type: name
+    data: キミキス Pure Rouge
+- attributes:
+  - type: date
+    data:
+      start: '20071006'
+      end: '20080329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+        press_path: 機動戦士ガンダム00_BDRip
+      markers: []
+      path: T:\機動戦士ガンダム
+  - type: country
+    data: japan
+  - type: name
+    data: 機動戦士ガンダム00 01-25
+- attributes:
+  - type: date
+    data:
+      start: '20071007'
+      end: '20071223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+        press_path: Prism Ark_DVDRip
+      markers: []
+      path: S:\Prism Ark
+  - type: country
+    data: japan
+  - type: name
+    data: Prism Ark
+- attributes:
+  - type: date
+    data:
+      start: '20071007'
+      end: '20071230'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: みなみけ_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: ANK
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: みなみけ_DVDRip
+      markers: []
+      path: V:\Japan\みなみけ
+  - type: country
+    data: japan
+  - type: name
+    data: みなみけ
+- attributes:
+  - type: date
+    data:
+      start: '20071007'
+      end: '20080323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMZJ
+        press_path: レンタルマギカ_DVDRip
+      markers: []
+      path: S:\レンタルマギカ
+  - type: country
+    data: japan
+  - type: name
+    data: レンタルマギカ
+- attributes:
+  - type: date
+    data:
+      start: '20071009'
+      end: '20071225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: HKGX
+        press_path: げんしけん2_DVDRip
+      markers: []
+      path: S:\げんしけん
+  - type: country
+    data: japan
+  - type: name
+    data: げんしけん2
+- attributes:
+  - type: date
+    data:
+      start: '20071011'
+      end: '20071227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CASO
+        press_path: こどものじかん_DVDRip
+      markers: []
+      path: Z:\こどものじかん
+  - type: country
+    data: japan
+  - type: name
+    data: こどものじかん
+- attributes:
+  - type: date
+    data:
+      start: '20071013'
+      end: '20070322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 576p
+        press_group: CASO
+        press_path: しおんの王_576p
+      markers: []
+      path: Z:\しおんの王
+  - type: country
+    data: japan
+  - type: name
+    data: しおんの王
+- attributes:
+  - type: date
+    data:
+      start: '20071018'
+      end: '20071018'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひだまりスケッチ 特別編
+- attributes:
+  - type: date
+    data:
+      start: '20071018'
+      end: '20080403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: CASO
+        press_path: 神霊狩_BDRip
+      markers: []
+      path: S:\神霊狩
+  - type: country
+    data: japan
+  - type: name
+    data: 神霊狩
+- attributes:
+  - type: date
+    data:
+      start: '20071208'
+      end: '20071208'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ああっ女神さまっ 闘う翼_BDRip
+      markers: []
+      path: Y:\ああっ女神さまっ
+  - type: country
+    data: japan
+  - type: name
+    data: ああっ女神さまっ 闘う翼
+- attributes:
+  - type: date
+    data:
+      start: '20071212'
+      end: '20080227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: CK
+        press_path: アヤカシ_DVDRip
+      markers: []
+      path: S:\アヤカシ
+  - type: country
+    data: japan
+  - type: name
+    data: アヤカシ

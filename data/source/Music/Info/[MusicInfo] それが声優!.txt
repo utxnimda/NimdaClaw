@@ -1,0 +1,13 @@
+REM GENRE 那就是声优
+
+[150618][NMAX-1191] それが声優! ED「耳の中へ」／イヤホンズ (flac)
+[150722][KICM-347] それが声優! OP「それが声優！」／イヤホンズ
+[150722][KICM-1616] それが声優! OP「それが声優！」／イヤホンズ (flac+log+bk)
+[150930][KICM-1628] それが声優!「光の先へ」／イヤホンズ (flac+log+bk)
+[150930][SSX-10378] それが声優! Sound Track Vol.1／橋本由香利 (flac+log+bk)
+[151028][SSX-10379] それが声優! Radio CD Vol.1「イヤホンズのあなたのお耳にプラグイン! Vol.1」／淺野真澄 (flac+log+bk)
+[151125][SSX-10380] それが声優! Sound Track Vol.2／橋本由香利 (flac+log+bk)
+[151223][SSX-10381] それが声優! Radio CD Vol.2「イヤホンズのあなたのお耳にプラグイン! Vol.2」(flac+log+bk)
+[160127][SSX-10382] それが声優! Radio CD Vol.3「Presents Webラジオ!総集編Vol.1」(flac+log+bk)
+[160224][SSX-10383] それが声優! Radio CD Vol.4「Presents Webラジオ!総集編Vol.2」(flac+log+bk)
+[160323][SSX-10384] それが声優! Complete Disc「あなたのお耳にプラグイン!」(flac+log+bk)

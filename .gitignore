@@ -1,0 +1,36 @@
+# Version-control metadata from the local SVN working copy.
+.svn/
+**/.svn/
+
+# Local runtime logs and throwaway launch helpers.
+.logs/
+**/.logs/
+
+# Python runtime artifacts.
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Frontend/runtime dependencies and build output.
+node_modules/
+dist/
+build/
+.vite/
+
+# Nimda generated caches.
+data/features/**/cache/
+data/framework/logs/
+data/framework/runtime/
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+
+# Generated Windows shortcuts belong in configured output directories, not git.
+*.lnk

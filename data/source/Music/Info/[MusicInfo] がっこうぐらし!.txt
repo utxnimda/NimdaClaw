@@ -1,0 +1,23 @@
+﻿REM GENRE 学园孤岛
+
+[150729][GNCA-0363] がっこうぐらし! OP「ふ・れ・ん・ど・し・た・い」／学園生活部
+[150729][GNCA-0364] がっこうぐらし! OP「ふ・れ・ん・ど・し・た・い」／学園生活部 (flac+log+bk)
+[150819][GNCA-0396] がっこうぐらし! ED「ハーモナイズ・クローバー & アフターグロウ」／黒崎真音 (flac+log+bk)
+[150819][GNCA-0397] がっこうぐらし! ED「ハーモナイズ・クローバー & アフターグロウ」／黒崎真音
+[150826][GNCA-0367] がっこうぐらし! Character Song ①「ピンクのハートボール」丈槍由紀 & 直樹美紀／水瀬いのり & 高橋李依 (flac)
+[150826][GNCA-0368] がっこうぐらし! Character Song ②「Hero」恵飛須沢胡桃 & 若狭悠里／小澤亜李 & M·A·O (flac)
+[150926][GNCA-0369] がっこうぐらし! Character Song ③「Yummy Yappy Recipe」若狭悠里 & 丈槍由紀／M·A·O & 水瀬いのり (flac)
+[150926][GNCA-0370] がっこうぐらし! Character Song ④「アンハッピーエンドワールド」直樹美紀 & 恵飛須沢胡桃／高橋李依 & 小澤亜李 (flac)
+[150926][GNXA-137002] がっこうぐらし! Drama CD「夢に砂糖をひとさじ、ふたさじ」(flac+log)
+[150930][TBZR-0532~3] がっこうぐらし! Radio CD「こちらGSH 学園・生活部・放送局 Vol.1」(flac+mp3+bk)
+[151023][GNXA-137102] がっこうぐらし! Original Sound Track Vol.1 (flac+log)
+[151028][GNCA-1429] がっこうぐらし! Character Song Album「卒業あるばむ」(flac)
+[151126][GNXA-137202] がっこうぐらし! Original Sound Track Vol.2 (flac+log)
+[151218][GNXA-137302] がっこうぐらし! Drama CD「いただきます」(flac+log)
+[160127][GNXA-137402] がっこうぐらし! Original Sound Track Vol.3 (flac+log)
+[160127][TBZR-0557~8] がっこうぐらし! Radio CD「こちらGSH 学園・生活部・放送局 Vol.2」(flac+mp3+bk)
+[160224][GNXA-137502] がっこうぐらし! Drama CD「わたしの、がっこうぐらし」(flac+log)
+[170627][SFCGKG100CD1~3] がっこうぐらし! Original Sound Track
+[171013][GNXA-137704] がっこうぐらし! Drama (flac)
+
+

@@ -1,0 +1,14 @@
+# 平面目录范例（files + content）；结构化 TV schema 见 example-jp-tv-2015.yaml
+# CLI: python -m work_catalog_yaml materialize -i ...
+version: 1
+metadata:
+  title: JP TV 数据片段示例
+root: Data
+files:
+  - path: Animation/Japan/TV/[JP][TVInfo][2013].txt
+    content: |
+      [20130102][20130320][-BDRip][CASO][-BDRip][-VCB]               |ヤマノススメ
+      [20130102][20130327][--720p][----][-BDRip][----]               |まんがーる！
+      [20130106][20130331][--720p][CKCS][-BDRip][CKCS][-BDRip][-VCB] | Love Live!
+                          [-BDRip][JSUM]
+      [20130117][20130418]                                           |Pokemon BW 2 N

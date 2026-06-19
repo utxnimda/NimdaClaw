@@ -1,0 +1,16 @@
+REM GENRE 金田一
+
+[140723][SMCL-343] 金田一少年の事件簿R Original Sound Track (m4a+bk)
+[151125][JEBN-0207] 金田一少年の事件簿R OP3「四銃士」／News
+[151125][JEBN-0209] 金田一少年の事件簿R OP3「四銃士」／News (flac)
+[151216][AICL-3025] 金田一少年の事件簿R ED3「瞳の奥の銀河」／Flower
+[151216][AICL-3027][1] 金田一少年の事件簿R ED3「瞳の奥の銀河」／Flower
+[151216][AICL-3028][1] 金田一少年の事件簿R ED3「瞳の奥の銀河」／Flower
+[151216][AICL-3029] 金田一少年の事件簿R ED3「瞳の奥の銀河」／Flower (flac)
+[151216][AICL-3030] 金田一少年の事件簿R ED3「瞳の奥の銀河」／Flower
+[160210][JACA-5489][1] 金田一少年の事件簿R OP4「Tragedy」／Kat-Tun
+[160210][JACA-5493] 金田一少年の事件簿R OP4「Tragedy」／Kat-Tun (flac)
+[160210][JACA-5491] 金田一少年の事件簿R OP4「Tragedy」／Kat-Tun
+[160302][SRCL-8993] 金田一少年の事件簿R ED4「決意の翼 」／暁月凛
+[160302][SRCL-8995] 金田一少年の事件簿R ED4「決意の翼 」／暁月凛 (flac)
+

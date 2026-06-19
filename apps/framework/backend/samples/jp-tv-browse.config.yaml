@@ -1,0 +1,21 @@
+# 复制到 nimda/config/features/collection-detail/config.yaml 后修改。
+# paths.filesystem_root 指向作品数据 DB。
+# 服务端加载 DB 目录下全部 *.yaml。
+
+version: 1
+
+paths:
+  filesystem_root: "E:/Project/nimda/data/features/collection-detail/db"
+  media_root: "E:/LinkVideo/[ACG] Japan"
+  shortcut_root: "E:/LinkVideo/[ACG] Japan/Finish"
+
+link_index:
+  layout_levels:
+    - "{domain_label}"
+    - "{country_label}"
+    - "{year_label}"
+    - "{name}"
+  shortcut_name: "{press_format}-{press_group}"
+  overwrite_shortcuts: true
+  scan_max_depth: 4
+  scan_max_dirs: 2000

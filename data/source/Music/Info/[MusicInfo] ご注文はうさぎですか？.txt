@@ -1,0 +1,61 @@
+﻿REM GENRE 请问你今天要来点兔子吗
+
+[150800][LEGS-0001] ご注文はうさぎですか？Original Radio CD ビターVer.
+[150800][LEGS-0002] ご注文はうさぎですか？Original Radio CD スウィートVer.
+[150812][GNCA-1471] ご注文はうさぎですか？Character Song Medley「ごちうさDJブレンド」
+
+[151111][GNCA-0400] ご注文はうさぎですか？？OP「ノーポイッ！」／Petit Rabbit's (flac+log+bk)
+[151111][GNCA-0401] ご注文はうさぎですか？？OP「ノーポイッ！」／Petit Rabbit's
+[151111][GNCA-0402] ご注文はうさぎですか？？ED「ときめきポポロン♪」／チマメ隊 (flac+log+bk)
+[151125][GNCA-1475] ご注文はうさぎですか？？Character Song Album「Cup Of Chino」チノ／水瀬いのり (flac+log+bk)
+[151225][GNCA-1476] ご注文はうさぎですか？？Original Sound Track (flac+log+bk)
+[151225][GNBA-2351] ご注文はうさぎですか？？Special CD Vol.1「にっこりカフェの魔法使い」／Petit Rabbit's (wav+log+bk)
+[160214][GNBA-2352] ご注文はうさぎですか？？Special CD Vol.2「冷静とモフモフの国境線」／種田梨沙 (wav+log+bk)
+[160303][FPBD-0350] ご注文はうさぎですか？？Wonderful Party! Original Sound Track (m4a+bk)
+[160309][GNBA-2353] ご注文はうさぎですか？？Special CD Vol.3「Sister Or Sister？」／佐倉綾音 & 茅野愛衣 (flac+bk)
+[160408][GNBA-2354] ご注文はうさぎですか？？Special CD Vol.4「やきもち風味のカモミール」／佐藤聡美 & 内田真礼 (flac+bk)
+[160502][GNBA-2355] ご注文はうさぎですか？？Special CD Vol.5「お手伝いのラララン添えはいかがですか？」／チマメ隊 (flac+bk)
+[160603][GNBA-2356] ご注文はうさぎですか？？Special CD Vol.6「本日は誠にラリルレイン」(flac+bk)
+[160827][GNCA-0451] ご注文はうさぎですか？？Character Song Series 01 ココア／佐倉綾音 (wav+log+bk)
+[160827][GNCA-0452] ご注文はうさぎですか？？Character Song Series 02 リゼ／種田梨沙 (wav+log+bk)
+[160827][GNCA-0453] ご注文はうさぎですか？？Character Song Series 03 マヤ／徳井青空 (wav+log+bk)
+[160928][GNCA-0454] ご注文はうさぎですか？？Character Song Series 04 シャロ／内田真礼 (wav+log+bk)
+[160928][GNCA-0455] ご注文はうさぎですか？？Character Song Series 05 メグ／村川梨衣 (wav+log+bk)
+[160928][GNCA-0456] ご注文はうさぎですか？？Character Song Series 06 チノ／水瀬いのり (wav+log+bk)
+[161026][GNCA-0457] ご注文はうさぎですか？？Character Song Series 07 千夜／佐藤聡美 (wav+log+bk)
+[161026][GNCA-0458] ご注文はうさぎですか？？Character Song Series 08 青山ブルーマウンテン & モカ／早見沙織 & 茅野愛衣 (wav+log+bk)
+[161026][LPR-762] ご注文はうさぎですか？？Character Song Series Special Disc (wav+log+bk)
+[161125][GNCA-1500] ご注文はうさぎですか？？チマメ隊 Character Song Album「Chimame March」／チマメ隊 (flac)
+
+[161221][GNCA-1501] ご注文はうさぎですか？Character Song Selection Album「Order The Songs」
+[171025][GNCA-0516] ご注文はうさぎですか？？〜Dear My Sister〜 上映記念 Character Song 1
+[171122][GNCA-0516] ご注文はうさぎですか？？〜Dear My Sister〜 上映記念 Character Song 2
+[171206][GNCA-1516] ご注文はうさぎですか？？〜Dear My Sister〜 Duet Song Album
+[171222][GNCA-1517] ご注文はうさぎですか？Character Song Selection Album「Order The Songs2」
+[180330][GNXA-121702~4] ご注文はうさぎですか？？〜Dear My Sister〜 Special Disc
+	[180330][GNXA-121702] ご注文はうさぎですか？？〜ear My Sister〜 Character Song「セカイがカフェになっちゃった!」
+	[180330][GNXA-121703] ご注文はうさぎですか？？〜Dear My Sister〜 Original Sound Track
+	[180330][GNXA-121704] ご注文はうさぎですか？？〜Dear My Sister〜 Live「Chimame March In Osaka」
+[180815][GNCA-0551] ご注文はうさぎですか？？Character Solo Series 01 ココア／佐倉綾音
+[180829][GNCA-0552] ご注文はうさぎですか？？Character Solo Series 02 シャロ／内田真礼
+[180912][GNCA-0558] ご注文はうさぎですか？？Character Solo Series 03 モカ／茅野愛衣
+[180926][GNCA-0554] ご注文はうさぎですか？？Character Solo Series 04 青山ブルーマウンテン／早見沙織
+[181010][GNCA-0555] ご注文はうさぎですか？？Character Solo Series 05 マヤ／徳井青空
+[181024][GNCA-0556] ご注文はうさぎですか？？Character Solo Series 06 メグ／村川梨
+[181107][GNCA-0557] ご注文はうさぎですか？？Character Solo Series 07 千夜／佐藤聡美
+[181121][GNCA-0553] ご注文はうさぎですか？？Character Solo Series 08 リゼ／種田梨沙
+[181205][GNCA-0559] ご注文はうさぎですか？？Character Solo Series 09 チノ／水瀬いのり
+[181205][LPR-794] ご注文はうさぎですか？？Character Solo Series Special Disc
+[181219][GNCA-1550] ご注文はうさぎですか？？Character Song Medley「ごちうさDJブレンド2」
+[190214][GNCA-0571] ご注文はうさぎですか？？Birthday Song Series 01 リゼ／種田梨沙
+[190313][GNCA-0572] ご注文はうさぎですか？？Birthday Song Series 02 モカ／茅野愛衣
+[190410][GNCA-0573] ご注文はうさぎですか？？Birthday Song Series 03 ココア／佐倉綾音
+[190615][GNCA-0574] ご注文はうさぎですか？？Birthday Song Series 04 シャロ／内田真礼
+[190808][GNCA-0575] ご注文はうさぎですか？？Birthday Song Series 05 マヤ／徳井青空
+[190919][GNCA-0576] ご注文はうさぎですか？？Birthday Song Series 06 千夜／佐藤聡美
+[190926][GNXA-121902~3] ご注文はうさぎですか？？〜Sing For You〜 Insert Song Hi-Res & Mini DJCD「Mix For You」
+[191027][GNCA-0577] ご注文はうさぎですか？？Birthday Song Series 07 青山ブルーマウンテン／早見沙織
+[191102][GNCA-0578] ご注文はうさぎですか？？Birthday Song Series 08 メグ／村川梨衣
+[191204][GNCA-0579] ご注文はうさぎですか？？Birthday Song Series 09 チノ／水瀬いのり
+[191204][LPR-809] ご注文はうさぎですか？？Birthday Song Series Special Disc
+[200422][GNCA-1566] ご注文はうさぎですか？Selection Of April Fools' Day
