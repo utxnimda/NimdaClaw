@@ -22,6 +22,8 @@ build/
 
 # Nimda generated caches.
 data/features/**/cache/
+data/features/**/db/index/
+data/features/**/history/
 data/framework/logs/
 data/framework/runtime/
 
