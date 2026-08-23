@@ -1,18 +1,50 @@
 (function () {
-  var root = (window.JpTvBrowseFeatureRegistry =
-    window.JpTvBrowseFeatureRegistry || {
-      features: [],
-      register: function (feature) {
-        this.features.push(feature);
-      },
-    });
+  function ensureFeatureRegistry() {
+    var registry = window.JpTvBrowseFeatureRegistry || {};
+    if (!Array.isArray(registry.features)) registry.features = [];
+    registry.register = function (feature) {
+      if (!feature || !feature.id) return;
+      var features = Array.isArray(this.features) ? this.features : (this.features = []);
+      for (var i = 0; i < features.length; i++) {
+        if (features[i] && features[i].id === feature.id) {
+          if (features[i] !== feature && typeof features[i].dispose === "function") {
+            try {
+              features[i].dispose();
+            } catch (_e) {}
+          }
+          features[i] = feature;
+          return;
+        }
+      }
+      features.push(feature);
+    };
+    window.JpTvBrowseFeatureRegistry = registry;
+    return registry;
+  }
+
+  var root = ensureFeatureRegistry();
 
   var collectionRecordsPayload = null;
   var collectionRecordsBound = false;
+  var cleanupCallbacks = [];
   var featureCtx = null;
 
   function ctx() {
     return featureCtx || {};
+  }
+
+  function addCleanup(fn) {
+    cleanupCallbacks.push(fn);
+  }
+
+  function disposeCollectionRecordsFeature() {
+    collectionRecordsPayload = null;
+    while (cleanupCallbacks.length) {
+      try {
+        cleanupCallbacks.pop()();
+      } catch (_e) {}
+    }
+    collectionRecordsBound = false;
   }
 
   function arrSlice() {
@@ -325,7 +357,7 @@
     var view = collectionView();
     if (collectionRecordsBound || !view) return;
     collectionRecordsBound = true;
-    view.addEventListener("click", function (ev) {
+    var onClick = function (ev) {
       var t = ev.target;
       if (!t || !t.closest) return;
       var btn = t.closest("[data-collection-action]");
@@ -353,6 +385,10 @@
         var idx = parseInt(btn.getAttribute("data-record-index"), 10);
         deleteCollectionRecordAt(idx);
       }
+    };
+    view.addEventListener("click", onClick);
+    addCleanup(function () {
+      view.removeEventListener("click", onClick);
     });
   }
 
@@ -375,6 +411,9 @@
     refreshAfterConfig: function (nextCtx) {
       featureCtx = nextCtx;
       if (collectionRecordsPayload) renderCollectionRecords(collectionRecordsPayload);
+    },
+    dispose: function () {
+      disposeCollectionRecordsFeature();
     },
   });
 })();

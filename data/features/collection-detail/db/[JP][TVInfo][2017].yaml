@@ -1,0 +1,19 @@
+- attributes:
+  - type: date
+    data:
+      start: '2017-07-01'
+      end: '2017-12-30'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Fate／Apocrypha
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Fate／Apocrypha_BDRip
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Fate／Apocrypha

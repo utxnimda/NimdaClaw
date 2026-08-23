@@ -165,6 +165,26 @@ class AnimationTvJpBrowsePresenter(JpTvBrowsePresenter):
         )
 
 
+class TelevisionTvBrowsePresenter(JpTvBrowsePresenter):
+    profile_key = "television-tv"
+
+    def profile_label(self) -> str:
+        return "电视剧 · TV（television / tv，作品形态归类）"
+
+    def row_payload(
+        self,
+        entry: JpTvEntry,
+        *,
+        index_in_file: int,
+        yaml_source_rel: str | None = None,
+    ) -> dict[str, Any]:
+        return minimal_jp_tv_browse_row_payload(
+            entry,
+            index_in_file=index_in_file,
+            yaml_source_rel=yaml_source_rel,
+        )
+
+
 def minimal_jp_tv_browse_row_payload(
     entry: JpTvEntry,
     *,
@@ -224,6 +244,7 @@ class BrowsePayload(TypedDict, total=False):
 
 
 register_jp_tv_browse_presenter(AnimationTvJpBrowsePresenter())
+register_jp_tv_browse_presenter(TelevisionTvBrowsePresenter())
 
 
 def build_jp_tv_browse_payload(

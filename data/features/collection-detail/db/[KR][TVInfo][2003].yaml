@@ -1,0 +1,31 @@
+- attributes:
+  - type: date
+    data:
+      start: '20030707'
+      end: '20030908'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\夏日香气
+      collectioned:
+      - press_format: 384p
+        press_group: '----'
+        press_path: 夏日香气_384p
+      - press_format: 384p 双语
+        press_group: '----'
+        press_path: 夏日香气_384p 双语
+      - press_format: 456p
+        press_group: '----'
+        press_path: 夏日香气_456p
+      - press_format: 480P
+        press_group: '----'
+        press_path: 夏日香气_480P
+      - press_format: 480P 无字
+        press_group: '----'
+        press_path: 夏日香气_480P 无字
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 夏日香气

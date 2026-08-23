@@ -5,7 +5,8 @@ import os
 import re
 import shutil
 import subprocess
-import difflib
+import threading
+import base64
 import hashlib
 import json
 import unicodedata
@@ -47,27 +48,45 @@ from collection_detail.save import (
 _INVALID_NAME_CHARS_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 _DEFAULT_LEVELS = ("{year_label}", "{date_range_label} {name}")
 _DEFAULT_SHORTCUT_NAME = "{press_format}{press_group_suffix}"
-_DEFAULT_MEDIA_ROOT = "E:/LinkVideo/[ACG] Japan"
+_DEFAULT_LEGACY_MEDIA_ROOT = "E:/LinkVideo/[ACG] Japan"
 _DEFAULT_SHORTCUT_ROOT = "E:/LinkVideo/[ACG] Japan/Finish"
 _SHORTCUT_SCAN_CACHE: dict[str, Any] = {"signature": None, "leaves": []}
-_DISK_ASSOC_CACHE: dict[str, Any] = {"signature": None, "rows": []}
 _LINK_INDEX_LITE_PAYLOAD_CACHE: dict[str, Any] = {"signature": None, "payload": None}
-_ASSOCIATION_REJECTS_FILENAME = "link-index-rejected-associations.json"
+_FEATURE_CONFIG_CACHE: dict[str, Any] = {"signature": None, "data": None}
 _RESOURCE_SCAN_CACHE_FILENAME = "resource-library-scan-cache.yaml"
 _RESOURCE_SCAN_LEGACY_JSON_FILENAME = "resource-library-scan-cache.json"
 _RESOURCE_SCAN_NODE_DIRNAME = "resource-library-scan-cache"
+_RESOURCE_SCAN_METRICS_VERSION = 2
+_SHORTCUT_SCAN_CACHE_FILENAME = "link-index-shortcut-scan-cache.yaml"
+_LINK_INDEX_DB_FILENAME = "link-index.yaml"
+_PRESS_ALIAS_TOKENS = ("VCB", "CK")
 
 
 def _str_or_blank(v: Any) -> str:
     return v.strip() if isinstance(v, str) else ""
 
 
+def _invalidate_feature_config_cache() -> None:
+    _FEATURE_CONFIG_CACHE["signature"] = None
+    _FEATURE_CONFIG_CACHE["data"] = None
+
+
 def _feature_config() -> dict[str, Any]:
     p = feature_config_path("collection-detail")
-    if not p.is_file():
+    try:
+        st = p.stat()
+    except OSError:
+        _invalidate_feature_config_cache()
         return {}
+    signature = (str(p.resolve()), int(st.st_mtime_ns), int(st.st_size))
+    if _FEATURE_CONFIG_CACHE.get("signature") == signature:
+        cached = _FEATURE_CONFIG_CACHE.get("data")
+        return cast(dict[str, Any], cached) if isinstance(cached, dict) else {}
     raw = load_yaml(p)
-    return raw if isinstance(raw, dict) else {}
+    data = raw if isinstance(raw, dict) else {}
+    _FEATURE_CONFIG_CACHE["signature"] = signature
+    _FEATURE_CONFIG_CACHE["data"] = data
+    return data
 
 
 def _paths_config() -> dict[str, Any]:
@@ -85,8 +104,9 @@ def _path_from_config(key: str, fallback: Path | str) -> Path:
     return Path(raw or fallback).expanduser()
 
 
-def media_root() -> Path:
-    return _path_from_config("media_root", _DEFAULT_MEDIA_ROOT).resolve()
+def _legacy_media_root() -> Path:
+    """Resolve the pre-resource-library root used by older relative catalog paths."""
+    return _path_from_config("media_root", _DEFAULT_LEGACY_MEDIA_ROOT).resolve()
 
 
 def resource_roots() -> list[Path]:
@@ -109,7 +129,16 @@ def resource_roots() -> list[Path]:
         out.append(p)
     if out:
         return out
-    return [media_root()]
+    return [_legacy_media_root()]
+
+
+def _resource_roots_explicitly_configured() -> bool:
+    raw = _paths_config().get("resource_roots")
+    if isinstance(raw, str):
+        return bool(_str_or_blank(raw))
+    if isinstance(raw, list):
+        return any(bool(_str_or_blank(x)) for x in raw)
+    return False
 
 
 def _normal_resource_excludes(raw: Any) -> list[str]:
@@ -164,6 +193,54 @@ def shortcut_root() -> Path:
     return _path_from_config("shortcut_root", _DEFAULT_SHORTCUT_ROOT).resolve()
 
 
+def _shortcut_root_profiles() -> list[dict[str, Any]]:
+    raw = _paths_config().get("shortcut_roots")
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        root_s = _str_or_blank(item.get("root") or item.get("path"))
+        match = item.get("match")
+        if not root_s or not isinstance(match, dict):
+            continue
+        normal_match = {
+            key: _str_or_blank(match.get(key))
+            for key in ("domain", "country", "release_type")
+            if _str_or_blank(match.get(key))
+        }
+        if not normal_match:
+            continue
+        out.append(
+            {
+                "root": Path(root_s).expanduser().resolve(),
+                "match": normal_match,
+            }
+        )
+    return out
+
+
+def shortcut_roots() -> list[Path]:
+    out = [shortcut_root(), *[cast(Path, item["root"]) for item in _shortcut_root_profiles()]]
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in out:
+        key = _path_compare_key(root)
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def _shortcut_root_for_work(work: dict[str, Any]) -> Path:
+    for profile in _shortcut_root_profiles():
+        match = cast(dict[str, str], profile["match"])
+        if all(_str_or_blank(work.get(key)) == expected for key, expected in match.items()):
+            return cast(Path, profile["root"])
+    return shortcut_root()
+
+
 def _layout_levels() -> tuple[str, ...]:
     raw = _link_index_config().get("layout_levels")
     if isinstance(raw, list):
@@ -175,11 +252,6 @@ def _layout_levels() -> tuple[str, ...]:
 
 def _shortcut_name_template() -> str:
     return _str_or_blank(_link_index_config().get("shortcut_name")) or _DEFAULT_SHORTCUT_NAME
-
-
-def _overwrite_shortcuts_default() -> bool:
-    raw = _link_index_config().get("overwrite_shortcuts")
-    return bool(raw) if isinstance(raw, bool) else True
 
 
 def _scan_max_depth() -> int:
@@ -203,29 +275,46 @@ def _resource_scan_max_dirs() -> int:
     return 50000
 
 
+def _resource_scan_max_depth() -> int:
+    raw = _link_index_config().get("resource_scan_max_depth")
+    if isinstance(raw, int) and raw >= 0:
+        return min(raw, 12)
+    return 1
+
+
 def collection_link_index_config_json() -> dict[str, Any]:
     roots = resource_roots()
+    shortcut_profiles = _shortcut_root_profiles()
     return {
-        "media_root": str(media_root()),
         "resource_roots": [str(p) for p in roots],
         "resource_excludes": {str(p): resource_excludes_for_root(p) for p in roots},
         "shortcut_root": str(shortcut_root()),
+        "shortcut_roots": [str(p) for p in shortcut_roots()],
+        "shortcut_root_profiles": [
+            {"root": str(item["root"]), "match": dict(cast(dict[str, str], item["match"]))}
+            for item in shortcut_profiles
+        ],
+        "index_db_path": str(_link_index_db_path()),
         "layout_levels": list(_layout_levels()),
         "shortcut_name": _shortcut_name_template(),
-        "overwrite_shortcuts": _overwrite_shortcuts_default(),
         "resource_scan_max_dirs": _resource_scan_max_dirs(),
+        "resource_scan_max_depth": _resource_scan_max_depth(),
         "storage": "catalog_yaml",
         "path_field": "attributes/data/path",
         "press_path_field": "attributes/data/collectioned/*/press_path",
     }
 
 
-def _association_rejects_path() -> Path:
-    return (feature_data_root("collection-detail") / "db" / _ASSOCIATION_REJECTS_FILENAME).resolve()
-
-
 def _resource_scan_cache_path() -> Path:
     return (feature_data_root("collection-detail") / "cache" / _RESOURCE_SCAN_CACHE_FILENAME).resolve()
+
+
+def _shortcut_scan_cache_path() -> Path:
+    return (feature_data_root("collection-detail") / "cache" / _SHORTCUT_SCAN_CACHE_FILENAME).resolve()
+
+
+def _link_index_db_path() -> Path:
+    return (feature_data_root("collection-detail") / "db" / "index" / _LINK_INDEX_DB_FILENAME).resolve()
 
 
 def _resource_scan_legacy_json_path() -> Path:
@@ -241,35 +330,6 @@ def _resource_scan_node_path(relpath: str) -> Path:
     return (_resource_scan_node_dir() / digest[:2] / f"{digest[2:]}.yaml").resolve()
 
 
-def _load_association_rejects() -> dict[str, Any]:
-    path = _association_rejects_path()
-    if not path.is_file():
-        return {"version": 1, "items": {}}
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(raw, dict):
-        items = raw.get("items")
-        if isinstance(items, dict):
-            return {"version": 1, "items": {str(k): v for k, v in items.items() if str(k)}}
-        if isinstance(items, list):
-            return {"version": 1, "items": {str(x): {"key": str(x)} for x in items if str(x)}}
-    if isinstance(raw, list):
-        return {"version": 1, "items": {str(x): {"key": str(x)} for x in raw if str(x)}}
-    return {"version": 1, "items": {}}
-
-
-def _save_association_rejects(store: dict[str, Any]) -> None:
-    path = _association_rejects_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    items = store.get("items")
-    clean_items = items if isinstance(items, dict) else {}
-    payload = {"version": 1, "items": clean_items}
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def _empty_resource_tree() -> dict[str, Any]:
-    return {"type": "folder", "name": "资源库", "relpath": "", "path": "", "children": []}
-
-
 def _empty_resource_tree() -> dict[str, Any]:
     return {"type": "folder", "name": "资源库", "relpath": "", "path": "", "children": [], "children_loaded": True}
 
@@ -278,6 +338,7 @@ def _resource_scan_cache_empty() -> dict[str, Any]:
     return {
         "ok": True,
         "cached": False,
+        "metrics_version": _RESOURCE_SCAN_METRICS_VERSION,
         "config": collection_link_index_config_json(),
         "summary": {
             "root_count": 0,
@@ -338,7 +399,12 @@ def _resource_node_cache_payload(node: dict[str, Any]) -> dict[str, Any]:
     )
     out.setdefault("size", 0)
     out.setdefault("mtime", 0)
-    return {"ok": True, "relpath": str(out.get("relpath") or ""), "node": out}
+    return {
+        "ok": True,
+        "metrics_version": _RESOURCE_SCAN_METRICS_VERSION,
+        "relpath": str(out.get("relpath") or ""),
+        "node": out,
+    }
 
 
 def _resource_parent_relpath(relpath: str) -> str:
@@ -559,7 +625,11 @@ def _write_resource_node_cache(node: dict[str, Any]) -> None:
     relpath = str(node.get("relpath") or "")
     path = _resource_scan_node_path(relpath)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(dump_yaml_string(_resource_node_cache_payload(node)), encoding="utf-8")
+    if node.get("children_loaded") is False:
+        return
+    else:
+        payload = _resource_node_cache_payload(node)
+    path.write_text(dump_yaml_string(payload), encoding="utf-8")
     for child in node.get("children", []) or []:
         if isinstance(child, dict):
             _write_resource_node_cache(child)
@@ -577,8 +647,14 @@ def _load_resource_scan_cache() -> dict[str, Any]:
     raw = load_yaml(path)
     if not isinstance(raw, dict):
         return _resource_scan_cache_empty()
+    if int(raw.get("metrics_version") or 0) != _RESOURCE_SCAN_METRICS_VERSION:
+        out = _resource_scan_cache_empty()
+        out["stale_cache_path"] = str(path)
+        out["cache_note"] = "资源库目录大小统计已更新，请重新扫描资源库。"
+        return out
     raw["ok"] = True
     raw["cached"] = True
+    raw["metrics_version"] = _RESOURCE_SCAN_METRICS_VERSION
     raw["cache_path"] = str(path)
     raw["node_cache_dir"] = str(_resource_scan_node_dir())
     raw["config"] = collection_link_index_config_json()
@@ -601,6 +677,7 @@ def _save_resource_scan_cache(payload: dict[str, Any]) -> None:
     cache_payload = dict(payload)
     cache_payload["ok"] = True
     cache_payload["cached"] = True
+    cache_payload["metrics_version"] = _RESOURCE_SCAN_METRICS_VERSION
     cache_payload["cache_path"] = str(path)
     cache_payload["node_cache_dir"] = str(node_dir)
     tree = cache_payload.get("tree") if isinstance(cache_payload.get("tree"), dict) else _empty_resource_tree()
@@ -617,43 +694,27 @@ def resource_libraries_node_payload(relpath: str) -> dict[str, Any]:
     rel = str(relpath or "")
     path = _resource_scan_node_path(rel)
     if not path.is_file():
+        live_node = _resource_live_node_from_relpath(rel)
+        if live_node is not None:
+            _write_resource_node_cache(live_node)
+            return {"ok": True, "cached": False, "relpath": rel, "node": live_node}
         raise FileNotFoundError(rel or "资源库根目录")
     raw = load_yaml(path)
     if not isinstance(raw, dict) or not isinstance(raw.get("node"), dict):
         raise ValueError("资源库目录缓存损坏，请重新扫描。")
+    if int(raw.get("metrics_version") or 0) != _RESOURCE_SCAN_METRICS_VERSION:
+        live_node = _resource_live_node_from_relpath(rel)
+        if live_node is not None:
+            _write_resource_node_cache(live_node)
+            return {"ok": True, "cached": False, "relpath": rel, "node": live_node}
+        raise ValueError("resource library node cache is stale; please rescan")
     node = raw["node"]
     if str(node.get("relpath") or "") != rel:
         raise ValueError("资源库目录缓存索引不一致，请重新扫描。")
+    if node.get("children_loaded") is False and node.get("path"):
+        node = _resource_live_node_for_relpath(node)
+        _write_resource_node_cache(node)
     return {"ok": True, "cached": True, "relpath": rel, "node": node}
-
-
-def _association_reject_keys() -> set[str]:
-    return set((_load_association_rejects().get("items") or {}).keys())
-
-
-def _association_reject_identity(item: dict[str, Any], cand: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "version": 1,
-        "shortcut_relpath": _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/"),
-        "shortcut_path": _str_or_blank(item.get("shortcut_path") or item.get("path")),
-        "link_name": _without_lnk_suffix(item.get("name") or ""),
-        "target_path": _str_or_blank(cand.get("suggested_target_path") or item.get("target_path")),
-        "yaml_source_rel": _str_or_blank(cand.get("yaml_source_rel")).replace("\\", "/"),
-        "index_in_file": str(cand.get("index_in_file") if cand.get("index_in_file") is not None else ""),
-        "name": _str_or_blank(cand.get("name")),
-        "begin_date": _str_or_blank(cand.get("begin_date")),
-        "end_date": _str_or_blank(cand.get("end_date")),
-        "press_key": _str_or_blank(cand.get("press_key")),
-        "press_format": _str_or_blank(cand.get("press_format")),
-        "press_group": _str_or_blank(cand.get("press_group")),
-        "suggested_path": _str_or_blank(cand.get("suggested_path")).replace("\\", "/"),
-        "suggested_press_path": _str_or_blank(cand.get("suggested_press_path")).replace("\\", "/"),
-    }
-
-
-def _association_reject_key(item: dict[str, Any], cand: dict[str, Any]) -> str:
-    raw = json.dumps(_association_reject_identity(item, cand), ensure_ascii=False, sort_keys=True)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
 
 def _yaml_roundtrip() -> YAML:
@@ -663,27 +724,6 @@ def _yaml_roundtrip() -> YAML:
     y.width = 10_000_000
     y.indent(mapping=2, sequence=2, offset=0)
     return y
-
-
-def _normal_resource_root_strings(raw: Any) -> list[str]:
-    if not isinstance(raw, list):
-        raise ValueError("roots 必须为数组")
-    out: list[str] = []
-    seen: set[str] = set()
-    for idx, item in enumerate(raw):
-        value = _str_or_blank(item)
-        if not value:
-            continue
-        try:
-            path = Path(value).expanduser().resolve()
-        except OSError as exc:
-            raise ValueError(f"roots[{idx}] 不是有效目录路径：{value}") from exc
-        key = str(path).casefold()
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(str(path))
-    return out
 
 
 def _normal_resource_root_entries(raw: Any) -> tuple[list[str], dict[str, list[str]]]:
@@ -739,6 +779,7 @@ def save_resource_library_roots_from_ui_body(body: dict[str, Any]) -> dict[str, 
     cfg_path.parent.mkdir(parents=True, exist_ok=True)
     with cfg_path.open("w", encoding="utf-8") as fp:
         y.dump(doc, fp)
+    _invalidate_feature_config_cache()
     _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
     _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
     return {"config": collection_link_index_config_json(), "config_path": str(cfg_path.resolve())}
@@ -777,6 +818,119 @@ def _resource_file_entry(root: Path, path: Path) -> dict[str, Any]:
     }
 
 
+def _resource_dir_stat(path: Path) -> tuple[bool, int]:
+    try:
+        st = path.stat()
+        return path.is_dir(), int(st.st_mtime)
+    except OSError:
+        return False, 0
+
+
+def _resource_dir_metric_summary(
+    root: Path,
+    path: Path,
+    excludes: list[str],
+    shortcut_root_key: str,
+) -> dict[str, int | bool]:
+    size = 0
+    direct_child_count = 0
+    total_child_count = 0
+    dir_count = 0
+    file_count = 0
+    stack = [path]
+    first = True
+    while stack:
+        cur = stack.pop()
+        try:
+            entries = list(cur.iterdir())
+        except OSError:
+            continue
+        if first:
+            for entry in entries:
+                try:
+                    is_dir = entry.is_dir()
+                except OSError:
+                    continue
+                if is_dir and (
+                    (shortcut_root_key and _path_compare_key(entry) == shortcut_root_key)
+                    or _is_resource_scan_excluded(root, entry, excludes)
+                ):
+                    continue
+                direct_child_count += 1
+            first = False
+        for entry in entries:
+            try:
+                is_dir = entry.is_dir()
+            except OSError:
+                continue
+            if is_dir:
+                if shortcut_root_key and _path_compare_key(entry) == shortcut_root_key:
+                    continue
+                if _is_resource_scan_excluded(root, entry, excludes):
+                    continue
+                dir_count += 1
+                total_child_count += 1
+                stack.append(entry)
+                continue
+            try:
+                size += int(entry.stat().st_size)
+            except OSError:
+                pass
+            file_count += 1
+            total_child_count += 1
+    return {
+        "size": size,
+        "direct_child_count": direct_child_count,
+        "total_child_count": total_child_count,
+        "dir_count": dir_count,
+        "file_count": file_count,
+        "has_children": direct_child_count > 0,
+    }
+
+
+def _resource_shallow_dir_node(
+    root: Path,
+    path: Path,
+    relpath: str,
+    excludes: list[str],
+    shortcut_root_key: str,
+    root_name: str | None = None,
+) -> dict[str, Any]:
+    exists, mtime = _resource_dir_stat(path)
+    metrics = (
+        _resource_dir_metric_summary(root, path, excludes, shortcut_root_key)
+        if exists
+        else {
+            "size": 0,
+            "direct_child_count": 0,
+            "total_child_count": 0,
+            "dir_count": 0,
+            "file_count": 0,
+            "has_children": False,
+        }
+    )
+    return {
+        "type": "folder",
+        "name": root_name or path.name,
+        "relpath": relpath,
+        "path": str(path),
+        "exists": exists,
+        "error": "" if exists else "directory missing",
+        "children": [],
+        "files": [],
+        "children_loaded": False,
+        "has_children": bool(metrics.get("has_children")),
+        "size": int(metrics.get("size") or 0),
+        "mtime": mtime,
+        "direct_child_count": int(metrics.get("direct_child_count") or 0),
+        "total_child_count": int(metrics.get("total_child_count") or 0),
+        "dir_count": int(metrics.get("dir_count") or 0),
+        "file_count": int(metrics.get("file_count") or 0),
+        "series_count": int(metrics.get("dir_count") or 0),
+        "item_count": int(metrics.get("file_count") or 0),
+    }
+
+
 def _resource_dir_node(
     root: Path,
     path: Path,
@@ -786,21 +940,20 @@ def _resource_dir_node(
     counters: dict[str, Any],
     max_dirs: int,
     root_name: str | None = None,
+    depth: int = 0,
+    max_depth: int | None = None,
 ) -> dict[str, Any]:
-    try:
-        dir_stat = path.stat()
-        dir_mtime = int(dir_stat.st_mtime)
-    except OSError:
-        dir_mtime = 0
+    exists, dir_mtime = _resource_dir_stat(path)
     node: dict[str, Any] = {
         "type": "folder",
         "name": root_name or path.name,
         "relpath": relpath,
         "path": str(path),
-        "exists": path.is_dir(),
+        "exists": exists,
         "error": "",
         "children": [],
         "files": [],
+        "children_loaded": True,
         "size": 0,
         "mtime": dir_mtime,
         "direct_child_count": 0,
@@ -833,7 +986,20 @@ def _resource_dir_node(
                 child_rel = f"{root_rel}/{entry.relative_to(root).as_posix()}" if root_rel else entry.relative_to(root).as_posix()
             except ValueError:
                 child_rel = f"{relpath}/{entry.name}"
-            child = _resource_dir_node(root, entry, child_rel, excludes, shortcut_root_key, counters, max_dirs)
+            if max_depth is not None and depth >= max_depth:
+                child = _resource_shallow_dir_node(root, entry, child_rel, excludes, shortcut_root_key)
+            else:
+                child = _resource_dir_node(
+                    root,
+                    entry,
+                    child_rel,
+                    excludes,
+                    shortcut_root_key,
+                    counters,
+                    max_dirs,
+                    depth=depth + 1,
+                    max_depth=max_depth,
+                )
             node["children"].append(child)
             node["dir_count"] += 1 + int(child.get("dir_count") or 0)
             node["file_count"] += int(child.get("file_count") or 0)
@@ -857,61 +1023,87 @@ def _resource_dir_node(
     return node
 
 
-def _resource_tree_from_roots(roots_out: list[dict[str, Any]]) -> dict[str, Any]:
-    tree = _empty_resource_tree()
-    root_children: list[dict[str, Any]] = []
-    for root_idx, root in enumerate(roots_out):
-        root_path = str(root.get("root") or "")
-        root_rel = f"root:{root_idx}"
-        root_node: dict[str, Any] = {
-            "type": "folder",
-            "name": root_path or f"resource-root-{root_idx + 1}",
-            "relpath": root_rel,
-            "path": root_path,
-            "series_count": int(root.get("series_count") or 0),
-            "item_count": int(root.get("item_count") or 0),
-            "exists": bool(root.get("exists")),
-            "error": str(root.get("error") or ""),
-            "children": [],
-        }
-        series_rows = root.get("series") if isinstance(root.get("series"), list) else []
-        for series in series_rows:
-            if not isinstance(series, dict):
-                continue
-            series_name = str(series.get("name") or "")
-            series_rel = f"{root_rel}/{series.get('relpath') or series_name}"
-            child_rows = series.get("children") if isinstance(series.get("children"), list) else []
-            series_node: dict[str, Any] = {
-                "type": "folder",
-                "name": series_name,
-                "relpath": series_rel,
-                "path": str(series.get("path") or ""),
-                "series_count": 0,
-                "item_count": len(child_rows),
-                "exists": True,
-                "error": str(series.get("error") or ""),
-                "children": [],
-            }
-            for child in child_rows:
-                if not isinstance(child, dict):
-                    continue
-                child_name = str(child.get("name") or "")
-                series_node["children"].append(
-                    {
-                        "type": "resource",
-                        "name": child_name,
-                        "relpath": f"{root_rel}/{child.get('relpath') or (series_name + '/' + child_name)}",
-                        "path": str(child.get("path") or ""),
-                        "series_name": str(child.get("series_name") or series_name),
-                        "work_name": str(child.get("work_name") or ""),
-                        "press_info": str(child.get("press_info") or ""),
-                        "children": [],
-                    }
-                )
-            root_node["children"].append(series_node)
-        root_children.append(root_node)
-    tree["children"] = root_children
-    return tree
+def _resource_root_for_relpath(relpath: str) -> Path | None:
+    m = re.match(r"^root:(\d+)(?:/|$)", str(relpath or ""))
+    if not m:
+        return None
+    idx = int(m.group(1))
+    roots = resource_roots()
+    return roots[idx] if 0 <= idx < len(roots) else None
+
+
+def _resource_path_for_relpath(relpath: str) -> Path | None:
+    rel = str(relpath or "").replace("\\", "/").strip("/")
+    root = _resource_root_for_relpath(rel)
+    if root is None:
+        return None
+    rest = rel.split("/", 1)[1] if "/" in rel else ""
+    try:
+        root_r = root.resolve()
+        path = (root_r / rest).resolve() if rest else root_r
+        path.relative_to(root_r)
+        return path
+    except (OSError, ValueError):
+        return None
+
+
+def _resource_live_node_for_relpath(node: dict[str, Any]) -> dict[str, Any]:
+    relpath = str(node.get("relpath") or "")
+    root = _resource_root_for_relpath(relpath)
+    if root is None:
+        return node
+    path_s = _str_or_blank(node.get("path"))
+    if not path_s:
+        return node
+    path = Path(path_s).expanduser()
+    try:
+        path_r = path.resolve()
+        path_r.relative_to(root.resolve())
+    except (OSError, ValueError):
+        return node
+    try:
+        shortcut_root_key = _path_compare_key(shortcut_root())
+    except (OSError, ValueError):
+        shortcut_root_key = ""
+    counters: dict[str, Any] = {"dirs": 0, "files": 0, "truncated": False}
+    return _resource_dir_node(
+        root,
+        path_r,
+        relpath,
+        resource_excludes_for_root(root),
+        shortcut_root_key,
+        counters,
+        _resource_scan_max_dirs(),
+        root_name=str(node.get("name") or path_r.name),
+        depth=0,
+        max_depth=0,
+    )
+
+
+def _resource_live_node_from_relpath(relpath: str) -> dict[str, Any] | None:
+    rel = str(relpath or "").replace("\\", "/").strip("/")
+    root = _resource_root_for_relpath(rel)
+    path = _resource_path_for_relpath(rel)
+    if root is None or path is None:
+        return None
+    root_name = str(root) if rel == rel.split("/", 1)[0] else path.name
+    try:
+        shortcut_root_key = _path_compare_key(shortcut_root())
+    except (OSError, ValueError):
+        shortcut_root_key = ""
+    counters: dict[str, Any] = {"dirs": 0, "files": 0, "truncated": False}
+    return _resource_dir_node(
+        root,
+        path,
+        rel,
+        resource_excludes_for_root(root),
+        shortcut_root_key,
+        counters,
+        _resource_scan_max_dirs(),
+        root_name=root_name,
+        depth=0,
+        max_depth=0,
+    )
 
 
 def resource_libraries_cached_payload() -> dict[str, Any]:
@@ -987,6 +1179,7 @@ def _is_resource_scan_excluded(root: Path, path: Path, excludes: list[str]) -> b
 
 def scan_resource_libraries_payload() -> dict[str, Any]:
     max_dirs = _resource_scan_max_dirs()
+    max_depth = _resource_scan_max_depth()
     try:
         shortcut_root_key = _path_compare_key(shortcut_root())
     except (OSError, ValueError):
@@ -1062,7 +1255,18 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
             )
             continue
         counters: dict[str, Any] = {"dirs": 0, "files": 0, "truncated": False}
-        root_node = _resource_dir_node(root, root, root_rel, root_excludes, shortcut_root_key, counters, max_dirs, str(root))
+        root_node = _resource_dir_node(
+            root,
+            root,
+            root_rel,
+            root_excludes,
+            shortcut_root_key,
+            counters,
+            max_dirs,
+            str(root),
+            depth=0,
+            max_depth=max_depth,
+        )
         tree["children"].append(root_node)
         root_item["dir_count"] = int(root_node.get("dir_count") or 0)
         root_item["file_count"] = int(root_node.get("file_count") or 0)
@@ -1132,6 +1336,7 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
             "total_child_count": sum(int(item.get("total_child_count") or 0) for item in roots_out),
             "truncated": truncated,
             "max_dirs": max_dirs,
+            "max_depth": max_depth,
         },
         "roots": roots_out,
         "items": flat_items,
@@ -1233,7 +1438,7 @@ def _catalog_yaml_paths(settings: JpTvBrowseSettings) -> list[Path]:
             return [
                 p.resolve()
                 for p in sorted(root.glob("*.yaml"))
-                if p.is_file() and not p.name.startswith(".")
+                if p.is_file() and not p.name.startswith(".") and p.name != _LINK_INDEX_DB_FILENAME
             ]
     return [Path(abs_s).resolve() for abs_s in settings.resolved_catalog_yaml_paths]
 
@@ -1265,26 +1470,6 @@ def _clean_work_path(raw: Any, *, label: str = "path") -> str:
         except OSError:
             return str(Path(raw_s).expanduser())
     return _clean_rel_path(raw_s, label=label)
-
-
-def _split_target_path_for_ui_mapping(raw: Any, *, label: str = "target_path") -> tuple[str, str]:
-    target_s = _str_or_blank(raw)
-    if not target_s:
-        return "", ""
-    if not (re.match(r"^[A-Za-z]:[\\/]", target_s) or target_s.startswith(("/", "\\"))):
-        raise ValueError(f"{label} 必须为实际绝对路径")
-    target = Path(target_s).expanduser()
-    try:
-        target = target.resolve()
-    except OSError:
-        pass
-    leaf = target.name
-    if not leaf:
-        raise ValueError(f"{label} 必须指向具体资源目录")
-    return _clean_work_path(str(target.parent), label=f"{label}.path"), _clean_rel_path(
-        leaf,
-        label=f"{label}.press_path",
-    )
 
 
 def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
@@ -1416,37 +1601,6 @@ def _merge_ui_mappings(works: list[dict[str, Any]], mapping_items: list[dict[str
     return out
 
 
-def _relative_dirs(root: Path) -> list[str]:
-    root = root.resolve()
-    try:
-        if not root.is_dir():
-            return []
-    except OSError:
-        return []
-    max_depth = _scan_max_depth()
-    max_dirs = _scan_max_dirs()
-    out: list[str] = []
-    stack: list[tuple[Path, int]] = [(root, 0)]
-    while stack and len(out) < max_dirs:
-        cur, depth = stack.pop()
-        if depth > 0:
-            try:
-                out.append(cur.relative_to(root).as_posix())
-            except ValueError:
-                continue
-        if depth >= max_depth:
-            continue
-        try:
-            children = sorted([p for p in cur.iterdir() if p.is_dir()], key=lambda p: p.name.lower())
-        except OSError:
-            continue
-        for child in reversed(children):
-            if child.name.startswith("."):
-                continue
-            stack.append((child, depth + 1))
-    return out
-
-
 def _path_under(root: Path, raw: str, *, label: str) -> Path:
     s = _clean_rel_path(raw, label=label)
     if not s:
@@ -1479,110 +1633,356 @@ def _plan_context(work: dict[str, Any], press: dict[str, Any]) -> dict[str, str]
     return ctx
 
 
-def _shortcut_for(shortcut_root_p: Path, levels: tuple[str, ...], name_tpl: str, ctx: dict[str, str]) -> Path:
-    parts = [_template_text(level, ctx) for level in levels]
-    filename = _template_text(name_tpl, ctx)
+def _link_index_db_empty() -> dict[str, Any]:
+    return {
+        "version": 1,
+        "generated_at": "",
+        "source": "collection-detail catalog yaml",
+        "layout_levels": list(_layout_levels()),
+        "shortcut_name": _shortcut_name_template(),
+        "items": [],
+    }
+
+
+def _load_link_index_db() -> dict[str, Any]:
+    path = _link_index_db_path()
+    if not path.is_file():
+        return _link_index_db_empty()
+    raw = load_yaml(path)
+    if not isinstance(raw, dict):
+        return _link_index_db_empty()
+    raw.setdefault("version", 1)
+    raw.setdefault("generated_at", "")
+    raw.setdefault("source", "collection-detail catalog yaml")
+    raw.setdefault("layout_levels", list(_layout_levels()))
+    raw.setdefault("shortcut_name", _shortcut_name_template())
+    raw.setdefault("items", [])
+    return raw
+
+
+def _save_link_index_db(payload: dict[str, Any]) -> None:
+    path = _link_index_db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(dump_yaml_string(payload), encoding="utf-8")
+
+
+def _index_entry_key(work: dict[str, Any], press: dict[str, Any]) -> str:
+    raw = {
+        "yaml_source_rel": _str_or_blank(work.get("yaml_source_rel")).replace("\\", "/"),
+        "index_in_file": str(work.get("index_in_file") if work.get("index_in_file") is not None else ""),
+        "press_key": _str_or_blank(press.get("press_key")),
+    }
+    return hashlib.sha1(json.dumps(raw, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _index_relpath_for(work: dict[str, Any], press: dict[str, Any]) -> tuple[str, list[str]]:
+    ctx = _plan_context(work, press)
+    parts = [_template_text(level, ctx) for level in _layout_levels()]
+    filename = _template_text(_shortcut_name_template(), ctx)
     if not filename.lower().endswith(".lnk"):
         filename += ".lnk"
-    return shortcut_root_p.joinpath(*parts, filename).resolve()
+    parts.append(filename)
+    clean_parts = [part for part in parts if part]
+    return "/".join(clean_parts), clean_parts
 
 
-def _work_assoc(work: dict[str, Any], press: dict[str, Any] | None = None) -> dict[str, Any]:
-    out = {
+def _catalog_target_for_work_press(work: dict[str, Any], press: dict[str, Any]) -> tuple[str, bool, str]:
+    work_path_s = _str_or_blank(work.get("path"))
+    press_path_s = _str_or_blank(press.get(TV_JP_PRESS_PATH_KEY))
+    if not work_path_s or not press_path_s:
+        return "", False, ""
+    try:
+        target = _target_for(_legacy_media_root(), work_path_s, press_path_s)
+    except (OSError, ValueError) as exc:
+        return "", False, str(exc)
+    try:
+        exists = target.is_dir()
+    except OSError:
+        exists = False
+    return str(target), exists, ""
+
+
+def _resource_candidate_for_work_press(
+    work: dict[str, Any],
+    press: dict[str, Any],
+    resource_items: list[dict[str, Any]],
+    resource_index: dict[str, list[dict[str, Any]]] | None = None,
+) -> dict[str, Any] | None:
+    work_keys = {_strict_name_key(work.get("name") or "")}
+    work_keys = {key for key in work_keys if key}
+    if not work_keys:
+        return None
+    press_probe = {
+        "press_format": press.get(TV_JP_PRESS_FORMAT_KEY) or press.get("press_format") or "",
+        "press_group": press.get(TV_JP_PRESS_GROUP_KEY) or press.get("press_group") or "",
+    }
+    exact_press_keys = _candidate_press_resource_match_keys(press_probe)
+    format_key = _press_component_key(press_probe.get("press_format") or "")
+    candidates: list[dict[str, Any]] = []
+    fallback_candidates: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    resource_pool: list[dict[str, Any]] = []
+    if resource_index is not None:
+        seen_pool: set[int] = set()
+        for work_key in work_keys:
+            for resource in resource_index.get(work_key, []):
+                ident = id(resource)
+                if ident in seen_pool:
+                    continue
+                seen_pool.add(ident)
+                resource_pool.append(resource)
+    else:
+        resource_pool = resource_items
+    for resource in resource_pool:
+        if not isinstance(resource, dict):
+            continue
+        if resource_index is None and not (_resource_work_match_keys(resource) & work_keys):
+            continue
+        path_s = _str_or_blank(resource.get("path"))
+        if not path_s:
+            continue
+        try:
+            path = Path(path_s).expanduser().resolve()
+            exists = path.is_dir()
+        except OSError:
+            path = Path(path_s).expanduser()
+            exists = False
+        if not exists:
+            continue
+        target_key = _path_compare_key(path)
+        if target_key in seen:
+            continue
+        resource_press_raw = resource.get("press_info") or resource.get("name") or ""
+        resource_press_keys = {_press_component_key(resource_press_raw)} | _press_alias_match_keys(resource_press_raw)
+        resource_press_keys = {key for key in resource_press_keys if key}
+        base = {
+            "target_path": str(path),
+            "suggested_path": str(path.parent),
+            "suggested_press_path": path.name,
+            "resource_root": resource.get("root") or "",
+            "resource_relpath": resource.get("relpath") or "",
+            "series_name": resource.get("series_name") or "",
+            "resource_name": resource.get("name") or "",
+            "work_name": resource.get("work_name") or "",
+            "press_info": resource.get("press_info") or "",
+        }
+        if exact_press_keys and (resource_press_keys & exact_press_keys):
+            seen.add(target_key)
+            candidates.append({**base, "match_source": "resource_exact_press", "score": 200})
+            continue
+        if format_key and (
+            _press_component_key(resource.get("press_info") or "") == format_key
+            or format_key in str(_press_component_key(resource.get("press_info") or "")).split()
+        ):
+            fallback_candidates.append({**base, "match_source": "resource_format_fallback", "score": 100})
+    pool = candidates if candidates else fallback_candidates
+    if not pool:
+        return None
+    pool.sort(key=lambda item: (-int(item.get("score") or 0), str(item.get("target_path") or "").casefold()))
+    best_score = int(pool[0].get("score") or 0)
+    top = [item for item in pool if int(item.get("score") or 0) == best_score]
+    if len(top) != 1:
+        return None
+    return dict(top[0])
+
+
+def _resource_items_by_work_key(resource_items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    out: dict[str, list[dict[str, Any]]] = {}
+    for resource in resource_items:
+        if not isinstance(resource, dict):
+            continue
+        for key in _resource_work_match_keys(resource):
+            if key:
+                out.setdefault(key, []).append(resource)
+    return out
+
+
+def _index_entry_from_work_press(
+    work: dict[str, Any],
+    press: dict[str, Any],
+    resource_items: list[dict[str, Any]],
+    *,
+    previous: dict[str, Any] | None = None,
+    resource_index: dict[str, list[dict[str, Any]]] | None = None,
+    prefer_previous_target: bool = False,
+) -> dict[str, Any]:
+    relpath, parts = _index_relpath_for(work, press)
+    work_shortcut_root = _shortcut_root_for_work(work)
+    try:
+        planned_shortcut_path = str((work_shortcut_root / relpath).resolve())
+    except OSError:
+        planned_shortcut_path = str(work_shortcut_root / relpath)
+    catalog_target, catalog_exists, catalog_error = _catalog_target_for_work_press(work, press)
+    resource_candidate = _resource_candidate_for_work_press(work, press, resource_items, resource_index)
+    previous_target = _str_or_blank((previous or {}).get("target_path"))
+    target_path = ""
+    target_source = ""
+    if prefer_previous_target and previous_target:
+        target_path = previous_target
+        target_source = _str_or_blank((previous or {}).get("target_source")) or "index_db_previous"
+    elif resource_candidate:
+        target_path = _str_or_blank(resource_candidate.get("target_path"))
+        target_source = str(resource_candidate.get("match_source") or "resource")
+    elif catalog_target:
+        target_path = catalog_target
+        target_source = "catalog"
+    elif previous_target:
+        target_path = previous_target
+        target_source = "index_db_previous"
+    target_exists = False
+    if target_path:
+        try:
+            target_exists = Path(target_path).expanduser().is_dir()
+        except OSError:
+            target_exists = False
+    status = "ready" if target_exists else "missing_target"
+    if catalog_error and not target_path:
+        status = "invalid_path"
+    entry: dict[str, Any] = {
+        "entry_key": _index_entry_key(work, press),
+        "status": status,
+        "source": "index_db",
         "work_key": work.get("work_key") or "",
         "yaml_source_rel": work.get("yaml_source_rel") or "",
         "index_in_file": work.get("index_in_file"),
         "name": work.get("name") or "",
+        "domain": work.get("domain") or "",
+        "country": work.get("country") or "",
+        "release_type": work.get("release_type") or "",
         "year": work.get("year") or "",
+        "begin_date": work.get("begin_date") or "",
+        "end_date": work.get("end_date") or "",
+        "date_range_label": work.get("date_range_label") or "",
+        "press_key": press.get("press_key") or "",
+        "press_label": press.get("label") or "",
+        "press_format": press.get(TV_JP_PRESS_FORMAT_KEY) or "",
+        "press_group": press.get(TV_JP_PRESS_GROUP_KEY) or "",
+        "press_path": _str_or_blank(press.get(TV_JP_PRESS_PATH_KEY)),
+        "work_path": _str_or_blank(work.get("path")),
+        "target_path": target_path,
+        "target_source": target_source,
+        "target_exists": target_exists,
+        "shortcut_path": planned_shortcut_path,
+        "shortcut_root": str(work_shortcut_root),
+        "shortcut_relpath": relpath,
+        "shortcut_parts": parts,
+        "shortcut_exists": False,
+        "shortcut_target_path": target_path,
+        "shortcut_target_exists": target_exists,
+        "matched_shortcut_path": "",
+        "matched_shortcut_relpath": "",
+        "link_exists": target_exists,
+        "db_linked": target_exists,
     }
-    if press is not None:
-        out.update(
-            {
-                "press_key": press.get("press_key") or "",
-                "press_label": press.get("label") or "",
-            }
-        )
+    if catalog_error:
+        entry["error"] = catalog_error
+    if resource_candidate:
+        entry["resource_candidate"] = resource_candidate
+        if previous_target and _path_compare_key(previous_target) != _path_compare_key(resource_candidate.get("target_path")):
+            entry["target_fix"] = resource_candidate
+            entry["status"] = "missing_target" if not target_exists else "ready"
+    return entry
+
+
+def _index_entries_from_works(
+    works: list[dict[str, Any]],
+    *,
+    previous_items: list[dict[str, Any]] | None = None,
+    use_resource_index: bool = False,
+    prefer_previous_target: bool = False,
+) -> list[dict[str, Any]]:
+    resource_items = _resource_fix_items_from_cache() if use_resource_index and _resource_roots_explicitly_configured() else []
+    resource_index = _resource_items_by_work_key(resource_items) if resource_items else None
+    previous_by_key = {
+        str(item.get("entry_key") or ""): item
+        for item in previous_items or []
+        if isinstance(item, dict) and item.get("entry_key")
+    }
+    entries: list[dict[str, Any]] = []
+    for work in works:
+        for press in work.get("press", []) or []:
+            if not isinstance(press, dict):
+                continue
+            key = _index_entry_key(work, press)
+            entries.append(
+                _index_entry_from_work_press(
+                    work,
+                    press,
+                    resource_items,
+                    previous=previous_by_key.get(key),
+                    resource_index=resource_index,
+                    prefer_previous_target=prefer_previous_target,
+                )
+            )
+    return entries
+
+
+def _save_index_entries_from_works(works: list[dict[str, Any]], *, catalog_root: str = "") -> dict[str, Any]:
+    previous = _load_link_index_db()
+    entries = _index_entries_from_works(
+        works,
+        previous_items=[item for item in previous.get("items", []) if isinstance(item, dict)]
+        if isinstance(previous.get("items"), list)
+        else [],
+        use_resource_index=True,
+    )
+    payload = {
+        "version": 1,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "source": "collection-detail catalog yaml",
+        "catalog_root": catalog_root,
+        "layout_levels": list(_layout_levels()),
+        "shortcut_name": _shortcut_name_template(),
+        "items": entries,
+    }
+    _save_link_index_db(payload)
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
+    return payload
+
+
+def _index_db_items_for_payload(works: list[dict[str, Any]], *, catalog_root: str = "") -> tuple[list[dict[str, Any]], bool]:
+    db = _load_link_index_db()
+    raw_items = db.get("items")
+    db_catalog_root = _str_or_blank(db.get("catalog_root"))
+    can_use_db = bool(catalog_root and db_catalog_root and db_catalog_root == catalog_root)
+    if can_use_db and isinstance(raw_items, list) and raw_items:
+        return _refreshed_index_db_display_items(raw_items), True
+    return _index_entries_from_works(works), False
+
+
+def _refreshed_index_db_display_items(raw_items: Any) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    if not isinstance(raw_items, list):
+        return out
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            continue
+        item = dict(raw)
+        target_s = _str_or_blank(item.get("target_path"))
+        target_exists = False
+        if target_s:
+            try:
+                target_exists = Path(target_s).expanduser().is_dir()
+            except OSError:
+                target_exists = False
+        item["target_exists"] = target_exists
+        item["shortcut_target_path"] = target_s
+        item["shortcut_target_exists"] = target_exists
+        item["link_exists"] = target_exists
+        item["db_linked"] = target_exists
+        item["status"] = "ready" if target_exists else "missing_target"
+        out.append(item)
     return out
 
 
-def _build_plan_from_works(works: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    mr = media_root()
-    sr = shortcut_root()
-    levels = _layout_levels()
-    name_tpl = _shortcut_name_template()
-    plan: list[dict[str, Any]] = []
-    seen: dict[str, str] = {}
-    for work in works:
-        work_path_s = _str_or_blank(work.get("path"))
-        if not work_path_s:
-            continue
-        for press in work.get("press", []):
-            if not isinstance(press, dict):
-                continue
-            press_path_s = _str_or_blank(press.get(TV_JP_PRESS_PATH_KEY))
-            if not press_path_s:
-                continue
-            try:
-                target = _target_for(mr, work_path_s, press_path_s)
-                shortcut = _shortcut_for(sr, levels, name_tpl, _plan_context(work, press))
-                shortcut.relative_to(sr)
-                shortcut_s = str(shortcut)
-                target_s = str(target)
-                status = "ready"
-                if not target.exists():
-                    status = "missing_target"
-                prev = seen.get(shortcut_s.lower())
-                if prev is not None and prev != target_s:
-                    status = "duplicate_shortcut"
-                seen.setdefault(shortcut_s.lower(), target_s)
-                shortcut_rel = shortcut.relative_to(sr).as_posix()
-                plan.append(
-                    {
-                        "status": status,
-                        "work_key": work["work_key"],
-                        "yaml_source_rel": work.get("yaml_source_rel") or "",
-                        "index_in_file": work.get("index_in_file"),
-                        "name": work.get("name") or "",
-                        "year": work.get("year") or "",
-                        "begin_date": work.get("begin_date") or "",
-                        "end_date": work.get("end_date") or "",
-                        "date_range_label": work.get("date_range_label") or "",
-                        "press_key": press.get("press_key") or "",
-                        "press_label": press.get("label") or "",
-                        "press_format": press.get(TV_JP_PRESS_FORMAT_KEY) or "",
-                        "press_group": press.get(TV_JP_PRESS_GROUP_KEY) or "",
-                        "press_path": press_path_s,
-                        "work_path": work_path_s,
-                        "target_path": target_s,
-                        "target_exists": target.exists(),
-                        "shortcut_path": shortcut_s,
-                        "shortcut_relpath": shortcut_rel,
-                        "shortcut_parts": shortcut_rel.split("/"),
-                        "shortcut_exists": shortcut.exists(),
-                    },
-                )
-            except (OSError, ValueError) as exc:
-                plan.append(
-                    {
-                        "status": "invalid_path",
-                        "work_key": work.get("work_key") or "",
-                        "yaml_source_rel": work.get("yaml_source_rel") or "",
-                        "index_in_file": work.get("index_in_file"),
-                        "name": work.get("name") or "",
-                        "year": work.get("year") or "",
-                        "begin_date": work.get("begin_date") or "",
-                        "end_date": work.get("end_date") or "",
-                        "date_range_label": work.get("date_range_label") or "",
-                        "press_key": press.get("press_key") or "",
-                        "press_label": press.get("label") or "",
-                        "press_format": press.get(TV_JP_PRESS_FORMAT_KEY) or "",
-                        "press_group": press.get(TV_JP_PRESS_GROUP_KEY) or "",
-                        "press_path": press_path_s,
-                        "work_path": work_path_s,
-                        "error": str(exc),
-                    },
-                )
-    return plan
+def _settings_catalog_root_key(settings: JpTvBrowseSettings) -> str:
+    if settings.filesystem_root is None:
+        return ""
+    try:
+        return str(settings.filesystem_root.resolve())
+    except OSError:
+        return str(settings.filesystem_root)
 
 
 def _path_compare_key(raw: Any) -> str:
@@ -1595,58 +1995,11 @@ def _path_compare_key(raw: Any) -> str:
         return os.path.normcase(str(Path(s).expanduser()))
 
 
-def _annotate_plan_shortcut_targets(plan: list[dict[str, Any]], disk_leaves: list[dict[str, Any]]) -> None:
-    disk_by_shortcut: dict[str, dict[str, Any]] = {}
-    disk_by_target: dict[str, dict[str, Any]] = {}
-    for disk_item in disk_leaves:
-        shortcut_s = _str_or_blank(disk_item.get("shortcut_path"))
-        if shortcut_s:
-            disk_by_shortcut[_path_compare_key(shortcut_s)] = disk_item
-        target_s = _str_or_blank(disk_item.get("target_path"))
-        if bool(disk_item.get("target_exists")) and target_s:
-            disk_by_target.setdefault(_path_compare_key(target_s), disk_item)
-    for item in plan:
-        shortcut_s = _str_or_blank(item.get("shortcut_path"))
-        target_key = _path_compare_key(item.get("target_path"))
-        disk_item: dict[str, Any] = {}
-        if not shortcut_s:
-            disk_item = disk_by_target.get(target_key) or {}
-        else:
-            disk_item = disk_by_shortcut.get(_path_compare_key(shortcut_s)) or disk_by_target.get(target_key) or {}
-        actual_s = _str_or_blank(disk_item.get("target_path"))
-        item["matched_shortcut_path"] = _str_or_blank(disk_item.get("shortcut_path"))
-        item["matched_shortcut_relpath"] = _str_or_blank(disk_item.get("shortcut_relpath"))
-        item["shortcut_target_path"] = actual_s
-        item["shortcut_target_exists"] = bool(disk_item.get("target_exists"))
-        item["db_linked"] = bool(
-            item.get("shortcut_target_exists")
-            and actual_s
-            and _path_compare_key(actual_s) == _path_compare_key(item.get("target_path"))
-        )
-        item["link_exists"] = bool(item.get("shortcut_target_exists"))
-        if item["db_linked"] and item["matched_shortcut_path"]:
-            planned_shortcut = Path(str(item.get("shortcut_path") or ""))
-            matched_shortcut = Path(str(item["matched_shortcut_path"]))
-            if planned_shortcut.name:
-                try:
-                    normalized_shortcut = (matched_shortcut.parent / planned_shortcut.name).resolve()
-                    normalized_shortcut.relative_to(shortcut_root())
-                    item["configured_shortcut_path"] = str(planned_shortcut)
-                    item["configured_shortcut_relpath"] = str(item.get("shortcut_relpath") or "")
-                    item["shortcut_path"] = str(normalized_shortcut)
-                    normalized_rel = normalized_shortcut.relative_to(shortcut_root()).as_posix()
-                    item["shortcut_relpath"] = normalized_rel
-                    item["shortcut_parts"] = normalized_rel.split("/")
-                    item["shortcut_exists"] = normalized_shortcut.exists()
-                except (OSError, ValueError):
-                    pass
-
-
 def _planned_relpath_keys(plan: list[dict[str, Any]]) -> set[str]:
     return {
-        str(item.get("shortcut_relpath") or "").lower()
+        _path_compare_key(item.get("shortcut_path"))
         for item in plan
-        if item.get("shortcut_relpath")
+        if _path_compare_key(item.get("shortcut_path"))
     }
 
 
@@ -1664,8 +2017,8 @@ def _disk_leaf_is_unmapped(
     planned_relpaths: set[str],
     planned_targets: set[str],
 ) -> bool:
-    rel = str(item.get("shortcut_relpath") or "").lower()
-    if rel and rel in planned_relpaths:
+    shortcut_key = _path_compare_key(item.get("shortcut_path") or item.get("path"))
+    if shortcut_key and shortcut_key in planned_relpaths:
         return False
     target_key = _path_compare_key(item.get("target_path"))
     if bool(item.get("target_exists")) and target_key and target_key in planned_targets:
@@ -1709,6 +2062,7 @@ def _plan_summary(plan: list[dict[str, Any]]) -> dict[str, int]:
         "invalid_path": 0,
         "shortcut_exists": 0,
         "unmapped_on_disk": 0,
+        "empty_target_path": 0,
         "created": 0,
         "renamed": 0,
         "skipped": 0,
@@ -1718,6 +2072,8 @@ def _plan_summary(plan: list[dict[str, Any]]) -> dict[str, int]:
         status = str(item.get("status") or "")
         if status in out:
             out[status] += 1
+        if not _str_or_blank(item.get("target_path")):
+            out["empty_target_path"] += 1
         if item.get("target_fix"):
             out["target_fixable"] += 1
         if item.get("created"):
@@ -1735,60 +2091,192 @@ def _copy_shortcut_leaves(leaves: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [dict(item) for item in leaves]
 
 
-def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, Any]]:
-    root = shortcut_root()
+def _shortcut_scan_signature_payload(signature: tuple[Any, ...]) -> dict[str, Any]:
+    root = str(signature[0]) if signature else ""
+    files = signature[1] if len(signature) > 1 and isinstance(signature[1], tuple) else ()
+    return {
+        "root": root,
+        "files": [
+            {"relpath": str(rel), "mtime_ns": int(mtime_ns), "size": int(size)}
+            for rel, mtime_ns, size in files
+        ],
+    }
+
+
+def _shortcut_scan_signature_from_payload(raw: Any) -> tuple[Any, ...] | None:
+    if not isinstance(raw, dict):
+        return None
+    root = _str_or_blank(raw.get("root"))
+    files = raw.get("files")
+    if not root or not isinstance(files, list):
+        return None
+    out: list[tuple[str, int, int]] = []
+    for item in files:
+        if not isinstance(item, dict):
+            return None
+        rel = _str_or_blank(item.get("relpath"))
+        if not rel:
+            return None
+        try:
+            mtime_ns = int(item.get("mtime_ns"))
+            size = int(item.get("size"))
+        except (TypeError, ValueError):
+            return None
+        out.append((rel, mtime_ns, size))
+    return (root, tuple(sorted(out)))
+
+
+def _shortcut_leaf_cache_payload(item: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key in (
+        "type",
+        "name",
+        "relpath",
+        "path",
+        "shortcut_path",
+        "shortcut_root",
+        "shortcut_relpath",
+        "target_path",
+        "target_exists",
+        "target_resolved",
+        "target_error",
+        "shortcut_exists",
+    ):
+        if key in item:
+            out[key] = item[key]
+    parts = item.get("shortcut_parts")
+    out["shortcut_parts"] = [str(part) for part in parts] if isinstance(parts, list) else []
+    return out
+
+
+def _shortcut_leaf_from_cache(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    rel = _str_or_blank(raw.get("shortcut_relpath") or raw.get("relpath")).replace("\\", "/")
+    path = _str_or_blank(raw.get("shortcut_path") or raw.get("path"))
+    name = _str_or_blank(raw.get("name"))
+    if not rel or not path or not name:
+        return None
+    parts = raw.get("shortcut_parts")
+    return {
+        "type": _str_or_blank(raw.get("type")) or "disk_link",
+        "name": name,
+        "relpath": rel,
+        "path": path,
+        "shortcut_path": path,
+        "shortcut_root": _str_or_blank(raw.get("shortcut_root")),
+        "shortcut_relpath": rel,
+        "shortcut_parts": [str(part) for part in parts] if isinstance(parts, list) else rel.split("/"),
+        "shortcut_exists": bool(raw.get("shortcut_exists", True)),
+        "target_path": _str_or_blank(raw.get("target_path")),
+        "target_exists": bool(raw.get("target_exists")),
+        "target_resolved": bool(raw.get("target_resolved")),
+        "target_error": _str_or_blank(raw.get("target_error")),
+    }
+
+
+def _load_shortcut_scan_cache(signature: tuple[Any, ...]) -> list[dict[str, Any]] | None:
+    path = _shortcut_scan_cache_path()
+    if not path.is_file():
+        return None
     try:
-        if not root.is_dir():
-            return []
-    except OSError:
-        return []
+        raw = load_yaml(path)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    cached_signature = _shortcut_scan_signature_from_payload(raw.get("signature"))
+    if cached_signature != signature:
+        return None
+    leaves = raw.get("leaves")
+    if not isinstance(leaves, list):
+        return None
+    out: list[dict[str, Any]] = []
+    for item in leaves:
+        leaf = _shortcut_leaf_from_cache(item)
+        if leaf is None:
+            return None
+        out.append(leaf)
+    return out
+
+
+def _save_shortcut_scan_cache(signature: tuple[Any, ...], leaves: list[dict[str, Any]]) -> None:
+    path = _shortcut_scan_cache_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "cached": True,
+        "scanned_at": datetime.now().isoformat(timespec="seconds"),
+        "signature": _shortcut_scan_signature_payload(signature),
+        "leaves": [_shortcut_leaf_cache_payload(item) for item in leaves],
+    }
+    path.write_text(dump_yaml_string(payload), encoding="utf-8")
+
+
+def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, Any]]:
     max_dirs = _scan_max_dirs()
     max_depth = max(_scan_max_depth(), len(_layout_levels()) + 2)
     leaves: list[dict[str, Any]] = []
     shortcut_paths: list[Path] = []
     signature_parts: list[tuple[str, int, int]] = []
-    stack: list[tuple[Path, int]] = [(root, 0)]
     seen_dirs = 0
-    while stack and seen_dirs < max_dirs:
-        cur, depth = stack.pop()
-        seen_dirs += 1
+    scanned_roots: list[str] = []
+    for root_index, root in enumerate(shortcut_roots()):
         try:
-            children = sorted(cur.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+            if not root.is_dir():
+                continue
+            root_resolved = root.resolve()
         except OSError:
             continue
-        for child in reversed(children):
-            if child.name.startswith("."):
+        scanned_roots.append(str(root_resolved))
+        stack: list[tuple[Path, int]] = [(root_resolved, 0)]
+        while stack and seen_dirs < max_dirs:
+            cur, depth = stack.pop()
+            seen_dirs += 1
+            try:
+                children = sorted(cur.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+            except OSError:
                 continue
-            if child.is_dir():
-                if depth < max_depth:
-                    stack.append((child, depth + 1))
-                continue
-            if child.is_file() and child.suffix.lower() == ".lnk":
-                try:
-                    shortcut_abs = child.resolve()
-                    rel = shortcut_abs.relative_to(root.resolve()).as_posix()
-                    st = shortcut_abs.stat()
-                except ValueError:
+            for child in reversed(children):
+                if child.name.startswith("."):
                     continue
-                except OSError:
+                if child.is_dir():
+                    if depth < max_depth:
+                        stack.append((child, depth + 1))
                     continue
-                shortcut_paths.append(shortcut_abs)
-                signature_parts.append((rel, int(st.st_mtime_ns), int(st.st_size)))
-                leaves.append(
-                    {
-                        "type": "disk_link",
-                        "name": child.name,
-                        "relpath": rel,
-                        "path": str(shortcut_abs),
-                        "shortcut_path": str(shortcut_abs),
-                        "shortcut_relpath": rel,
-                        "shortcut_parts": rel.split("/"),
-                        "shortcut_exists": True,
-                    }
-                )
-    signature = (str(root.resolve()), tuple(sorted(signature_parts)))
+                if child.is_file() and child.suffix.lower() == ".lnk":
+                    try:
+                        shortcut_abs = child.resolve()
+                        rel = shortcut_abs.relative_to(root_resolved).as_posix()
+                        st = shortcut_abs.stat()
+                    except ValueError:
+                        continue
+                    except OSError:
+                        continue
+                    shortcut_paths.append(shortcut_abs)
+                    signature_parts.append((f"{root_index}:{rel}", int(st.st_mtime_ns), int(st.st_size)))
+                    leaves.append(
+                        {
+                            "type": "disk_link",
+                            "name": child.name,
+                            "relpath": rel,
+                            "path": str(shortcut_abs),
+                            "shortcut_path": str(shortcut_abs),
+                            "shortcut_root": str(root_resolved),
+                            "shortcut_relpath": rel,
+                            "shortcut_parts": rel.split("/"),
+                            "shortcut_exists": True,
+                        }
+                    )
+    signature = ("|".join(scanned_roots), tuple(sorted(signature_parts)))
     if not refresh_targets and _SHORTCUT_SCAN_CACHE.get("signature") == signature:
         return _copy_shortcut_leaves(cast(list[dict[str, Any]], _SHORTCUT_SCAN_CACHE.get("leaves") or []))
+    if not refresh_targets:
+        cached_leaves = _load_shortcut_scan_cache(signature)
+        if cached_leaves is not None:
+            _SHORTCUT_SCAN_CACHE["signature"] = signature
+            _SHORTCUT_SCAN_CACHE["leaves"] = _copy_shortcut_leaves(cached_leaves)
+            return cached_leaves
     target_infos = _windows_shortcut_targets(shortcut_paths)
     for item in leaves:
         shortcut_s = str(item.get("shortcut_path") or "")
@@ -1801,6 +2289,10 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
         item["target_error"] = str(info.get("error") or "")
     _SHORTCUT_SCAN_CACHE["signature"] = signature
     _SHORTCUT_SCAN_CACHE["leaves"] = _copy_shortcut_leaves(leaves)
+    try:
+        _save_shortcut_scan_cache(signature, leaves)
+    except OSError:
+        pass
     return leaves
 
 
@@ -1843,15 +2335,38 @@ def _build_tree(
     disk_leaves: list[dict[str, Any]] | None = None,
     disk_matches: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    sr = shortcut_root()
+    configured_roots = shortcut_roots()
+    multi_root = len(configured_roots) > 1
+    default_root = shortcut_root()
     root: dict[str, Any] = {
         "type": "root",
-        "name": sr.name or str(sr),
+        "name": "快捷方式索引" if multi_root else (default_root.name or str(default_root)),
         "relpath": "",
-        "path": str(sr),
+        "path": "" if multi_root else str(default_root),
         "associated": [],
         "children": [],
     }
+    root_nodes: dict[str, dict[str, Any]] = {}
+
+    def tree_root_for(raw_root: Any) -> tuple[Path, dict[str, Any]]:
+        sr = Path(_str_or_blank(raw_root) or str(default_root)).expanduser().resolve()
+        if not multi_root:
+            return sr, root
+        key = _path_compare_key(sr)
+        node = root_nodes.get(key)
+        if node is None:
+            node = {
+                "type": "folder",
+                "name": str(sr),
+                "relpath": f"root:{len(root_nodes)}",
+                "path": str(sr),
+                "associated": [],
+                "children": [],
+            }
+            root_nodes[key] = node
+            root["children"].append(node)
+        return sr, node
+
     planned_relpaths = _planned_relpath_keys(plan)
     planned_targets = _planned_target_keys(plan)
     for item in plan:
@@ -1860,6 +2375,7 @@ def _build_tree(
             continue
         assoc = {
             "work_key": item.get("work_key") or "",
+            "entry_key": item.get("entry_key") or "",
             "yaml_source_rel": item.get("yaml_source_rel") or "",
             "index_in_file": item.get("index_in_file"),
             "name": item.get("name") or "",
@@ -1868,7 +2384,9 @@ def _build_tree(
             "press_label": item.get("press_label") or "",
         }
         _append_assoc(root, assoc)
-        cur = root
+        sr, cur = tree_root_for(item.get("shortcut_root"))
+        if cur is not root:
+            _append_assoc(cur, assoc)
         rel_parts: list[str] = []
         for part in [str(x) for x in parts[:-1]]:
             rel_parts.append(part)
@@ -1892,6 +2410,7 @@ def _build_tree(
             "target_resolved": bool(item.get("target_resolved")),
             "target_error": str(item.get("target_error") or ""),
             "open_path": item.get("target_path") or "",
+            "source": item.get("source") or "",
             "status": item.get("status") or "",
             "db_associated": True,
             "db_linked": bool(item.get("db_linked")),
@@ -1902,12 +2421,14 @@ def _build_tree(
             "yaml_source_rel": item.get("yaml_source_rel") or "",
             "index_in_file": item.get("index_in_file"),
             "press_key": item.get("press_key") or "",
+            "press_format": item.get("press_format") or "",
+            "press_group": item.get("press_group") or "",
             "associated": [assoc],
             "children": [],
         }
         if isinstance(item.get("target_fix"), dict):
             link_node["target_fix"] = dict(cast(dict[str, Any], item["target_fix"]))
-        if not link_node["shortcut_exists"]:
+        if not link_node["shortcut_exists"] and item.get("source") != "index_db":
             link_node["warnings"] = ["索引链接尚未生成"]
         if not link_node["target_exists"]:
             link_node.setdefault("warnings", []).append("目标目录不存在")
@@ -1927,7 +2448,7 @@ def _build_tree(
         parts = item.get("shortcut_parts")
         if not isinstance(parts, list) or not parts:
             continue
-        cur = root
+        sr, cur = tree_root_for(item.get("shortcut_root"))
         rel_parts = []
         for part in [str(x) for x in parts[:-1]]:
             rel_parts.append(part)
@@ -1996,6 +2517,7 @@ def _slim_tree_for_index_browser(node: dict[str, Any]) -> dict[str, Any]:
     if node_type == "link":
         for key in (
             "status",
+            "source",
             "shortcut_path",
             "target_path",
             "shortcut_target_path",
@@ -2011,8 +2533,11 @@ def _slim_tree_for_index_browser(node: dict[str, Any]) -> dict[str, Any]:
             "db_linked",
             "db_name_matched",
             "target_fix",
+            "entry_key",
             "yaml_source_rel",
             "index_in_file",
+            "press_format",
+            "press_group",
         ):
             if key in node:
                 out[key] = node[key]
@@ -2022,335 +2547,36 @@ def _slim_tree_for_index_browser(node: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _without_lnk_suffix(raw: Any) -> str:
-    return re.sub(r"\.lnk$", "", str(raw or "").strip(), flags=re.IGNORECASE)
-
-
-def _strip_leading_date_prefixes(raw: str) -> str:
-    s = str(raw or "").strip()
-    while True:
-        next_s = re.sub(r"^\s*[\[\(【]\s*((?:19|20)\d{2}(?:\d{4})?)\s*[\]\)】]\s*", "", s)
-        if next_s != s:
-            s = next_s
-            continue
-        next_s = re.sub(r"^\s*((?:19|20)\d{6})[\s._-]+", "", s)
-        if next_s == s:
-            return s.strip()
-        s = next_s
-
-
-def _name_match_key(raw: Any) -> str:
-    s = _strip_leading_date_prefixes(_without_lnk_suffix(raw))
-    s = unicodedata.normalize("NFKC", s)
-    chars = [ch.casefold() if ch.isalnum() else " " for ch in s]
-    return " ".join("".join(chars).split())
-
-
-def _match_similarity(left: str, right: str) -> float:
-    if not left or not right:
-        return 0.0
-    if left == right:
-        return 1.0
-    ratio = difflib.SequenceMatcher(a=left, b=right).ratio()
-    lt = set(left.split())
-    rt = set(right.split())
-    overlap = len(lt & rt)
-    token_score = (2 * overlap / (len(lt) + len(rt))) if lt and rt else 0.0
-    contains_score = 0.0
-    shorter = left if len(left) < len(right) else right
-    longer = right if shorter == left else left
-    if len(shorter) >= 4 and shorter in longer:
-        contains_score = min(0.9, 0.62 + len(shorter) / max(len(longer), 1) * 0.25)
-    return max(ratio, token_score, contains_score)
-
-
-def _match_tokens(key: str) -> set[str]:
-    out: set[str] = set()
-    for token in str(key or "").split():
-        if not token:
-            continue
-        if token.isascii() and len(token) <= 1:
-            continue
-        out.add(token)
-    return out
-
-
-def _association_match_context(works: list[dict[str, Any]]) -> dict[str, Any]:
-    records: list[dict[str, Any]] = []
-    by_exact: dict[str, list[dict[str, Any]]] = {}
-    by_strict_exact: dict[str, list[dict[str, Any]]] = {}
-    by_token: dict[str, list[dict[str, Any]]] = {}
-    by_year: dict[str, list[dict[str, Any]]] = {}
-    for work in works:
-        name_key = _name_match_key(work.get("name") or "")
-        strict_name_key = _strict_name_key(work.get("name") or "")
-        if not name_key:
-            continue
-        record = {
-            "work": work,
-            "work_key": work.get("work_key") or "",
-            "name_key": name_key,
-            "strict_name_key": strict_name_key,
-            "tokens": _match_tokens(name_key),
-            "year": str(work.get("year") or ""),
-        }
-        records.append(record)
-        by_exact.setdefault(name_key, []).append(record)
-        if strict_name_key:
-            by_strict_exact.setdefault(strict_name_key, []).append(record)
-        if record["year"]:
-            by_year.setdefault(str(record["year"]), []).append(record)
-        for token in record["tokens"]:
-            by_token.setdefault(str(token), []).append(record)
-    return {
-        "records": records,
-        "by_exact": by_exact,
-        "by_strict_exact": by_strict_exact,
-        "by_token": by_token,
-        "by_year": by_year,
-    }
-
-
-def _shortcut_year_hint(item: dict[str, Any]) -> str:
-    hay = " ".join(str(x or "") for x in item.get("shortcut_parts", []) if isinstance(x, str))
-    m = re.search(r"(?:^|[^\d])((?:19|20)\d{2})(?:\d{4})?(?:[^\d]|$)", hay)
-    return m.group(1) if m else ""
-
-
-def _shortcut_date_range_hint(item: dict[str, Any]) -> tuple[str, str]:
-    parts = item.get("shortcut_parts")
-    hay_parts = [str(x or "") for x in parts if isinstance(x, str)] if isinstance(parts, list) else []
-    hay_parts.append(str(item.get("shortcut_relpath") or item.get("relpath") or ""))
-    for hay in hay_parts:
-        dates = re.findall(r"[\[\(【]\s*((?:19|20)\d{6})\s*[\]\)】]", hay)
-        if dates:
-            return dates[0], dates[1] if len(dates) > 1 else dates[0]
-    return "", ""
-
-
-def _date_year(raw: Any) -> str:
-    s = str(raw or "").strip()
-    return s[:4] if re.match(r"^(?:19|20)\d{2}", s) else ""
-
-
-def _shortcut_work_dates_compatible(item: dict[str, Any], work: dict[str, Any]) -> bool:
-    shortcut_begin, shortcut_end = _shortcut_date_range_hint(item)
-    work_begin = str(work.get("begin_date") or "")
-    work_end = str(work.get("end_date") or "")
-    shortcut_begin_year = _date_year(shortcut_begin)
-    shortcut_end_year = _date_year(shortcut_end)
-    work_begin_year = _date_year(work_begin)
-    work_end_year = _date_year(work_end)
-    if shortcut_begin_year and work_begin_year and shortcut_begin_year != work_begin_year:
-        return False
-    if shortcut_end_year and work_end_year and shortcut_end_year != work_end_year:
-        return False
-    return True
-
-
-def _shortcut_work_name_hint(item: dict[str, Any]) -> str:
-    parts = item.get("shortcut_parts")
-    if isinstance(parts, list) and len(parts) >= 2:
-        return _strip_leading_date_prefixes(str(parts[-2] or ""))
-    return _strip_leading_date_prefixes(_without_lnk_suffix(item.get("name") or ""))
-
-
-def _target_rel_under_media_root(target: Path | None) -> str:
-    if target is None:
-        return ""
-    try:
-        return target.resolve().relative_to(media_root().resolve()).as_posix()
-    except (OSError, ValueError):
-        return ""
-
-
-def _shortcut_target_info(item: dict[str, Any], *, resolve_target: bool = False) -> dict[str, Any]:
-    raw = str(item.get("shortcut_path") or item.get("path") or "")
-    if not raw:
-        return {
-            "target_path": "",
-            "target_exists": False,
-            "target_relpath": "",
-            "target_under_media_root": False,
-            "target_resolved": False,
-            "error": "shortcut_path is empty",
-        }
-    existing_target_s = _str_or_blank(item.get("target_path"))
-    if existing_target_s:
-        try:
-            existing_target = Path(existing_target_s).expanduser().resolve()
-        except OSError:
-            existing_target = Path(existing_target_s).expanduser()
-        target_rel = _target_rel_under_media_root(existing_target)
-        return {
-            "target_path": str(existing_target),
-            "target_exists": bool(item.get("target_exists")),
-            "target_relpath": target_rel,
-            "target_under_media_root": bool(target_rel),
-            "target_resolved": True,
-            "error": _str_or_blank(item.get("target_error")),
-        }
-    if not resolve_target:
-        return {
-            "target_path": "",
-            "target_exists": None,
-            "target_relpath": "",
-            "target_under_media_root": False,
-            "target_resolved": False,
-            "error": "",
-        }
-    shortcut = Path(raw).expanduser().resolve()
-    target_s = ""
-    error = ""
-    try:
-        target_s = _windows_shortcut_target(shortcut)
-    except (OSError, subprocess.SubprocessError) as exc:
-        error = str(exc)
-    target = Path(target_s).expanduser().resolve() if target_s else None
-    target_rel = _target_rel_under_media_root(target)
-    return {
-        "target_path": str(target) if target is not None else "",
-        "target_exists": bool(target and target.exists()),
-        "target_relpath": target_rel,
-        "target_under_media_root": bool(target_rel),
-        "target_resolved": True,
-        "error": error if not target_s else "",
-    }
-
-
-def _target_name_hints(item: dict[str, Any], target_info: dict[str, Any]) -> list[str]:
-    target_relpath = str(target_info.get("target_relpath") or "")
-    target_base, _target_leaf, target_suffix = _target_leaf_work_base(item, None, target_info)
-    hints = []
-    if target_base and target_suffix:
-        hints.append(target_base)
-    hints.append(_shortcut_work_name_hint(item))
-    if target_relpath:
-        parts = [part for part in target_relpath.split("/") if part]
-        if len(parts) >= 2:
-            hints.append(parts[-2])
-        elif parts:
-            hints.append(parts[-1])
-    out: list[str] = []
-    seen: set[str] = set()
-    for hint in hints:
-        h = _strip_leading_date_prefixes(hint)
-        k = _strict_name_key(h)
-        if h and k not in seen:
-            seen.add(k)
-            out.append(h)
-    return out
-
-
-def _suggest_paths_for_candidate(
-    item: dict[str, Any],
-    work: dict[str, Any],
-    target_info: dict[str, Any],
-) -> tuple[str, str, str]:
-    target_rel = str(target_info.get("target_relpath") or "").strip("/")
-    existing_work_path = _str_or_blank(work.get("path")).replace("\\", "/").strip("/")
-    target_abs = _str_or_blank(target_info.get("target_path"))
-    if target_rel:
-        if existing_work_path and (
-            target_rel == existing_work_path or target_rel.startswith(existing_work_path + "/")
-        ):
-            press_path = target_rel[len(existing_work_path) :].strip("/")
-            if press_path:
-                return existing_work_path, press_path, "target_existing_work_path"
-        parts = [part for part in target_rel.split("/") if part]
-        if len(parts) >= 2:
-            return "/".join(parts[:-1]), parts[-1], "target_relpath"
-        if parts:
-            return parts[0], _without_lnk_suffix(item.get("name")), "target_relpath_single"
-    if target_abs:
-        try:
-            target_path = Path(target_abs).expanduser().resolve()
-        except OSError:
-            target_path = Path(target_abs).expanduser()
-        if target_path.name:
-            return str(target_path.parent), target_path.name, "target_absolute_path"
-    fallback_work_path = existing_work_path or _shortcut_work_name_hint(item)
-    fallback_press_path = _without_lnk_suffix(item.get("name"))
-    return fallback_work_path, fallback_press_path, "shortcut_name"
-
-
-def _suggested_target_path_for_candidate(
-    work_path: str,
-    press_path: str,
-    target_info: dict[str, Any],
-) -> str:
-    target_abs = _str_or_blank(target_info.get("target_path"))
-    if target_abs:
-        return target_abs
-    if not work_path or not press_path:
-        return ""
-    try:
-        return str(_target_for(media_root(), work_path, press_path))
-    except (OSError, ValueError):
-        return ""
-
-
 def _strict_name_key(raw: Any) -> str:
     s = unicodedata.normalize("NFKC", str(raw or "")).strip()
     return re.sub(r"\s+", " ", s)
-
-
-def _target_leaf_work_base(
-    item: dict[str, Any],
-    press: dict[str, Any] | None,
-    target_info: dict[str, Any],
-) -> tuple[str, str, str]:
-    target_s = _str_or_blank(target_info.get("target_path"))
-    if not target_s:
-        return "", "", ""
-    try:
-        leaf = Path(target_s).expanduser().name
-    except OSError:
-        leaf = Path(target_s).name
-    if not leaf:
-        return "", "", ""
-    suffixes = [
-        _without_lnk_suffix(item.get("name")),
-    ]
-    if isinstance(press, dict):
-        fmt = _str_or_blank(press.get(TV_JP_PRESS_FORMAT_KEY))
-        grp = _str_or_blank(press.get(TV_JP_PRESS_GROUP_KEY))
-        label = _str_or_blank(press.get("label"))
-        suffixes.extend([fmt, label])
-        if fmt and grp:
-            suffixes.append(f"{fmt}-{grp}")
-    seen: set[str] = set()
-    for suffix in sorted((x for x in suffixes if x), key=len, reverse=True):
-        suffix_key = _press_component_key(suffix)
-        if suffix_key in seen:
-            continue
-        seen.add(suffix_key)
-        marker = "_" + suffix
-        marker_key = _press_component_key(marker)
-        if _press_component_key(leaf).endswith(marker_key):
-            return leaf[: -len(marker)], leaf, suffix
-    return leaf, leaf, ""
-
-
-def _target_leaf_matches_shortcut_work(
-    item: dict[str, Any],
-    press: dict[str, Any] | None,
-    target_info: dict[str, Any],
-) -> tuple[bool, str, str, str]:
-    work_name = _shortcut_work_name_hint(item)
-    base, leaf, suffix = _target_leaf_work_base(item, press, target_info)
-    return (
-        bool(work_name and base and _strict_name_key(work_name) == _strict_name_key(base)),
-        work_name,
-        base,
-        suffix or leaf,
-    )
 
 
 def _press_component_key(raw: Any) -> str:
     s = unicodedata.normalize("NFKC", str(raw or ""))
     s = re.sub(r"\s+", " ", s).strip().casefold()
     return s
+
+
+def _press_alias_match_keys(raw: Any) -> set[str]:
+    key = _press_component_key(raw)
+    if not key:
+        return set()
+    compact = re.sub(r"[^a-z0-9]+", "", key)
+    out: set[str] = set()
+    for token in _PRESS_ALIAS_TOKENS:
+        alias = _press_component_key(token)
+        if not alias:
+            continue
+        boundary = re.search(rf"(^|[^a-z0-9]){re.escape(alias)}([^a-z0-9]|$)", key)
+        if boundary or compact.startswith(alias) or compact.endswith(alias):
+            out.add(alias)
+    return out
+
+
+def _press_group_match_key(raw: Any) -> str:
+    key = _press_component_key(raw)
+    return "" if key in {"", "----"} else key
 
 
 def _resource_fix_items_from_cache() -> list[dict[str, Any]]:
@@ -2362,858 +2588,48 @@ def _resource_fix_items_from_cache() -> list[dict[str, Any]]:
     return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
 
 
-def _shortcut_press_match_keys(item: dict[str, Any]) -> set[str]:
-    values: list[str] = []
-    parts = item.get("shortcut_parts")
-    if isinstance(parts, list) and parts:
-        values.append(_without_lnk_suffix(parts[-1]))
-    values.append(_without_lnk_suffix(item.get("name") or ""))
-    keys: set[str] = set()
-    for value in values:
-        raw = _without_lnk_suffix(value)
-        if not raw:
-            continue
-        variants = [raw]
-        m = re.match(r"^(.+?)\((.+?)\)$", raw)
-        if m:
-            left = m.group(1).strip()
-            right = m.group(2).strip()
-            variants.extend([left, f"{left}-{right}", f"{left}_{right}", f"{left} {right}", f"{left}/{right}"])
-        for variant in variants:
-            keys.add(_press_component_key(variant))
-        leaf = Path(raw.replace("\\", "/")).name
-        if leaf:
-            keys.add(_press_component_key(leaf))
+def _candidate_press_resource_match_keys(candidate: dict[str, Any] | None) -> set[str]:
+    if not isinstance(candidate, dict):
+        return set()
+    fmt = _str_or_blank(candidate.get("press_format"))
+    group = _str_or_blank(candidate.get("press_group"))
+    if not fmt:
+        return set()
+    keys = _press_alias_match_keys(fmt) | _press_alias_match_keys(group)
+    group_key = _press_group_match_key(group)
+    if not group_key:
+        keys.add(_press_component_key(fmt))
+        return {key for key in keys if key}
+    variants = [
+        f"{fmt}({group})",
+        f"{fmt}-{group}",
+        f"{fmt}_{group}",
+        f"{fmt} {group}",
+        f"{fmt}/{group}",
+    ]
+    keys.update(_press_component_key(value) for value in variants if _press_component_key(value))
     return {key for key in keys if key}
 
 
-def _shortcut_work_match_keys(item: dict[str, Any]) -> set[str]:
-    values = [_shortcut_work_name_hint(item)]
-    target_s = _str_or_blank(item.get("target_path"))
-    if target_s:
-        try:
-            target = Path(target_s).expanduser()
-            values.append(target.parent.name)
-        except OSError:
-            pass
-    keys = {_strict_name_key(value) for value in values if _strict_name_key(value)}
-    return {key for key in keys if key}
-
-
-def _actual_shortcut_item_for_fix(item: dict[str, Any]) -> dict[str, Any] | None:
-    shortcut_s = _str_or_blank(item.get("matched_shortcut_path") or item.get("shortcut_path") or item.get("path"))
-    if not shortcut_s:
-        return None
-    actual_exists = item.get("shortcut_target_exists") if "shortcut_target_exists" in item else item.get("target_exists")
-    if actual_exists is True:
-        return None
-    if not bool(item.get("shortcut_exists") or item.get("matched_shortcut_path")):
-        return None
-    try:
-        shortcut = Path(shortcut_s).expanduser().resolve()
-    except OSError:
-        shortcut = Path(shortcut_s).expanduser()
-    parts = item.get("shortcut_parts")
-    if not isinstance(parts, list) or not parts:
-        try:
-            parts = shortcut.relative_to(shortcut_root()).as_posix().split("/")
-        except (OSError, ValueError):
-            parts = [shortcut.name]
-    out = dict(item)
-    out["shortcut_path"] = str(shortcut)
-    out["path"] = str(shortcut)
-    out["name"] = shortcut.name
-    out["shortcut_parts"] = parts
-    out["target_path"] = _str_or_blank(item.get("shortcut_target_path") or item.get("target_path"))
-    out["target_exists"] = bool(actual_exists)
-    return out
-
-
-def _resource_fix_candidate_for_shortcut_item(
-    item: dict[str, Any],
-    resource_items: list[dict[str, Any]],
-) -> dict[str, Any] | None:
-    shortcut_item = _actual_shortcut_item_for_fix(item)
-    if shortcut_item is None:
-        return None
-    work_keys = _shortcut_work_match_keys(shortcut_item)
-    press_keys = _shortcut_press_match_keys(shortcut_item)
-    if not work_keys or not press_keys:
-        return None
-    candidates: list[dict[str, Any]] = []
-    for resource in resource_items:
-        resource_work_key = _strict_name_key(resource.get("work_name") or "")
-        if resource_work_key not in work_keys:
-            continue
-        resource_press_key = _press_component_key(resource.get("press_info") or "")
-        if resource_press_key not in press_keys:
-            continue
-        path_s = _str_or_blank(resource.get("path"))
-        if not path_s:
-            continue
-        try:
-            resource_path = Path(path_s).expanduser().resolve()
-        except OSError:
-            resource_path = Path(path_s).expanduser()
-        try:
-            resource_exists = resource_path.is_dir()
-        except OSError:
-            resource_exists = False
-        if not resource_exists:
-            continue
-        series_key = _strict_name_key(resource.get("series_name") or "")
-        score = 100 + (10 if series_key in work_keys else 0)
-        candidates.append(
-            {
-                "target_path": str(resource_path),
-                "suggested_path": str(resource_path.parent),
-                "suggested_press_path": resource_path.name,
-                "resource_root": resource.get("root") or "",
-                "resource_relpath": resource.get("relpath") or "",
-                "series_name": resource.get("series_name") or "",
-                "resource_name": resource.get("name") or "",
-                "work_name": resource.get("work_name") or "",
-                "press_info": resource.get("press_info") or "",
-                "score": score,
-                "reason": "资源库目录中找到同作品名、同压制信息的真实目录",
-            }
-        )
-    if not candidates:
-        return None
-    candidates.sort(
-        key=lambda c: (
-            -int(c.get("score") or 0),
-            str(c.get("target_path") or "").casefold(),
-        )
-    )
-    best_score = int(candidates[0].get("score") or 0)
-    top = [cand for cand in candidates if int(cand.get("score") or 0) == best_score]
-    if len(top) != 1:
-        return None
-    result = dict(top[0])
-    result["candidate_count"] = len(candidates)
-    return result
-
-
-def _annotate_plan_resource_fixes(plan: list[dict[str, Any]]) -> None:
-    resource_items = _resource_fix_items_from_cache()
-    if not resource_items:
-        return
-    for item in plan:
-        fix = _resource_fix_candidate_for_shortcut_item(item, resource_items)
-        if fix:
-            item["target_fix"] = fix
-
-
-def _annotate_shortcut_resource_fixes(items: list[dict[str, Any]]) -> None:
-    resource_items = _resource_fix_items_from_cache()
-    if not resource_items:
-        return
-    for item in items:
-        fix = _resource_fix_candidate_for_shortcut_item(item, resource_items)
-        if fix:
-            item["target_fix"] = fix
-
-
-def _link_press_hint(item: dict[str, Any], work: dict[str, Any]) -> tuple[str, str]:
-    leaf = _press_component_key(_without_lnk_suffix(item.get("name") or ""))
-    if not leaf:
-        return "", ""
-    format_keys = [
-        _press_component_key(press.get(TV_JP_PRESS_FORMAT_KEY))
-        for press in work.get("press", [])
-        if isinstance(press, dict)
-    ]
-    for fmt in sorted({x for x in format_keys if x}, key=len, reverse=True):
-        if leaf == fmt:
-            return fmt, ""
-        m = re.match(r"^(.+?)\((.+?)\)$", leaf)
-        if m and m.group(1).strip() == fmt:
-            return fmt, m.group(2).strip()
-        for sep in ("-", "_", " ", "/", "／"):
-            prefix = fmt + sep
-            if leaf.startswith(prefix):
-                return fmt, leaf[len(prefix) :].strip()
-    parts = re.split(r"[\s_-]+", leaf, maxsplit=1)
-    return parts[0].strip(), parts[1].strip() if len(parts) > 1 else ""
-
-
-def _press_score(leaf_name: str, press: dict[str, Any]) -> float:
-    needle = _name_match_key(leaf_name)
-    if not needle:
-        return 0.0
-    values = [
-        press.get("label") or "",
-        press.get(TV_JP_PRESS_FORMAT_KEY) or "",
-        press.get(TV_JP_PRESS_GROUP_KEY) or "",
-        f"{press.get(TV_JP_PRESS_FORMAT_KEY) or ''}-{press.get(TV_JP_PRESS_GROUP_KEY) or ''}",
-    ]
-    return max(_match_similarity(needle, _name_match_key(v)) for v in values)
-
-
-def _best_press_for_link(item: dict[str, Any], work: dict[str, Any]) -> dict[str, Any] | None:
-    press_rows = [p for p in work.get("press", []) if isinstance(p, dict)]
-    if not press_rows:
-        return None
-    link_format, link_group = _link_press_hint(item, work)
-    if not link_format:
-        return None
-    format_matches = [
-        press
-        for press in press_rows
-        if _press_component_key(press.get(TV_JP_PRESS_FORMAT_KEY)) == link_format
-    ]
-    if len(format_matches) == 1:
-        return format_matches[0]
-    if len(format_matches) <= 1 or not link_group:
-        return None
-    group_matches = [
-        press
-        for press in format_matches
-        if _press_component_key(press.get(TV_JP_PRESS_GROUP_KEY)) == link_group
-    ]
-    return group_matches[0] if len(group_matches) == 1 else None
-
-
-def _press_options_for_work(work: dict[str, Any]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for press in work.get("press", []):
-        if not isinstance(press, dict):
-            continue
-        out.append(
-            {
-                "press_key": press.get("press_key") or "",
-                "press_label": press.get("label") or "",
-                "press_format": press.get(TV_JP_PRESS_FORMAT_KEY) or "",
-                "press_group": press.get(TV_JP_PRESS_GROUP_KEY) or "",
-                "press_path": press.get(TV_JP_PRESS_PATH_KEY) or "",
-            }
-        )
-    return out
-
-
-def _association_candidate(
-    item: dict[str, Any],
-    work: dict[str, Any],
-    target_info: dict[str, Any],
-    *,
-    score: float,
-    exact: bool,
-    press_override: dict[str, Any] | None = None,
-    match_type: str | None = None,
-) -> dict[str, Any]:
-    press = press_override if isinstance(press_override, dict) else _best_press_for_link(item, work)
-    work_path, press_path, source = _suggest_paths_for_candidate(item, work, target_info)
-    suggested_target_path = _suggested_target_path_for_candidate(work_path, press_path, target_info)
-    link_target_exists = target_info.get("target_exists") is True
-    target_name_matches, shortcut_work_name, target_work_base, target_suffix = _target_leaf_matches_shortcut_work(
-        item,
-        press,
-        target_info,
-    )
-    work_name_matches_target = bool(
-        target_work_base
-        and _strict_name_key(work.get("name") or "") == _strict_name_key(target_work_base)
-    )
-    strict_exact = bool(exact and (target_name_matches or work_name_matches_target))
-    reason = ""
-    if (
-        press
-        and link_target_exists
-        and target_info.get("target_resolved")
-        and not (target_name_matches or work_name_matches_target)
-    ):
-        reason = (
-            "目标目录名未完全匹配：索引作品名「"
-            + shortcut_work_name
-            + "」，目标目录去掉 _压制格式 后为「"
-            + target_work_base
-            + "」"
-        )
-    elif not press:
-        reason = "作品没有可关联的压制项"
-    elif not target_info.get("target_resolved"):
-        reason = "未解析快捷方式目标，需人工确认相对路径"
-    elif not target_info.get("target_under_media_root"):
-        reason = "快捷方式目标不在当前媒体根目录下，需人工确认相对路径"
-    if not press and [p for p in work.get("press", []) if isinstance(p, dict)]:
-        reason = "压制格式未匹配；同格式多项时需要压制组也匹配"
-    if not link_target_exists:
-        reason = "快捷方式目标目录不存在，不能作为实际资源目录关联"
-    result = {
-        "work_key": work.get("work_key") or "",
-        "yaml_source_rel": work.get("yaml_source_rel") or "",
-        "index_in_file": work.get("index_in_file"),
-        "name": work.get("name") or "",
-        "year": work.get("year") or "",
-        "begin_date": work.get("begin_date") or "",
-        "end_date": work.get("end_date") or "",
-        "date_range_label": work.get("date_range_label") or "",
-        "path": work.get("path") or "",
-        "score": round(float(score), 4),
-        "match_type": match_type or ("exact" if strict_exact else "candidate"),
-        "press_key": press.get("press_key") if press else "",
-        "press_label": press.get("label") if press else "",
-        "press_path": press.get(TV_JP_PRESS_PATH_KEY) if press else "",
-        "press_options": _press_options_for_work(work),
-        "suggested_path": work_path,
-        "suggested_press_path": press_path,
-        "suggested_target_path": suggested_target_path,
-        "suggested_path_source": source,
-        "target_name_matched": target_name_matches,
-        "target_name_check": {
-            "shortcut_work_name": shortcut_work_name,
-            "target_work_base": target_work_base,
-            "stripped_suffix": target_suffix,
-            "work_name_matches_target": work_name_matches_target,
-        },
-        "can_apply": bool(link_target_exists and press and suggested_target_path),
-        "can_auto_apply": bool(link_target_exists and strict_exact and press and suggested_target_path),
-        "reason": reason,
-    }
-    if press:
-        result["press_format"] = press.get(TV_JP_PRESS_FORMAT_KEY) or ""
-        result["press_group"] = press.get(TV_JP_PRESS_GROUP_KEY) or ""
-    else:
-        result["press_format"] = ""
-        result["press_group"] = ""
-    result["reject_key"] = _association_reject_key(item, result)
-    return result
-
-
-def _association_shortcut_parent_relpath(item: dict[str, Any]) -> str:
-    rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/")
-    if not rel:
+def _resource_name_without_press_suffix(resource_name: Any, press_info: Any) -> str:
+    name = str(resource_name or "").strip()
+    press = str(press_info or "").strip()
+    if not name or not press:
         return ""
-    return rel.rsplit("/", 1)[0] if "/" in rel else ""
+    folded = name.casefold()
+    for sep in ("_", "-", " "):
+        marker = f"{sep}{press}".casefold()
+        if folded.endswith(marker):
+            return name[: -len(marker)].strip()
+    return ""
 
 
-def _association_link_option(item: dict[str, Any], *, resolve_target: bool = False) -> dict[str, Any]:
-    target_info = _shortcut_target_info(item, resolve_target=resolve_target)
-    rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/")
-    return {
-        "shortcut_relpath": rel,
-        "shortcut_path": _str_or_blank(item.get("shortcut_path") or item.get("path")),
-        "link_name": _without_lnk_suffix(item.get("name") or Path(rel).name),
-        "display": rel[:-4] if rel.lower().endswith(".lnk") else rel,
-        "target_path": target_info.get("target_path") or "",
-        "target_exists": target_info.get("target_exists"),
-        "target_relpath": target_info.get("target_relpath") or "",
-        "target_under_media_root": bool(target_info.get("target_under_media_root")),
-        "target_resolved": bool(target_info.get("target_resolved")),
-        "target_error": target_info.get("error") or "",
-    }
-
-
-def _association_link_options_for_item(
-    item: dict[str, Any],
-    links_by_parent: dict[str, list[dict[str, Any]]] | None,
-    *,
-    resolve_targets: bool = False,
-) -> list[dict[str, Any]]:
-    parent = _association_shortcut_parent_relpath(item)
-    rows = list((links_by_parent or {}).get(parent.lower(), [])) if parent else [item]
-    if not rows:
-        rows = [item]
-    out: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for row in rows:
-        option = _association_link_option(row, resolve_target=resolve_targets)
-        rel_key = _str_or_blank(option.get("shortcut_relpath")).casefold()
-        path_key = _str_or_blank(option.get("shortcut_path")).casefold()
-        key = rel_key or path_key
-        if not key or key in seen:
-            continue
-        seen.add(key)
-        out.append(option)
-    current_rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/").casefold()
-    out.sort(
-        key=lambda opt: (
-            0 if _str_or_blank(opt.get("shortcut_relpath")).casefold() == current_rel else 1,
-            str(opt.get("display") or opt.get("shortcut_relpath") or "").casefold(),
-        )
-    )
-    return out
-
-
-def _association_exact_work_records_for_item(
-    item: dict[str, Any],
-    target_info: dict[str, Any],
-    ctx: dict[str, Any],
-) -> list[dict[str, Any]]:
-    target_work_base, _target_leaf, _target_suffix = _target_leaf_work_base(item, None, target_info)
-    work_name = target_work_base or _shortcut_work_name_hint(item)
-    strict_key = _strict_name_key(work_name)
-    if not strict_key:
-        return []
-    by_strict_exact = cast(dict[str, list[dict[str, Any]]], ctx.get("by_strict_exact") or {})
-    records = by_strict_exact.get(strict_key, [])
-    return [
-        record
-        for record in records
-        if isinstance(record, dict)
-        and isinstance(record.get("work"), dict)
-        and _shortcut_work_dates_compatible(item, cast(dict[str, Any], record.get("work") or {}))
+def _resource_work_match_keys(resource: dict[str, Any]) -> set[str]:
+    values = [
+        resource.get("work_name") or "",
+        _resource_name_without_press_suffix(resource.get("name"), resource.get("press_info")),
     ]
-
-
-def _association_candidates_for_exact_work_group(
-    item: dict[str, Any],
-    target_info: dict[str, Any],
-    ctx: dict[str, Any],
-) -> list[dict[str, Any]]:
-    candidates: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for record in _association_exact_work_records_for_item(item, target_info, ctx):
-        work = cast(dict[str, Any], record.get("work") or {})
-        for press in work.get("press", []) or []:
-            if not isinstance(press, dict) or not _str_or_blank(press.get("press_key")):
-                continue
-            key = "::".join(
-                [
-                    _str_or_blank(work.get("yaml_source_rel")).replace("\\", "/"),
-                    str(work.get("index_in_file")),
-                    _str_or_blank(press.get("press_key")),
-                ]
-            )
-            if key in seen:
-                continue
-            seen.add(key)
-            candidates.append(
-                _association_candidate(
-                    item,
-                    work,
-                    target_info,
-                    score=1.0,
-                    exact=True,
-                    press_override=press,
-                    match_type="work_exact",
-                )
-            )
-    candidates.sort(
-        key=lambda c: (
-            str(c.get("name") or "").casefold(),
-            str(c.get("begin_date") or c.get("year") or ""),
-            str(c.get("press_format") or "").casefold(),
-            str(c.get("press_group") or "").casefold(),
-        )
-    )
-    return candidates
-
-
-def _association_candidate_key(cand: dict[str, Any]) -> str:
-    return "::".join(
-        [
-            _str_or_blank(cand.get("yaml_source_rel")).replace("\\", "/").casefold(),
-            str(cand.get("index_in_file")),
-            _str_or_blank(cand.get("press_key")).casefold(),
-        ]
-    )
-
-
-def _association_candidate_is_unlinked(cand: dict[str, Any]) -> bool:
-    return not _str_or_blank(cand.get("press_path"))
-
-
-def _association_link_key(link: dict[str, Any]) -> str:
-    rel = _str_or_blank(link.get("shortcut_relpath")).replace("\\", "/").casefold()
-    if rel:
-        return rel
-    return _str_or_blank(link.get("shortcut_path")).casefold()
-
-
-def _press_group_match_key(raw: Any) -> str:
-    key = _press_component_key(raw)
-    return "" if key in {"", "----"} else key
-
-
-def _candidate_press_match_pair(cand: dict[str, Any]) -> tuple[str, str]:
-    return (
-        _press_component_key(cand.get("press_format")),
-        _press_group_match_key(cand.get("press_group")),
-    )
-
-
-def _link_option_press_match_pair(link: dict[str, Any], candidates: list[dict[str, Any]]) -> tuple[str, str]:
-    press_rows = [
-        {
-            TV_JP_PRESS_FORMAT_KEY: cand.get("press_format") or "",
-            TV_JP_PRESS_GROUP_KEY: cand.get("press_group") or "",
-        }
-        for cand in candidates
-    ]
-    item = {"name": (link.get("link_name") or Path(str(link.get("display") or "")).name or "") + ".lnk"}
-    fmt, group = _link_press_hint(item, {"press": press_rows})
-    return fmt, _press_group_match_key(group)
-
-
-def _association_default_candidates_by_link(
-    link_options: list[dict[str, Any]],
-    candidates: list[dict[str, Any]],
-    pairing_candidates: list[dict[str, Any]] | None = None,
-) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
-    link_by_key = {_association_link_key(link): link for link in link_options if _association_link_key(link)}
-    cand_by_key = {_association_candidate_key(cand): cand for cand in candidates if _association_candidate_key(cand)}
-    pair_cand_by_key = {
-        _association_candidate_key(cand): cand
-        for cand in (pairing_candidates if pairing_candidates is not None else candidates)
-        if _association_candidate_key(cand)
-    }
-    remaining_links = set(link_by_key)
-    remaining_cands = set(pair_cand_by_key)
-    pair_by_link: dict[str, str] = {}
-    reason_by_link: dict[str, str] = {}
-    edges: list[tuple[str, str]] = []
-    cand_pairs = {key: _candidate_press_match_pair(cand) for key, cand in pair_cand_by_key.items()}
-    for link_key, link in link_by_key.items():
-        link_pair = _link_option_press_match_pair(link, candidates)
-        if not link_pair[0]:
-            continue
-        for cand_key, cand_pair in cand_pairs.items():
-            if link_pair == cand_pair:
-                edges.append((link_key, cand_key))
-    while True:
-        active_edges = [
-            (link_key, cand_key)
-            for link_key, cand_key in edges
-            if link_key in remaining_links and cand_key in remaining_cands
-        ]
-        link_degree: dict[str, int] = {}
-        cand_degree: dict[str, int] = {}
-        for link_key, cand_key in active_edges:
-            link_degree[link_key] = link_degree.get(link_key, 0) + 1
-            cand_degree[cand_key] = cand_degree.get(cand_key, 0) + 1
-        unique_edges = [
-            (link_key, cand_key)
-            for link_key, cand_key in active_edges
-            if link_degree.get(link_key) == 1 and cand_degree.get(cand_key) == 1
-        ]
-        if not unique_edges:
-            break
-        for link_key, cand_key in unique_edges:
-            if link_key not in remaining_links or cand_key not in remaining_cands:
-                continue
-            pair_by_link[link_key] = cand_key
-            reason_by_link[link_key] = "press_exact"
-            remaining_links.remove(link_key)
-            remaining_cands.remove(cand_key)
-    if pair_by_link and len(remaining_links) == 1 and len(remaining_cands) == 1:
-        link_key = next(iter(remaining_links))
-        cand_key = next(iter(remaining_cands))
-        pair_by_link[link_key] = cand_key
-        reason_by_link[link_key] = "remaining_single"
-    out: dict[str, dict[str, Any]] = {}
-    out_reasons: dict[str, str] = {}
-    for link_key, cand_key in pair_by_link.items():
-        cand = cand_by_key.get(cand_key)
-        if not cand:
-            continue
-        out[link_key] = cand
-        out_reasons[link_key] = reason_by_link.get(link_key, "")
-    return out, out_reasons
-
-
-def _association_row_for_unmapped_link(
-    item: dict[str, Any],
-    works: list[dict[str, Any]],
-    match_ctx: dict[str, Any] | None = None,
-    *,
-    resolve_target: bool = False,
-    links_by_parent: dict[str, list[dict[str, Any]]] | None = None,
-) -> dict[str, Any]:
-    target_info = _shortcut_target_info(item, resolve_target=resolve_target)
-    link_options = _association_link_options_for_item(
-        item,
-        links_by_parent,
-        resolve_targets=resolve_target,
-    )
-    hints = _target_name_hints(item, target_info)
-    hint_keys = [_name_match_key(hint) for hint in hints]
-    strict_hint_keys = [_strict_name_key(hint) for hint in hints]
-    year_hint = _shortcut_year_hint(item)
-    ctx = match_ctx or _association_match_context(works)
-    by_exact = cast(dict[str, list[dict[str, Any]]], ctx.get("by_exact") or {})
-    by_strict_exact = cast(dict[str, list[dict[str, Any]]], ctx.get("by_strict_exact") or {})
-    by_token = cast(dict[str, list[dict[str, Any]]], ctx.get("by_token") or {})
-    by_year = cast(dict[str, list[dict[str, Any]]], ctx.get("by_year") or {})
-    pool_by_key: dict[str, dict[str, Any]] = {}
-    strict_exact_keys: set[str] = set()
-    loose_exact_keys: set[str] = set()
-    target_base_hint, _target_leaf_hint, target_base_suffix = _target_leaf_work_base(item, None, target_info)
-    target_base_key = _strict_name_key(target_base_hint)
-    for strict_hint_key in strict_hint_keys:
-        for record in by_strict_exact.get(strict_hint_key, []):
-            wk = str(record.get("work_key") or "")
-            if wk:
-                pool_by_key[wk] = record
-                strict_exact_keys.add(wk)
-    for hint_key in hint_keys:
-        for record in by_exact.get(hint_key, []):
-            wk = str(record.get("work_key") or "")
-            if wk:
-                pool_by_key.setdefault(wk, record)
-                loose_exact_keys.add(wk)
-        for token in _match_tokens(hint_key):
-            for record in by_token.get(token, []):
-                wk = str(record.get("work_key") or "")
-                if wk:
-                    pool_by_key.setdefault(wk, record)
-    if year_hint:
-        same_year = {
-            str(record.get("work_key") or ""): record
-            for record in by_year.get(year_hint, [])
-            if str(record.get("work_key") or "")
-        }
-        narrowed = {
-            wk: record
-            for wk, record in pool_by_key.items()
-            if wk in same_year or wk in strict_exact_keys or wk in loose_exact_keys
-        }
-        if narrowed:
-            pool_by_key = narrowed
-    candidates: list[dict[str, Any]] = []
-    for record in pool_by_key.values():
-        work = cast(dict[str, Any], record.get("work") or {})
-        name_key = str(record.get("name_key") or "")
-        if not name_key:
-            continue
-        if not _shortcut_work_dates_compatible(item, work):
-            continue
-        wk = str(record.get("work_key") or "")
-        exact = wk in strict_exact_keys
-        loose_exact = wk in loose_exact_keys
-        if (
-            target_base_suffix
-            and target_base_key
-            and _strict_name_key(work.get("name") or "") != target_base_key
-        ):
-            continue
-        score = 1.0 if exact else (0.98 if loose_exact else max((_match_similarity(hk, name_key) for hk in hint_keys), default=0.0))
-        if year_hint and str(work.get("year") or "") == year_hint:
-            score = min(1.0, score + 0.08)
-        if exact or loose_exact or score >= 0.42:
-            candidates.append(
-                _association_candidate(item, work, target_info, score=score, exact=exact),
-            )
-    original_exact_candidates = [
-        cand
-        for cand in candidates
-        if cand.get("press_key") and cand.get("match_type") == "exact"
-    ]
-    pairing_candidates = [cand for cand in candidates if cand.get("press_key")]
-    candidates = [
-        cand
-        for cand in candidates
-        if cand.get("press_key") and _association_candidate_is_unlinked(cand)
-    ]
-    original_exact_candidates = [
-        cand
-        for cand in original_exact_candidates
-        if _association_candidate_is_unlinked(cand)
-    ]
-    if not original_exact_candidates:
-        work_group_candidates_all = [
-            cand for cand in _association_candidates_for_exact_work_group(item, target_info, ctx) if cand.get("press_key")
-        ]
-        work_group_candidates = [
-            cand
-            for cand in work_group_candidates_all
-            if cand.get("press_key") and _association_candidate_is_unlinked(cand)
-        ]
-        if work_group_candidates:
-            candidates = work_group_candidates
-            pairing_candidates = work_group_candidates_all
-    candidates.sort(
-        key=lambda c: (
-            0 if c.get("match_type") == "exact" else 1,
-            -float(c.get("score") or 0),
-            str(c.get("name") or ""),
-        )
-    )
-    if not any(cand.get("match_type") == "work_exact" for cand in candidates):
-        candidates = candidates[:12]
-    default_candidates_by_link, default_reasons_by_link = _association_default_candidates_by_link(
-        link_options,
-        candidates,
-        pairing_candidates,
-    )
-    current_link_key = _association_link_key(link_options[0]) if link_options else ""
-    default_candidate = default_candidates_by_link.get(current_link_key)
-    default_reason = default_reasons_by_link.get(current_link_key, "")
-    exact_candidates = [c for c in candidates if c.get("match_type") == "exact"]
-    auto_candidate = exact_candidates[0] if len(exact_candidates) == 1 and exact_candidates[0].get("can_auto_apply") else None
-    if auto_candidate is None and default_candidate and default_candidate.get("can_auto_apply"):
-        auto_candidate = default_candidate
-        exact_candidates = [default_candidate]
-    return {
-        "id": item.get("shortcut_relpath") or item.get("relpath") or item.get("shortcut_path") or "",
-        "shortcut_relpath": item.get("shortcut_relpath") or item.get("relpath") or "",
-        "shortcut_path": item.get("shortcut_path") or item.get("path") or "",
-        "link_name": _without_lnk_suffix(item.get("name") or ""),
-        "work_name_hint": hints[0] if hints else "",
-        "name_hints": hints,
-        "year_hint": year_hint,
-        "target_path": target_info.get("target_path") or "",
-        "target_exists": target_info.get("target_exists"),
-        "target_relpath": target_info.get("target_relpath") or "",
-        "target_under_media_root": bool(target_info.get("target_under_media_root")),
-        "target_resolved": bool(target_info.get("target_resolved")),
-        "target_error": target_info.get("error") or "",
-        "link_options": link_options,
-        "link_option_count": len(link_options),
-        "work_group_relpath": _association_shortcut_parent_relpath(item),
-        "exact_count": len(exact_candidates),
-        "candidates": candidates,
-        "default_candidate": default_candidate,
-        "default_match_reason": default_reason,
-        "auto_candidate": auto_candidate,
-        "can_auto_apply": bool(auto_candidate),
-    }
-
-
-def _association_row_without_rejected(row: dict[str, Any], rejected_keys: set[str]) -> dict[str, Any]:
-    if not rejected_keys:
-        return row
-    candidates = [
-        cand
-        for cand in (row.get("candidates") if isinstance(row.get("candidates"), list) else [])
-        if isinstance(cand, dict) and str(cand.get("reject_key") or "") not in rejected_keys
-    ]
-    if len(candidates) == len(row.get("candidates") or []):
-        return row
-    link_options = [item for item in (row.get("link_options") if isinstance(row.get("link_options"), list) else []) if isinstance(item, dict)]
-    default_candidates_by_link, default_reasons_by_link = _association_default_candidates_by_link(link_options, candidates)
-    current_link_key = _association_link_key(link_options[0]) if link_options else ""
-    default_candidate = default_candidates_by_link.get(current_link_key)
-    default_reason = default_reasons_by_link.get(current_link_key, "")
-    exact_candidates = [c for c in candidates if c.get("match_type") == "exact"]
-    auto_candidate = exact_candidates[0] if len(exact_candidates) == 1 and exact_candidates[0].get("can_auto_apply") else None
-    if auto_candidate is None and default_candidate and default_candidate.get("can_auto_apply"):
-        auto_candidate = default_candidate
-        exact_candidates = [default_candidate]
-    next_row = dict(row)
-    next_row["candidates"] = candidates
-    next_row["exact_count"] = len(exact_candidates)
-    next_row["default_candidate"] = default_candidate
-    next_row["default_match_reason"] = default_reason
-    next_row["auto_candidate"] = auto_candidate
-    next_row["can_auto_apply"] = bool(auto_candidate)
-    return next_row
-
-
-def _unmapped_disk_leaves_for_works(works: list[dict[str, Any]], *, refresh_targets: bool = False) -> list[dict[str, Any]]:
-    return _unmapped_disk_leaves_from_scan(works, _scan_shortcut_leaves(refresh_targets=refresh_targets))
-
-
-def _unmapped_disk_leaves_from_scan(
-    works: list[dict[str, Any]],
-    shortcut_leaves: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    plan = _build_plan_from_works(works)
-    planned_relpaths = _planned_relpath_keys(plan)
-    planned_targets = _planned_target_keys(plan)
-    return [
-        item
-        for item in shortcut_leaves
-        if _disk_leaf_is_unmapped(item, planned_relpaths=planned_relpaths, planned_targets=planned_targets)
-    ]
-
-
-def _association_rows_for_disk_leaves(
-    works: list[dict[str, Any]],
-    disk_leaves: list[dict[str, Any]],
-    *,
-    resolve_targets: bool = False,
-    rejected_keys: set[str] | None = None,
-    link_leaves: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
-    match_ctx = _association_match_context(works)
-    links_by_parent: dict[str, list[dict[str, Any]]] = {}
-    for item in link_leaves if link_leaves is not None else disk_leaves:
-        parent = _association_shortcut_parent_relpath(item).lower()
-        if parent:
-            links_by_parent.setdefault(parent, []).append(item)
-    for rows in links_by_parent.values():
-        rows.sort(
-            key=lambda x: str(x.get("shortcut_relpath") or x.get("relpath") or x.get("shortcut_path") or "").casefold()
-        )
-    rows = [
-        _association_row_for_unmapped_link(
-            item,
-            works,
-            match_ctx,
-            resolve_target=resolve_targets,
-            links_by_parent=links_by_parent,
-        )
-        for item in disk_leaves
-    ]
-    if rejected_keys:
-        rows = [_association_row_without_rejected(row, rejected_keys) for row in rows]
-    return rows
-
-
-def _disk_assoc_signature(
-    works: list[dict[str, Any]],
-    disk_leaves: list[dict[str, Any]],
-    rejected_keys: set[str] | None = None,
-) -> tuple[Any, ...]:
-    work_sig = []
-    for work in works:
-        press_sig = []
-        for press in work.get("press", []):
-            if not isinstance(press, dict):
-                continue
-            press_sig.append(
-                (
-                    str(press.get("press_key") or ""),
-                    str(press.get(TV_JP_PRESS_FORMAT_KEY) or ""),
-                    str(press.get(TV_JP_PRESS_GROUP_KEY) or ""),
-                    str(press.get(TV_JP_PRESS_PATH_KEY) or ""),
-                )
-            )
-        work_sig.append(
-            (
-                str(work.get("work_key") or ""),
-                str(work.get("yaml_source_rel") or ""),
-                str(work.get("index_in_file") or ""),
-                str(work.get("name") or ""),
-                str(work.get("year") or ""),
-                str(work.get("path") or ""),
-                tuple(sorted(press_sig)),
-            )
-        )
-    disk_sig = [
-        (
-            str(item.get("shortcut_relpath") or item.get("relpath") or ""),
-            str(item.get("target_path") or ""),
-            bool(item.get("target_exists")),
-        )
-        for item in disk_leaves
-    ]
-    return (tuple(sorted(work_sig)), tuple(sorted(disk_sig)), tuple(sorted(rejected_keys or ())))
-
-
-def _cache_disk_association_rows(
-    works: list[dict[str, Any]],
-    disk_leaves: list[dict[str, Any]],
-    rows: list[dict[str, Any]],
-    rejected_keys: set[str] | None = None,
-) -> None:
-    if len(rows) != len(disk_leaves):
-        return
-    _DISK_ASSOC_CACHE["signature"] = _disk_assoc_signature(works, disk_leaves, rejected_keys)
-    _DISK_ASSOC_CACHE["rows"] = list(rows)
-
-
-def _cached_disk_association_rows(
-    works: list[dict[str, Any]],
-    disk_leaves: list[dict[str, Any]],
-    rejected_keys: set[str] | None = None,
-) -> list[dict[str, Any]]:
-    signature = _disk_assoc_signature(works, disk_leaves, rejected_keys)
-    if _DISK_ASSOC_CACHE.get("signature") != signature:
-        return []
-    return list(cast(list[dict[str, Any]], _DISK_ASSOC_CACHE.get("rows") or []))
+    return {key for key in (_strict_name_key(value) for value in values) if key}
 
 
 def _link_index_lite_payload_signature(settings: JpTvBrowseSettings) -> tuple[Any, ...]:
@@ -3225,8 +2641,14 @@ def _link_index_lite_payload_signature(settings: JpTvBrowseSettings) -> tuple[An
             files.append((str(fp), None, None))
             continue
         files.append((str(fp), st.st_mtime_ns, st.st_size))
+    index_db = _link_index_db_path()
+    try:
+        index_st = index_db.stat()
+        index_sig: tuple[Any, ...] = (str(index_db), index_st.st_mtime_ns, index_st.st_size)
+    except OSError:
+        index_sig = (str(index_db), None, None)
     config_s = json.dumps(collection_link_index_config_json(), ensure_ascii=False, sort_keys=True)
-    return (tuple(files), config_s, _SHORTCUT_SCAN_CACHE.get("signature"))
+    return (tuple(files), index_sig, config_s, _SHORTCUT_SCAN_CACHE.get("signature"))
 
 
 def _cached_link_index_lite_payload(settings: JpTvBrowseSettings) -> dict[str, Any] | None:
@@ -3242,263 +2664,76 @@ def _cache_link_index_lite_payload(settings: JpTvBrowseSettings, payload: dict[s
     _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = payload
 
 
-def link_index_association_payload(
-    settings: JpTvBrowseSettings,
-    *,
-    resolve_targets: bool = False,
-    refresh_links: bool = False,
-) -> dict[str, Any]:
+def validate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
+    resource_payload: dict[str, Any] | None = None
+    if body.get("refresh_resources", True) is not False:
+        resource_payload = scan_resource_libraries_payload()
     works = _load_catalog_works(settings)
-    all_disk_leaves = _scan_shortcut_leaves(refresh_targets=refresh_links)
-    disk_leaves = _unmapped_disk_leaves_from_scan(works, all_disk_leaves)
-    rejected_keys = _association_reject_keys()
-    rows = _association_rows_for_disk_leaves(
+    db = _load_link_index_db()
+    raw_items = db.get("items")
+    previous_items = [item for item in raw_items if isinstance(item, dict)] if isinstance(raw_items, list) else []
+    validation_plan = _index_entries_from_works(
         works,
-        disk_leaves,
-        resolve_targets=resolve_targets,
-        rejected_keys=rejected_keys,
-        link_leaves=all_disk_leaves,
+        previous_items=previous_items,
+        use_resource_index=True,
+        prefer_previous_target=True,
     )
-    _cache_disk_association_rows(works, disk_leaves, rows, rejected_keys=rejected_keys)
-    auto_items: list[dict[str, Any]] = []
-    for row in rows:
-        cand = row.get("auto_candidate")
-        if not isinstance(cand, dict):
+    payload = _payload_from_works(
+        works,
+        refresh_links=True,
+        catalog_root=_settings_catalog_root_key(settings),
+        plan_override=validation_plan,
+    )
+    summary = payload.get("plan_summary") if isinstance(payload.get("plan_summary"), dict) else {}
+    payload["validation"] = {
+        "resource_scan_summary": (resource_payload or {}).get("summary") if isinstance(resource_payload, dict) else None,
+        "mismatch_count": int(summary.get("target_fixable") or 0),
+        "index_db_path": str(_link_index_db_path()),
+    }
+    return payload
+
+
+def _is_index_db_fix_request(raw_items: list[Any]) -> bool:
+    for raw in raw_items:
+        if not isinstance(raw, dict):
             continue
-        auto_items.append(
-            {
-                "shortcut_relpath": row.get("shortcut_relpath") or "",
-                "yaml_source_rel": cand.get("yaml_source_rel") or "",
-                "index_in_file": cand.get("index_in_file"),
-                "press_key": cand.get("press_key") or "",
-                "path": cand.get("suggested_path") or "",
-                "press_path": cand.get("suggested_press_path") or "",
-                "target_path": cand.get("suggested_target_path") or "",
-            }
-        )
-    summary = {
-        "total_unmapped": len(rows),
-        "exact": sum(1 for row in rows if row.get("target_exists") is True and int(row.get("exact_count") or 0) == 1),
-        "exact_auto": len(auto_items),
-        "ambiguous_exact": sum(1 for row in rows if row.get("target_exists") is True and int(row.get("exact_count") or 0) > 1),
-        "with_candidates": sum(1 for row in rows if row.get("candidates")),
-        "without_candidates": sum(1 for row in rows if not row.get("candidates")),
-        "target_outside_media_root": sum(
-            1 for row in rows if row.get("target_path") and not row.get("target_under_media_root")
-        ),
-        "targets_resolved": sum(1 for row in rows if row.get("target_resolved")),
-    }
-    return {
-        "ok": True,
-        "config": collection_link_index_config_json(),
-        "summary": summary,
-        "auto_apply_items": auto_items,
-        "rows": rows,
-    }
+        shortcut_s = _str_or_blank(raw.get("shortcut_path") or raw.get("path"))
+        if _str_or_blank(raw.get("source")) == "index_db":
+            return True
+        if not shortcut_s and _str_or_blank(raw.get("shortcut_relpath")):
+            return True
+        if shortcut_s.startswith("indexdb://"):
+            return True
+    return False
 
 
-def reject_link_index_association_from_ui_body(
-    body: dict[str, Any],
+def _apply_link_index_db_target_fixes(
+    raw_items: list[Any],
     *,
     settings: JpTvBrowseSettings,
+    refresh_payload: bool,
 ) -> dict[str, Any]:
-    reject_key = _str_or_blank(body.get("reject_key"))
-    if not reject_key:
-        raise ValueError("reject_key 不能为空")
-    store = _load_association_rejects()
-    items = store.setdefault("items", {})
-    if not isinstance(items, dict):
-        items = {}
-        store["items"] = items
-    items[reject_key] = {
-        "key": reject_key,
-        "shortcut_relpath": _str_or_blank(body.get("shortcut_relpath")).replace("\\", "/"),
-        "target_path": _str_or_blank(body.get("target_path")),
-        "yaml_source_rel": _str_or_blank(body.get("yaml_source_rel")).replace("\\", "/"),
-        "index_in_file": body.get("index_in_file"),
-        "press_key": _str_or_blank(body.get("press_key")),
-    }
-    _save_association_rejects(store)
-    _DISK_ASSOC_CACHE["signature"] = None
-    _DISK_ASSOC_CACHE["rows"] = []
-    return {
-        "rejected_key": reject_key,
-        "association": link_index_association_payload(settings),
-    }
-
-
-def apply_link_index_associations_from_ui_body(
-    body: dict[str, Any],
-    *,
-    settings: JpTvBrowseSettings,
-) -> dict[str, Any]:
-    raw_items = body.get("items")
-    if not isinstance(raw_items, list) or not raw_items:
-        raise ValueError("items 必须为非空数组")
-    by_work: dict[str, dict[str, Any]] = {}
-    requested_shortcut_relpaths: set[str] = set()
-    for idx, raw in enumerate(raw_items):
-        if not isinstance(raw, dict):
-            raise ValueError(f"items[{idx}] 必须为对象")
-        shortcut_rel = _str_or_blank(raw.get("shortcut_relpath")).replace("\\", "/").lower()
-        if shortcut_rel:
-            requested_shortcut_relpaths.add(shortcut_rel)
-        yaml_rel = _str_or_blank(raw.get("yaml_source_rel")).replace("\\", "/")
-        try:
-            index_in_file = int(raw.get("index_in_file"))
-        except (TypeError, ValueError) as exc:
-            raise ValueError(f"items[{idx}].index_in_file 非法") from exc
-        press_key = _str_or_blank(raw.get("press_key"))
-        if _str_or_blank(raw.get("target_path")):
-            path_s, press_path_s = _split_target_path_for_ui_mapping(
-                raw.get("target_path"),
-                label=f"items[{idx}].target_path",
-            )
-        else:
-            path_s = _clean_work_path(raw.get("path"), label=f"items[{idx}].path")
-            press_path_s = _clean_rel_path(raw.get("press_path"), label=f"items[{idx}].press_path")
-        if not yaml_rel or index_in_file < 0:
-            raise ValueError(f"items[{idx}] 缺少有效作品定位")
-        if not press_key:
-            raise ValueError(f"items[{idx}] 缺少 press_key")
-        if not path_s or not press_path_s:
-            raise ValueError(f"items[{idx}] target_path / path / press_path 不能为空")
-        key = _work_key(yaml_rel, index_in_file)
-        mapping = by_work.setdefault(
-            key,
-            {
-                "yaml_source_rel": yaml_rel,
-                "index_in_file": index_in_file,
-                "path": path_s,
-                "press": [],
-            },
-        )
-        if mapping["path"] != path_s:
-            raise ValueError(f"{yaml_rel}#{index_in_file} 收到多个不同 path")
-        mapping["press"].append({"press_key": press_key, TV_JP_PRESS_PATH_KEY: press_path_s})
-    writes = _save_ui_mappings_to_catalog({"works": list(by_work.values())}, settings=settings)
-    payload = collection_link_index_payload(settings)
-    payload["writes"] = writes
-    association = link_index_association_payload(settings)
-    payload["association"] = association
-    if requested_shortcut_relpaths:
-        remaining = {
-            _str_or_blank(row.get("shortcut_relpath")).replace("\\", "/").lower()
-            for row in association.get("rows", [])
-            if isinstance(row, dict)
-        }
-        unresolved = sorted(x for x in requested_shortcut_relpaths if x in remaining)
-        if unresolved:
-            payload["association_unresolved"] = unresolved
-            payload["write_warning"] = (
-                "关联已写入，但部分索引项重新匹配后仍未消失，请检查路径、压制项或是否存在重复快捷方式："
-                + "，".join(unresolved[:5])
-                + (" ..." if len(unresolved) > 5 else "")
-            )
-    if not writes and not payload.get("write_warning"):
-        payload["write_warning"] = "没有检测到 YAML 实际变更，可能已经写入过。"
-    return payload
-
-
-def apply_link_index_target_fixes_from_ui_body(
-    body: dict[str, Any],
-    *,
-    settings: JpTvBrowseSettings,
-) -> dict[str, Any]:
-    raw_items = body.get("items")
-    if not isinstance(raw_items, list) or not raw_items:
-        raise ValueError("items 必须为非空数组")
-    by_work: dict[str, dict[str, Any]] = {}
-    for idx, raw in enumerate(raw_items):
-        if not isinstance(raw, dict):
-            raise ValueError(f"items[{idx}] 必须为对象")
-        yaml_rel = _str_or_blank(raw.get("yaml_source_rel")).replace("\\", "/")
-        try:
-            index_in_file = int(raw.get("index_in_file"))
-        except (TypeError, ValueError) as exc:
-            raise ValueError(f"items[{idx}].index_in_file 非法") from exc
-        press_key = _str_or_blank(raw.get("press_key"))
-        target_path_raw = raw.get("target_path", raw.get("fix_target_path"))
-        path_s, press_path_s = _split_target_path_for_ui_mapping(
-            target_path_raw,
-            label=f"items[{idx}].target_path",
-        )
-        target_path = Path(_str_or_blank(target_path_raw)).expanduser()
-        try:
-            target_path = target_path.resolve()
-        except OSError:
-            pass
-        if not target_path.is_dir():
-            raise ValueError(f"items[{idx}].target_path 不是存在的资源目录")
-        if not yaml_rel or index_in_file < 0:
-            raise ValueError(f"items[{idx}] 缺少有效作品定位")
-        if not press_key:
-            raise ValueError(f"items[{idx}] 缺少 press_key")
-        key = _work_key(yaml_rel, index_in_file)
-        mapping = by_work.setdefault(
-            key,
-            {
-                "yaml_source_rel": yaml_rel,
-                "index_in_file": index_in_file,
-                "path": path_s,
-                "press": [],
-            },
-        )
-        if mapping["path"] != path_s:
-            raise ValueError(f"{yaml_rel}#{index_in_file} 收到多个不同 path")
-        mapping["press"].append({"press_key": press_key, TV_JP_PRESS_PATH_KEY: press_path_s})
-    writes = _save_ui_mappings_to_catalog({"works": list(by_work.values())}, settings=settings)
-    _DISK_ASSOC_CACHE["signature"] = None
-    _DISK_ASSOC_CACHE["rows"] = []
-    payload = collection_link_index_payload(settings, refresh_links=True)
-    payload["writes"] = writes
-    return payload
-
-
-def _shortcut_fix_item_from_ui(raw: dict[str, Any], idx: int) -> dict[str, Any]:
-    sr = shortcut_root()
-    shortcut_s = _str_or_blank(raw.get("shortcut_path") or raw.get("path"))
-    shortcut_rel = _str_or_blank(raw.get("shortcut_relpath")).replace("\\", "/")
-    if shortcut_rel and not shortcut_s:
-        shortcut_s = str((sr / shortcut_rel).resolve())
-    if not shortcut_s:
-        raise ValueError(f"items[{idx}] 缺少 shortcut_path")
-    shortcut = Path(shortcut_s).expanduser().resolve()
-    shortcut.relative_to(sr)
-    if shortcut.suffix.lower() != ".lnk":
-        raise ValueError(f"items[{idx}].shortcut_path 必须是 .lnk")
-    if not shortcut.is_file():
-        raise FileNotFoundError(str(shortcut))
-    rel = shortcut.relative_to(sr).as_posix()
-    return {
-        "type": "disk_link",
-        "name": shortcut.name,
-        "path": str(shortcut),
-        "shortcut_path": str(shortcut),
-        "shortcut_relpath": rel,
-        "shortcut_parts": rel.split("/"),
-        "shortcut_exists": True,
-        "target_path": _str_or_blank(raw.get("current_target_path") or raw.get("old_target_path")),
-        "target_exists": False,
-    }
-
-
-def apply_link_index_target_fixes_from_ui_body(
-    body: dict[str, Any],
-    *,
-    settings: JpTvBrowseSettings,
-) -> dict[str, Any]:
-    raw_items = body.get("items")
-    if not isinstance(raw_items, list) or not raw_items:
-        raise ValueError("items 必须为非空数组")
-    resource_items = _resource_fix_items_from_cache()
-    if not resource_items:
-        raise ValueError("资源库目录缓存为空，请先扫描资源库")
+    db = _load_link_index_db()
+    items = db.get("items")
+    if not isinstance(items, list) or not items:
+        raise ValueError("索引 DB 为空，请先重新生成索引。")
+    by_rel: dict[str, dict[str, Any]] = {}
+    by_key: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/").lower()
+        key = _str_or_blank(item.get("entry_key"))
+        if rel:
+            by_rel[rel] = item
+        if key:
+            by_key[key] = item
     fixes: list[dict[str, Any]] = []
     for idx, raw in enumerate(raw_items):
         if not isinstance(raw, dict):
             raise ValueError(f"items[{idx}] 必须为对象")
-        shortcut_item = _shortcut_fix_item_from_ui(raw, idx)
+        rel = _str_or_blank(raw.get("shortcut_relpath") or raw.get("relpath")).replace("\\", "/").lower()
+        key = _str_or_blank(raw.get("entry_key"))
         target_s = _str_or_blank(raw.get("target_path") or raw.get("fix_target_path"))
         if not target_s:
             raise ValueError(f"items[{idx}] 缺少 target_path")
@@ -3509,28 +2744,53 @@ def apply_link_index_target_fixes_from_ui_body(
             pass
         if not target.is_dir():
             raise ValueError(f"items[{idx}].target_path 不是存在的资源目录")
-        candidate = _resource_fix_candidate_for_shortcut_item(shortcut_item, resource_items)
-        if not candidate:
-            raise ValueError(f"items[{idx}] 没有找到可修复候选")
-        if _path_compare_key(candidate.get("target_path")) != _path_compare_key(target):
-            raise ValueError(f"items[{idx}].target_path 与资源库候选不一致")
-        _create_windows_shortcut(Path(str(shortcut_item["shortcut_path"])), target)
+        item = by_key.get(key) if key else None
+        if item is None and rel:
+            item = by_rel.get(rel)
+        if item is None:
+            raise ValueError(f"items[{idx}] 没有找到对应的索引 DB 项")
+        item["target_path"] = str(target)
+        item["shortcut_target_path"] = str(target)
+        item["target_exists"] = True
+        item["shortcut_target_exists"] = True
+        item["link_exists"] = True
+        item["db_linked"] = True
+        item["target_source"] = "manual_fix"
+        item["status"] = "ready"
+        item.pop("target_fix", None)
         fixes.append(
             {
-                "shortcut_path": str(shortcut_item["shortcut_path"]),
-                "shortcut_relpath": str(shortcut_item["shortcut_relpath"]),
+                "shortcut_relpath": _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")),
                 "target_path": str(target),
             }
         )
-    _SHORTCUT_SCAN_CACHE["signature"] = None
-    _SHORTCUT_SCAN_CACHE["leaves"] = []
+    db["items"] = items
+    db["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    _save_link_index_db(db)
     _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
     _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
-    if body.get("refresh_payload") is False:
+    if not refresh_payload:
         return {"fixes": fixes}
     payload = collection_link_index_payload(settings, refresh_links=True)
     payload["fixes"] = fixes
     return payload
+
+
+def apply_link_index_target_fixes_from_ui_body(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    raw_items = body.get("items")
+    if not isinstance(raw_items, list) or not raw_items:
+        raise ValueError("items must be a non-empty list")
+    if not _is_index_db_fix_request(raw_items):
+        raise ValueError("link index target fixes only support index DB items")
+    return _apply_link_index_db_target_fixes(
+        raw_items,
+        settings=settings,
+        refresh_payload=body.get("refresh_payload") is not False,
+    )
 
 
 def _raw_collection_data(work: Any) -> dict[str, Any]:
@@ -3755,22 +3015,209 @@ def _create_windows_shortcut(shortcut_path: Path, target_path: Path) -> None:
         raise OSError(f"写入 .lnk 失败：{detail}")
 
 
-def _rename_shortcut_within_root(source_path: Path, target_path: Path) -> None:
-    sr = shortcut_root()
-    source = source_path.expanduser().resolve()
-    target = target_path.expanduser().resolve()
-    source.relative_to(sr)
-    target.relative_to(sr)
-    if source.suffix.lower() != ".lnk" or target.suffix.lower() != ".lnk":
-        raise ValueError("只能规范化 .lnk 快捷方式")
-    if _path_compare_key(source) == _path_compare_key(target):
-        return
-    if not source.is_file():
-        raise FileNotFoundError(str(source))
-    if target.exists():
-        raise FileExistsError(str(target))
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(source), str(target))
+_SCOPED_SHORTCUT_LOCK = threading.RLock()
+
+
+def _scoped_work_context(work: dict[str, Any]) -> dict[str, Any]:
+    date = work.get("date") if isinstance(work.get("date"), dict) else {}
+    begin_date = _str_or_blank(date.get("start") or work.get("begin_date"))
+    end_date = _str_or_blank(date.get("end") or work.get("end_date"))
+    year_match = re.search(r"(?:19|20)\d{2}", begin_date)
+    year = year_match.group(0) if year_match else ""
+    return {
+        "work_key": work.get("work_key") or "",
+        "yaml_source_rel": work.get("yaml_source_rel") or "",
+        "index_in_file": work.get("index_in_file"),
+        "name": work.get("name") or "",
+        "path": work.get("path") or "",
+        "domain": work.get("domain") or "",
+        "country": work.get("country") or "",
+        "release_type": work.get("release_type") or "",
+        "year": year,
+        "year_label": f"[{year}]" if year else "",
+        "begin_date": begin_date,
+        "end_date": end_date,
+        "date_range_label": (
+            f"[{begin_date}][{end_date}]"
+            if begin_date and end_date
+            else f"[{begin_date or end_date}]"
+            if begin_date or end_date
+            else ""
+        ),
+    }
+
+
+def preview_scoped_shortcuts_for_work(
+    work: dict[str, Any],
+    presses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Plan shortcuts for one work without clearing or writing shortcut roots."""
+
+    work_ctx = _scoped_work_context(work)
+    if not _str_or_blank(work_ctx.get("name")):
+        raise ValueError("scoped shortcut work name cannot be empty")
+    planned: list[dict[str, Any]] = []
+    seen_paths: set[str] = set()
+    for index, raw_press in enumerate(presses):
+        if not isinstance(raw_press, dict):
+            raise ValueError(f"scoped shortcut press {index + 1} must be an object")
+        press_format = _str_or_blank(raw_press.get(TV_JP_PRESS_FORMAT_KEY))
+        press_group = _str_or_blank(raw_press.get(TV_JP_PRESS_GROUP_KEY))
+        press_path = _str_or_blank(raw_press.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/")
+        target_s = _str_or_blank(raw_press.get("target_path"))
+        if not press_format or not press_group or not press_path or not target_s:
+            raise ValueError(
+                f"scoped shortcut press {index + 1} requires format, group, press_path and target_path"
+            )
+        target = Path(target_s).expanduser().resolve()
+        if not _path_under_any_root(target, resource_roots()):
+            raise ValueError(f"shortcut target is outside configured resource roots: {target}")
+        press = {
+            "press_key": raw_press.get("press_key") or f"{index}:main::{press_format}:{press_group}",
+            "label": raw_press.get("label") or f"{press_format}-{press_group}",
+            TV_JP_PRESS_FORMAT_KEY: press_format,
+            TV_JP_PRESS_GROUP_KEY: press_group,
+            TV_JP_PRESS_PATH_KEY: press_path,
+        }
+        relpath, parts = _index_relpath_for(work_ctx, press)
+        item_root = _shortcut_root_for_work(work_ctx)
+        shortcut_path = _safe_shortcut_path_from_rel(item_root, relpath)
+        shortcut_key = _path_compare_key(shortcut_path)
+        if shortcut_key in seen_paths:
+            raise ValueError(f"multiple presses resolve to the same shortcut path: {shortcut_path}")
+        seen_paths.add(shortcut_key)
+        status = "planned"
+        existing_target = ""
+        if shortcut_path.exists():
+            if not shortcut_path.is_file():
+                status = "conflict"
+            else:
+                existing_target = _windows_shortcut_target(shortcut_path)
+                status = (
+                    "already_exists"
+                    if existing_target and _path_compare_key(existing_target) == _path_compare_key(target)
+                    else "conflict"
+                )
+        entry = _index_entry_from_work_press(work_ctx, press, [])
+        entry.update(
+            {
+                "target_path": str(target),
+                "target_source": "media_directory_organizer",
+                "target_exists": target.is_dir(),
+                "shortcut_path": str(shortcut_path),
+                "shortcut_root": str(item_root),
+                "shortcut_relpath": relpath,
+                "shortcut_parts": parts,
+                "shortcut_target_path": str(target),
+                "shortcut_exists": status == "already_exists",
+                "matched_shortcut_path": str(shortcut_path) if status == "already_exists" else "",
+                "matched_shortcut_relpath": relpath if status == "already_exists" else "",
+            }
+        )
+        planned.append(
+            {
+                "status": status,
+                "work_name": str(work_ctx["name"]),
+                "press_format": press_format,
+                "press_group": press_group,
+                "press_path": press_path,
+                "target_path": str(target),
+                "target_exists_before_move": target.is_dir(),
+                "shortcut_root": str(item_root),
+                "shortcut_relpath": relpath,
+                "shortcut_path": str(shortcut_path),
+                "existing_target_path": existing_target,
+                "index_entry": entry,
+            }
+        )
+    return planned
+
+
+def refresh_link_index_db_from_catalog(settings: JpTvBrowseSettings) -> dict[str, Any]:
+    """Refresh the YAML index DB only; this never removes or writes .lnk files."""
+
+    works = _load_catalog_works(settings)
+    previous = _load_link_index_db()
+    previous_items = previous.get("items") if isinstance(previous.get("items"), list) else []
+    entries = _index_entries_from_works(
+        works,
+        previous_items=[item for item in previous_items if isinstance(item, dict)],
+        use_resource_index=False,
+    )
+    payload = {
+        "version": 1,
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "source": "collection-detail catalog yaml",
+        "catalog_root": _settings_catalog_root_key(settings),
+        "layout_levels": list(_layout_levels()),
+        "shortcut_name": _shortcut_name_template(),
+        "items": entries,
+    }
+    _save_link_index_db(payload)
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
+    return {
+        "path": str(_link_index_db_path()),
+        "generated_at": payload["generated_at"],
+        "item_count": len(entries),
+    }
+
+
+def apply_scoped_shortcuts_for_work(
+    items: list[dict[str, Any]],
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    """Create only the reviewed work's missing shortcuts and refresh index DB."""
+
+    with _SCOPED_SHORTCUT_LOCK:
+        prepared: list[tuple[Path, Path, dict[str, Any]]] = []
+        already_exists = 0
+        for index, item in enumerate(items):
+            if not isinstance(item, dict):
+                raise ValueError(f"scoped shortcut item {index + 1} must be an object")
+            item_root = Path(_str_or_blank(item.get("shortcut_root"))).expanduser().resolve()
+            if not any(_path_compare_key(item_root) == _path_compare_key(root) for root in shortcut_roots()):
+                raise ValueError(f"scoped shortcut root is not configured: {item_root}")
+            shortcut_path = _safe_shortcut_path_from_rel(item_root, item.get("shortcut_relpath"))
+            if _path_compare_key(shortcut_path) != _path_compare_key(item.get("shortcut_path")):
+                raise ValueError("scoped shortcut path no longer matches the reviewed plan")
+            target = Path(_str_or_blank(item.get("target_path"))).expanduser().resolve()
+            if not target.is_dir() or not _path_under_any_root(target, resource_roots()):
+                raise FileNotFoundError(f"shortcut target directory is missing or outside resource roots: {target}")
+            if shortcut_path.exists():
+                existing_target = _windows_shortcut_target(shortcut_path) if shortcut_path.is_file() else ""
+                if existing_target and _path_compare_key(existing_target) == _path_compare_key(target):
+                    already_exists += 1
+                    continue
+                raise FileExistsError(f"shortcut path already exists with another target: {shortcut_path}")
+            prepared.append((shortcut_path, target, item))
+
+        created: list[Path] = []
+        index_path = _link_index_db_path()
+        previous_index = index_path.read_bytes() if index_path.is_file() else None
+        try:
+            for shortcut_path, target, _item in prepared:
+                _create_windows_shortcut(shortcut_path, target)
+                created.append(shortcut_path)
+            index_result = refresh_link_index_db_from_catalog(settings)
+        except BaseException:
+            for shortcut_path in reversed(created):
+                shortcut_path.unlink(missing_ok=True)
+            if previous_index is None:
+                index_path.unlink(missing_ok=True)
+            else:
+                index_path.parent.mkdir(parents=True, exist_ok=True)
+                index_path.write_bytes(previous_index)
+            raise
+        return {
+            "ok": True,
+            "planned_count": len(items),
+            "created_count": len(created),
+            "already_exists_count": already_exists,
+            "shortcut_paths": [str(path) for path in created],
+            "index_db": index_result,
+        }
 
 
 def _payload_from_works(
@@ -3778,57 +3225,65 @@ def _payload_from_works(
     *,
     refresh_links: bool = False,
     lite: bool = False,
+    catalog_root: str = "",
+    plan_override: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    plan = _build_plan_from_works(works)
-    disk_leaves = _scan_shortcut_leaves(refresh_targets=refresh_links)
-    _annotate_shortcut_resource_fixes(disk_leaves)
-    _annotate_plan_shortcut_targets(plan, disk_leaves)
-    _annotate_plan_resource_fixes(plan)
-    planned_relpaths = _planned_relpath_keys(plan)
-    planned_targets = _planned_target_keys(plan)
-    unmapped_disk = [
-        item
-        for item in disk_leaves
-        if _disk_leaf_is_unmapped(item, planned_relpaths=planned_relpaths, planned_targets=planned_targets)
-    ]
-    disk_match_rows = _cached_disk_association_rows(works, unmapped_disk)
-    disk_matches = {
-        str(row.get("shortcut_relpath") or "").lower(): row
-        for row in disk_match_rows
-        if row.get("shortcut_relpath")
-    }
+    if plan_override is not None:
+        plan = plan_override
+        index_db_exists = True
+    else:
+        plan, index_db_exists = _index_db_items_for_payload(works, catalog_root=catalog_root)
     plan_summary = _plan_summary(plan)
-    plan_summary["unmapped_on_disk"] = len(unmapped_disk)
-    plan_summary["target_fixable"] += sum(1 for item in unmapped_disk if item.get("target_fix"))
-    tree = _build_tree(plan, disk_leaves, disk_matches)
+    plan_summary["unmapped_on_disk"] = 0
+    tree = _build_tree(plan, [], {})
     payload: dict[str, Any] = {
         "ok": True,
         "config": collection_link_index_config_json(),
         "plan_summary": plan_summary,
         "mapping_summary": _mapping_summary(works),
         "disk_summary": {
-            "shortcut_leaves": len(disk_leaves),
-            "unmapped_on_disk": len(unmapped_disk),
-            "db_match_cached": bool(disk_match_rows),
+            "shortcut_leaves": 0,
+            "unmapped_on_disk": 0,
+            "db_match_cached": False,
+            "index_db_exists": index_db_exists,
+            "index_db_path": str(_link_index_db_path()),
         },
         "tree": _slim_tree_for_index_browser(tree) if lite else tree,
     }
     if lite:
         return payload
-    dirs_warning = ""
-    try:
-        media_dirs = _relative_dirs(media_root())
-    except OSError as exc:
-        media_dirs = []
-        dirs_warning = str(exc)
     payload.update(
         {
-            "media_dirs": media_dirs,
-            "media_dirs_warning": dirs_warning,
             "works": works,
             "plan": plan[:300],
         }
     )
+    return payload
+
+
+def _lite_payload_from_index_db(settings: JpTvBrowseSettings) -> dict[str, Any] | None:
+    catalog_root = _settings_catalog_root_key(settings)
+    if not catalog_root:
+        return None
+    db = _load_link_index_db()
+    if _str_or_blank(db.get("catalog_root")) != catalog_root:
+        return None
+    items = _refreshed_index_db_display_items(db.get("items"))
+    if not items:
+        return None
+    payload = _payload_from_works(
+        [],
+        lite=True,
+        catalog_root=catalog_root,
+        plan_override=items,
+    )
+    payload["mapping_summary"] = {
+        "total_press": len(items),
+        "mapped_press": sum(1 for item in items if _str_or_blank(item.get("target_path"))),
+        "unconfigured_press": sum(1 for item in items if not _str_or_blank(item.get("target_path"))),
+        "unconfigured_work_path": 0,
+        "unconfigured_press_path": 0,
+    }
     return payload
 
 
@@ -3839,10 +3294,18 @@ def collection_link_index_payload(
     lite: bool = False,
 ) -> dict[str, Any]:
     if lite and not refresh_links:
+        fast_payload = _lite_payload_from_index_db(settings)
+        if fast_payload is not None:
+            return fast_payload
         cached = _cached_link_index_lite_payload(settings)
         if cached is not None:
             return cached
-    payload = _payload_from_works(_load_catalog_works(settings), refresh_links=refresh_links, lite=lite)
+    payload = _payload_from_works(
+        _load_catalog_works(settings),
+        refresh_links=refresh_links,
+        lite=lite,
+        catalog_root=_settings_catalog_root_key(settings),
+    )
     if lite:
         _cache_link_index_lite_payload(settings, payload)
     return payload
@@ -3850,7 +3313,7 @@ def collection_link_index_payload(
 
 def preview_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
     works = _merge_ui_mappings(_load_catalog_works(settings), _ui_mapping_items(body))
-    return _payload_from_works(works)
+    return _payload_from_works(works, catalog_root=_settings_catalog_root_key(settings))
 
 
 def save_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
@@ -3862,89 +3325,224 @@ def save_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSe
 
 def generate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
     works = _load_catalog_works(settings)
-    overwrite = body.get("overwrite_shortcuts")
-    overwrite_bool = bool(overwrite) if isinstance(overwrite, bool) else _overwrite_shortcuts_default()
-    plan = _build_plan_from_works(works)
-    disk_leaves = _scan_shortcut_leaves(refresh_targets=True)
-    _annotate_shortcut_resource_fixes(disk_leaves)
-    _annotate_plan_shortcut_targets(plan, disk_leaves)
-    _annotate_plan_resource_fixes(plan)
-    out_plan: list[dict[str, Any]] = []
-    for item in plan:
-        next_item = dict(item)
-        if item.get("status") != "ready":
-            next_item["skipped"] = True
-            out_plan.append(next_item)
+    if body.get("refresh_resources") is True:
+        scan_resource_libraries_payload()
+    saved = _save_index_entries_from_works(works, catalog_root=_settings_catalog_root_key(settings))
+    payload = _payload_from_works(works, refresh_links=True, catalog_root=_settings_catalog_root_key(settings))
+    payload["generated"] = saved.get("items", [])
+    payload["index_db"] = {
+        "path": str(_link_index_db_path()),
+        "generated_at": saved.get("generated_at") or "",
+        "item_count": len(saved.get("items") or []),
+    }
+    return payload
+
+
+def _shortcut_root_direct_entries(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    if not root.is_dir():
+        raise ValueError(f"索引输出路径不是目录：{root}")
+    return list(root.iterdir())
+
+
+def _safe_shortcut_path_from_rel(root: Path, relpath: Any) -> Path:
+    rel = _str_or_blank(relpath).replace("\\", "/").strip("/")
+    if not rel:
+        raise ValueError("索引项缺少相对路径")
+    rel_path = Path(rel)
+    if rel_path.is_absolute() or any(part in {"", ".", ".."} for part in rel_path.parts):
+        raise ValueError(f"索引项路径非法：{rel}")
+    target = (root / rel_path).resolve()
+    target.relative_to(root)
+    if target.suffix.lower() != ".lnk":
+        target = target.with_suffix(target.suffix + ".lnk") if target.suffix else target.with_suffix(".lnk")
+    return target
+
+
+def _clear_directory_contents(root: Path) -> int:
+    removed = 0
+    root.mkdir(parents=True, exist_ok=True)
+    for child in list(root.iterdir()):
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+        removed += 1
+    return removed
+
+
+def _backup_shortcut_root(root: Path, backup_dir_raw: Any) -> str:
+    backup_parent_s = _str_or_blank(backup_dir_raw)
+    if not backup_parent_s:
+        return ""
+    backup_parent = Path(backup_parent_s).expanduser().resolve()
+    root_resolved = root.resolve()
+    try:
+        backup_parent.relative_to(root_resolved)
+        raise ValueError("备份目录不能位于索引输出目录内部")
+    except ValueError as exc:
+        if "备份目录" in str(exc):
+            raise
+    if _path_compare_key(backup_parent) == _path_compare_key(root_resolved):
+        raise ValueError("备份目录不能等于索引输出目录")
+    backup_parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    base_name = root_resolved.name or "index-output"
+    backup_path = backup_parent / f"{base_name}-{stamp}"
+    suffix = 1
+    while backup_path.exists():
+        suffix += 1
+        backup_path = backup_parent / f"{base_name}-{stamp}-{suffix}"
+    shutil.copytree(root_resolved, backup_path)
+    return str(backup_path)
+
+
+def _link_index_file_generation_plan(settings: JpTvBrowseSettings) -> tuple[list[dict[str, Any]], bool]:
+    works = _load_catalog_works(settings)
+    return _index_db_items_for_payload(works, catalog_root=_settings_catalog_root_key(settings))
+
+
+def _shortcut_root_for_index_item(item: dict[str, Any]) -> Path:
+    configured = _str_or_blank(item.get("shortcut_root"))
+    return Path(configured).expanduser().resolve() if configured else _shortcut_root_for_work(item)
+
+
+def _link_index_file_generation_preview(items: list[dict[str, Any]]) -> dict[str, Any]:
+    roots_in_plan: list[Path] = []
+    seen_roots: set[str] = set()
+    for item in items:
+        root = _shortcut_root_for_index_item(item)
+        key = _path_compare_key(root)
+        if key and key not in seen_roots:
+            seen_roots.add(key)
+            roots_in_plan.append(root)
+    if not roots_in_plan:
+        roots_in_plan = [shortcut_root()]
+    root_rows: list[dict[str, Any]] = []
+    all_entries: list[Path] = []
+    for root in roots_in_plan:
+        entries = _shortcut_root_direct_entries(root)
+        all_entries.extend(entries)
+        root_rows.append(
+            {
+                "output_root": str(root),
+                "root_exists": root.exists(),
+                "root_non_empty": bool(entries),
+                "existing_count": len(entries),
+                "existing_sample": [entry.name for entry in entries[:20]],
+                "planned": sum(
+                    1 for item in items if _path_compare_key(_shortcut_root_for_index_item(item)) == _path_compare_key(root)
+                ),
+            }
+        )
+    creatable = 0
+    skipped_empty_target = 0
+    skipped_missing_target = 0
+    for item in items:
+        target_s = _str_or_blank(item.get("target_path"))
+        if not target_s:
+            skipped_empty_target += 1
             continue
-        shortcut = Path(str(item.get("shortcut_path") or ""))
-        target = Path(str(item.get("target_path") or ""))
-        matched_shortcut_s = _str_or_blank(item.get("matched_shortcut_path"))
-        if (
-            item.get("db_linked")
-            and matched_shortcut_s
-            and _path_compare_key(matched_shortcut_s) != _path_compare_key(shortcut)
-        ):
-            if shortcut.exists():
-                next_item["status"] = "shortcut_exists"
-                next_item["skipped"] = True
-                next_item["rename_skipped"] = True
-                out_plan.append(next_item)
-                continue
+        if "target_exists" in item:
+            target_exists = bool(item.get("target_exists"))
+        else:
             try:
-                _rename_shortcut_within_root(Path(matched_shortcut_s), shortcut)
-                next_item["renamed"] = True
-                next_item["shortcut_exists"] = True
-                next_item["matched_shortcut_path"] = str(shortcut)
-                try:
-                    next_item["matched_shortcut_relpath"] = shortcut.resolve().relative_to(shortcut_root()).as_posix()
-                except (OSError, ValueError):
-                    next_item["matched_shortcut_relpath"] = next_item.get("shortcut_relpath") or ""
-            except (OSError, ValueError) as exc:
-                next_item["status"] = "failed"
-                next_item["error"] = str(exc)
-            out_plan.append(next_item)
+                target_exists = Path(target_s).expanduser().is_dir()
+            except OSError:
+                target_exists = False
+        if not target_exists:
+            skipped_missing_target += 1
             continue
-        if shortcut.exists() and not overwrite_bool:
-            next_item["status"] = "shortcut_exists"
-            next_item["skipped"] = True
-            out_plan.append(next_item)
+        creatable += 1
+    return {
+        "output_root": str(roots_in_plan[0]),
+        "output_roots": [str(root) for root in roots_in_plan],
+        "roots": root_rows,
+        "root_exists": all(root.exists() for root in roots_in_plan),
+        "root_non_empty": bool(all_entries),
+        "existing_count": len(all_entries),
+        "existing_sample": [str(entry) for entry in all_entries[:20]],
+        "total": len(items),
+        "creatable": creatable,
+        "skipped_empty_target": skipped_empty_target,
+        "skipped_missing_target": skipped_missing_target,
+    }
+
+
+def generate_link_index_files_from_ui_body(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    items, index_db_exists = _link_index_file_generation_plan(settings)
+    preview = _link_index_file_generation_preview(items)
+    preview["index_db_exists"] = index_db_exists
+    if body.get("preview") is True:
+        return {
+            "config": collection_link_index_config_json(),
+            "file_generation": preview,
+        }
+    roots = [Path(value).expanduser().resolve() for value in preview["output_roots"]]
+    for root in roots:
+        root.mkdir(parents=True, exist_ok=True)
+    if preview["root_non_empty"] and (
+        body.get("confirm_clear") is not True or body.get("confirm_clear_twice") is not True
+    ):
+        raise ValueError("索引输出目录非空，生成前必须完成两次确认")
+    backup_paths: list[str] = []
+    removed_count = 0
+    for root in roots:
+        entries = _shortcut_root_direct_entries(root)
+        if entries and _str_or_blank(body.get("backup_dir")):
+            backup_paths.append(_backup_shortcut_root(root, body.get("backup_dir")))
+        if entries:
+            removed_count += _clear_directory_contents(root)
+    created = 0
+    skipped_empty_target = 0
+    skipped_missing_target = 0
+    failed: list[dict[str, Any]] = []
+    for item in items:
+        rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath"))
+        target_s = _str_or_blank(item.get("target_path"))
+        if not target_s:
+            skipped_empty_target += 1
             continue
         try:
-            _create_windows_shortcut(shortcut, target)
-            next_item["created"] = True
-        except (OSError, subprocess.CalledProcessError) as exc:
-            next_item["status"] = "failed"
-            next_item["error"] = str(exc)
-        out_plan.append(next_item)
-    disk_leaves = _scan_shortcut_leaves(refresh_targets=True)
-    _annotate_shortcut_resource_fixes(disk_leaves)
-    _annotate_plan_shortcut_targets(out_plan, disk_leaves)
-    _annotate_plan_resource_fixes(out_plan)
-    planned_relpaths = _planned_relpath_keys(out_plan)
-    planned_targets = _planned_target_keys(out_plan)
-    unmapped_disk = [
-        item
-        for item in disk_leaves
-        if _disk_leaf_is_unmapped(item, planned_relpaths=planned_relpaths, planned_targets=planned_targets)
-    ]
-    disk_match_rows = _cached_disk_association_rows(works, unmapped_disk)
-    disk_matches = {
-        str(row.get("shortcut_relpath") or "").lower(): row
-        for row in disk_match_rows
-        if row.get("shortcut_relpath")
+            target_path = Path(target_s).expanduser().resolve()
+        except OSError:
+            target_path = Path(target_s).expanduser()
+        if not target_path.is_dir():
+            skipped_missing_target += 1
+            continue
+        try:
+            item_root = _shortcut_root_for_index_item(item)
+            shortcut_path = _safe_shortcut_path_from_rel(item_root, rel)
+            _create_windows_shortcut(shortcut_path, target_path)
+            created += 1
+        except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+            failed.append(
+                {
+                    "shortcut_relpath": rel,
+                    "target_path": target_s,
+                    "error": str(exc),
+                }
+            )
+    payload = collection_link_index_payload(settings)
+    payload["file_generation"] = {
+        **preview,
+        "output_root": str(roots[0]),
+        "output_roots": [str(root) for root in roots],
+        "backup_path": backup_paths[0] if len(backup_paths) == 1 else "",
+        "backup_paths": backup_paths,
+        "removed_count": removed_count,
+        "created": created,
+        "skipped_empty_target": skipped_empty_target,
+        "skipped_missing_target": skipped_missing_target,
+        "failed_count": len(failed),
+        "failed": failed[:50],
     }
-    plan_summary = _plan_summary(out_plan)
-    plan_summary["unmapped_on_disk"] = len(unmapped_disk)
-    plan_summary["target_fixable"] += sum(1 for item in unmapped_disk if item.get("target_fix"))
-    return {
-        "config": collection_link_index_config_json(),
-        "works": works,
-        "plan": out_plan[:300],
-        "plan_summary": plan_summary,
-        "mapping_summary": _mapping_summary(works),
-        "tree": _build_tree(out_plan, disk_leaves, disk_matches),
-        "writes": [],
-    }
+    return payload
 
 
 def _path_under_any_root(path: Path, roots: list[Path]) -> bool:
@@ -4039,7 +3637,8 @@ def _windows_shortcut_targets(shortcut_paths: list[Path]) -> dict[str, dict[str,
         "    [pscustomobject]@{ path = [string]$shortcutPath; target = ''; error = [string]$_.Exception.Message }\n"
         "  }\n"
         "}\n"
-        "$rows | ConvertTo-Json -Compress\n"
+        "$json = $rows | ConvertTo-Json -Compress\n"
+        "[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))\n"
     )
     kwargs: dict[str, Any] = {}
     if hasattr(subprocess, "CREATE_NO_WINDOW"):
@@ -4058,8 +3657,9 @@ def _windows_shortcut_targets(shortcut_paths: list[Path]) -> dict[str, dict[str,
     if proc.returncode != 0 or not proc.stdout.strip():
         return {}
     try:
-        raw_rows = json.loads(proc.stdout)
-    except json.JSONDecodeError:
+        decoded_stdout = base64.b64decode(proc.stdout.strip()).decode("utf-8")
+        raw_rows = json.loads(decoded_stdout)
+    except (ValueError, json.JSONDecodeError):
         return {}
     rows = raw_rows if isinstance(raw_rows, list) else [raw_rows]
     out: dict[str, dict[str, Any]] = {}
@@ -4082,9 +3682,9 @@ def resolve_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("path 不能为空")
     p = Path(raw.strip()).expanduser().resolve()
-    roots = [media_root(), shortcut_root()]
+    roots = [*resource_roots(), *shortcut_roots()]
     if not _path_under_any_root(p, roots):
-        raise ValueError("只能解析媒体根目录或索引输出目录下的路径")
+        raise ValueError("只能解析资源库目录或索引输出目录下的路径")
     if not p.exists():
         raise FileNotFoundError(str(p))
     if p.is_file() and p.suffix.lower() == ".lnk":
@@ -4113,9 +3713,9 @@ def open_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("path 不能为空")
     p = Path(raw.strip()).expanduser().resolve()
-    roots = [media_root(), shortcut_root()]
+    roots = [*resource_roots(), *shortcut_roots()]
     if not _path_under_any_root(p, roots):
-        raise ValueError("只能打开媒体根目录或索引输出目录下的路径")
+        raise ValueError("只能打开资源库目录或索引输出目录下的路径")
     if not p.exists():
         raise FileNotFoundError(str(p))
     open_path = p
@@ -4136,3 +3736,29 @@ def open_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     else:
         subprocess.Popen(["xdg-open", str(open_path)])
     return {"path": str(open_path), "source_path": str(p), "resolved_from_shortcut": resolved_from_shortcut}
+
+
+def open_collection_press_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
+    work_raw = body.get("path", body.get("work_path"))
+    press_raw = body.get("press_path")
+    if not isinstance(work_raw, str) or not work_raw.strip():
+        raise ValueError("作品父路径不能为空")
+    if not isinstance(press_raw, str) or not press_raw.strip():
+        raise ValueError("压制路径不能为空")
+    target = _target_for(_legacy_media_root(), work_raw.strip(), press_raw.strip())
+    roots = resource_roots()
+    if not _path_under_any_root(target, roots):
+        raise ValueError("只能打开资源库目录下的连接路径")
+    if not target.exists():
+        raise FileNotFoundError(str(target))
+    open_path = target if target.is_dir() else target.parent
+    if os.name == "nt":
+        os.startfile(str(open_path))  # type: ignore[attr-defined]
+    else:
+        subprocess.Popen(["xdg-open", str(open_path)])
+    return {
+        "path": str(open_path),
+        "target_path": str(target),
+        "source_path": str(target),
+        "resolved_from_shortcut": False,
+    }

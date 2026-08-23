@@ -1,0 +1,3601 @@
+version: 1
+generated_at: '2026-08-23T17:33:47'
+sources:
+  note:
+    path: data/source/Animation/Note.h
+    sha256: 514015f68b173229ca8b36ffa9a809f8a545f8db5a2140c92192607822c9846e
+  catalog_root: data/features/collection-detail/db
+rules:
+  combination_member_limit: 4
+  catalog_storage_field: press_group
+  member_corrections:
+    TGTDS: TGTD
+    VCP: VCB
+release_groups:
+- code: AI
+  kind: release
+  names:
+  - AI-Raw
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 123
+    raw: //AI   - AI-Raw
+  classifier_family: AI
+- code: ALK
+  kind: release
+  names:
+  - Alkasa
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 128
+    raw: //ALK  - Alkasa
+  classifier_family: ALK
+- code: ANK
+  kind: release
+  names:
+  - ANK-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 105
+    raw: //ANK  - ANK-Raws
+  classifier_family: ANK
+- code: BEAT
+  kind: release
+  names:
+  - Beatrice-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 115
+    raw: //BEAT - Beatrice-Raws
+  classifier_family: BEAT
+- code: CENT
+  kind: release
+  names:
+  - Centaurea-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 125
+    raw: //CENT - Centaurea-Raws
+  classifier_family: CENT
+- code: CX
+  kind: release
+  names:
+  - CX-Raw
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 121
+    raw: //CX   - CX-Raw
+  classifier_family: CX
+- code: DBD
+  kind: release
+  names:
+  - DBD-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 131
+    raw: //DBD  - DBD-Raws
+  classifier_family: DBD
+- code: EP
+  kind: release
+  names:
+  - EggPain Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 117
+    raw: //EP   - EggPain Raws
+  classifier_family: EP
+- code: FS
+  kind: release
+  names:
+  - FS-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 109
+    raw: //FS   - FS-Raws
+  classifier_family: FS
+- code: JSUM
+  kind: release
+  names:
+  - Jsum
+  aliases:
+  - JSUM
+  sources:
+  - kind: collection-detail catalog
+  classifier_family: JSUM
+- code: KAGU
+  kind: release
+  names:
+  - Kagura
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 126
+    raw: //KAGU - Kagura
+  classifier_family: KAGU
+- code: KRS
+  kind: release
+  names:
+  - Sergey_krs
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 127
+    raw: //KRS  - Sergey_krs
+  classifier_family: KRS
+- code: KWK
+  kind: release
+  names:
+  - Kawaiika-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 130
+    raw: //KWK  - Kawaiika-Raws
+  classifier_family: KWK
+- code: LB
+  kind: release
+  names:
+  - LittleBakas!
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 111
+    raw: //LB   - LittleBakas!
+  classifier_family: LB
+- code: LEO
+  kind: release
+  names:
+  - Leopard-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 114
+    raw: //LEO  - Leopard-Raws
+  classifier_family: LEO
+- code: LILI
+  kind: release
+  names:
+  - Lilith-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 122
+    raw: //LILI - Lilith-Raws
+  classifier_family: LILI
+- code: LYR
+  kind: release
+  names:
+  - LY-Raw
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 120
+    raw: //LYR  - LY-Raw
+  classifier_family: LYR
+- code: MW
+  kind: release
+  names:
+  - Mawen1250
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 129
+    raw: //MW   - Mawen1250
+  classifier_family: MW
+- code: MZ
+  kind: release
+  names:
+  - Moozzi2
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 107
+    raw: //MZ   - Moozzi2
+  classifier_family: MZ
+- code: PHI
+  kind: release
+  names:
+  - Philosophy-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 113
+    raw: //PHI  - Philosophy-Raws
+  classifier_family: PHI
+- code: RF
+  kind: release
+  names:
+  - ReinForce
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 104
+    raw: //RF   - ReinForce
+  classifier_family: RF
+- code: SFEO
+  kind: release
+  names:
+  - SFEO-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 106
+    raw: //SFEO - SFEO-Raws
+  classifier_family: SFEO
+- code: SLED
+  kind: release
+  names:
+  - Salender-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 124
+    raw: //SLED - Salender-Raws
+  classifier_family: SLED
+- code: SNOW
+  kind: release
+  names:
+  - Snow-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 110
+    raw: //SNOW - Snow-Raws
+  classifier_family: SNOW
+- code: TD
+  kind: release
+  names:
+  - TD-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 108
+    raw: //TD   - TD-Raws
+  classifier_family: TD
+- code: U2
+  kind: release
+  names:
+  - U2-Rip
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 118
+    raw: //U2   - U2-Rip
+  classifier_family: U2
+- code: UCC
+  kind: release
+  names:
+  - UCCUSS
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 119
+    raw: //UCC  - UCCUSS
+  classifier_family: UCC
+- code: VCB
+  kind: release
+  names:
+  - VCB-Studio
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 103
+    raw: //VCB  - VCB-Studio
+  classifier_family: VCB
+- code: XRIP
+  kind: release
+  names:
+  - X-Rip
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 112
+    raw: //XRIP - X-Rip
+  classifier_family: XRIP
+- code: YS
+  kind: release
+  names:
+  - Yousei-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 116
+    raw: //YS   - Yousei-Raws
+  classifier_family: YS
+- code: ZAZA
+  kind: release
+  names:
+  - ZaZa-Raws
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 132
+    raw: //ZAZA - ZaZa-Raws
+  classifier_family: ZAZA
+translation_groups:
+- code: ACG7
+  kind: translation
+  names: []
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 98
+    raw: //ACG7
+- code: AIR
+  kind: translation
+  names:
+  - A.I.R NesSub
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 71
+    raw: //AIR  - A.I.R NesSub
+- code: AJZ
+  kind: translation
+  names:
+  - 傲娇零字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 33
+    raw: //AJZ  - 傲娇零字幕组
+- code: AL
+  kind: translation
+  names:
+  - 魔术师工坊
+  aliases:
+  - Atelier
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 41
+    raw: //AL   - 魔术师工坊       //Atelier
+- code: AS
+  kind: translation
+  names:
+  - 繁星字幕组
+  aliases:
+  - Array Stars
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 46
+    raw: //AS   - 繁星字幕组       //Array Stars
+- code: AT
+  kind: translation
+  names:
+  - 千夏字幕组
+  aliases:
+  - Airota
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 14
+    raw: //AT   - 千夏字幕组       //Airota
+- code: BEAN
+  kind: translation
+  names:
+  - 豌豆字幕组
+  aliases:
+  - BeanSub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 31
+    raw: //BEAN - 豌豆字幕组       //BeanSub
+- code: BL
+  kind: translation
+  names:
+  - 白恋字幕组
+  aliases:
+  - Shirokoi
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 74
+    raw: //BL   - 白恋字幕组       //Shirokoi
+- code: BY
+  kind: translation
+  names:
+  - 白月字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 68
+    raw: //BY   - 白月字幕组
+- code: CASO
+  kind: translation
+  names:
+  - 华盟字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 7
+    raw: //CASO - 华盟字幕组
+- code: CC
+  kind: translation
+  names:
+  - CC动漫
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 10
+    raw: //CC   - CC动漫
+- code: CCAT
+  kind: translation
+  names:
+  - 漫猫字幕组
+  aliases:
+  - Comicat
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 24
+    raw: //CCAT - 漫猫字幕组       //Comicat
+- code: CFS
+  kind: translation
+  names:
+  - Cornflower.Studio
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 56
+    raw: //CFS  - Cornflower.Studio
+- code: CK
+  kind: translation
+  names:
+  - 澄空学园
+  aliases:
+  - Sumisora
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 6
+    raw: //CK   - 澄空学园         //Sumisora
+- code: DHR
+  kind: translation
+  names:
+  - DHR动研字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 16
+    raw: //DHR  - DHR动研字幕组
+- code: DMG
+  kind: translation
+  names:
+  - 动漫国字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 9
+    raw: //DMG  - 动漫国字幕组
+- code: DMHY
+  kind: translation
+  names:
+  - 动漫花园
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 32
+    raw: //DMHY - 动漫花园
+- code: DYMY
+  kind: translation
+  names:
+  - 动音漫影
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 59
+    raw: //DYMY - 动音漫影
+- code: FL
+  kind: translation
+  names:
+  - 雪飘字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 8
+    raw: //FL   - 雪飘字幕组
+- code: FREE
+  kind: translation
+  names:
+  - 自由字幕组
+  aliases:
+  - Free Sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 34
+    raw: //FREE - 自由字幕组       //Free Sub
+- code: FSKY
+  kind: translation
+  names:
+  - Fosky
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 100
+    raw: //FSKY - Fosky
+- code: FZ
+  kind: translation
+  names:
+  - 腐宅字幕组
+  aliases:
+  - FZ Sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 36
+    raw: //FZ   - 腐宅字幕组       //FZ Sub
+- code: FZSD
+  kind: translation
+  names:
+  - 风之圣殿字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 20
+    raw: //FZSD - 风之圣殿字幕组
+- code: HA
+  kind: translation
+  names:
+  - Ha Sub
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 48
+    raw: //HA   - Ha Sub
+- code: HK
+  kind: translation
+  names:
+  - HKACG
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 40
+    raw: //HK   - HKACG
+- code: HKAC
+  kind: translation
+  names:
+  - HKACG
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 57
+    raw: //HKAC - HKACG
+- code: HKG
+  kind: translation
+  names:
+  - HKG字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 81
+    raw: //HKG  - HKG字幕组
+- code: HORR
+  kind: translation
+  names:
+  - Horrible-Subs
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 86
+    raw: //HORR - Horrible-Subs
+- code: HSUB
+  kind: translation
+  names:
+  - 花语花丸
+  aliases:
+  - HaSub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 87
+    raw: //HSUB   花语花丸         //HaSub
+- code: HY
+  kind: translation
+  names:
+  - 幻樱字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 19
+    raw: //HY   - 幻樱字幕组
+- code: IG
+  kind: translation
+  names:
+  - I.G.
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 95
+    raw: //IG   - I.G.
+- code: JY
+  kind: translation
+  names:
+  - 极影字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 12
+    raw: //JY   - 极影字幕组
+- code: KAMI
+  kind: translation
+  names:
+  - 诸神字幕组
+  aliases:
+  - Kamigoroshi
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 17
+    raw: //KAMI - 诸神字幕组       //Kamigoroshi
+- code: KH
+  kind: translation
+  names:
+  - 口胡字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 99
+    raw: //KH   - 口胡字幕组
+- code: KISS
+  kind: translation
+  names:
+  - 爱恋字幕组
+  aliases:
+  - Kisssub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 25
+    raw: //KISS - 爱恋字幕组       //Kisssub
+- code: KNA
+  kind: translation
+  names:
+  - KNA字幕组
+  aliases:
+  - KNA-Subs
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 44
+    raw: //KNA  - KNA字幕组        //KNA-Subs
+- code: KOEI
+  kind: translation
+  names:
+  - 光荣字母 暗
+  aliases:
+  - Koei sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 60
+    raw: //KOEI - 光荣字母 暗      //Koei sub
+- code: LF2
+  kind: translation
+  names:
+  - 小花花同盟战线
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 18
+    raw: //LF2  - 小花花同盟战线
+- code: LK
+  kind: translation
+  names:
+  - 轻之国度
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 11
+    raw: //LK   - 轻之国度
+- code: LKDS
+  kind: translation
+  names:
+  - 轻国袋鼠
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 47
+    raw: //LKDS - 轻国袋鼠
+- code: LOLI
+  kind: translation
+  names:
+  - LoliHouse
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 15
+    raw: //LOLI - LoliHouse
+- code: LS
+  kind: translation
+  names:
+  - 漏勺
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 63
+    raw: //LS   - 漏勺
+- code: LXG
+  kind: translation
+  names:
+  - 动漫流行馆
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 51
+    raw: //LXG  - 动漫流行馆
+- code: LYUN
+  kind: translation
+  names:
+  - 流云字幕组
+  aliases:
+  - Liuyun
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 58
+    raw: //LYUN - 流云字幕组       //Liuyun
+- code: MA
+  kind: translation
+  names:
+  - 幻之字幕组
+  aliases:
+  - Mabors-Sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 29
+    raw: //MA   - 幻之字幕组       //Mabors-Sub
+- code: MAHO
+  kind: translation
+  names:
+  - 魔穗字幕组
+  aliases:
+  - Maho Sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 42
+    raw: //MAHO - 魔穗字幕组       //Maho Sub
+- code: MGSQ
+  kind: translation
+  names:
+  - 物语圈系列
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 52
+    raw: //MGSQ - 物语圈系列
+- code: MH
+  kind: translation
+  names:
+  - 茉语星梦字幕组
+  aliases:
+  - MakariHoshiyume
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 13
+    raw: //MH   - 茉语星梦字幕组   //MakariHoshiyume
+- code: MKH
+  kind: translation
+  names:
+  - 莳乃字幕屋
+  aliases:
+  - Makino House
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 76
+    raw: //MKH  - 莳乃字幕屋       //Makino House
+- code: MM
+  kind: translation
+  names:
+  - 咪梦动漫组
+  - 漫迷字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 65
+    raw: //MM   - 咪梦动漫组
+  - file: data/source/Animation/Note.h
+    line: 101
+    raw: //MM   - 漫迷字幕组
+- code: MMCH
+  kind: translation
+  names:
+  - 喵萌茶會字幕組
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 37
+    raw: //MMCH - 喵萌茶會字幕組
+- code: MMZY
+  kind: translation
+  names:
+  - 漫盟之影
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 72
+    raw: //MMZY - 漫盟之影
+- code: MOON
+  kind: translation
+  names:
+  - 月舞字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 92
+    raw: //MOON - 月舞字幕组
+- code: MSR
+  kind: translation
+  names:
+  - 届恋字幕组
+  aliases:
+  - MSRSub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 53
+    raw: //MSR  - 届恋字幕组       //MSRSub
+- code: MT
+  kind: translation
+  names:
+  - 茉語月夜
+  aliases:
+  - MakariTsukiyo
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 67
+    raw: //MT   - 茉語月夜         //MakariTsukiyo
+- code: NK
+  kind: translation
+  names:
+  - 喵萌奶茶屋
+  aliases:
+  - Nekomoe Kissaten
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 21
+    raw: //NK   - 喵萌奶茶屋       //Nekomoe Kissaten
+- code: NQ
+  kind: translation
+  names:
+  - NEO·QSW
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 49
+    raw: //NQ   - NEO·QSW
+- code: NTR
+  kind: translation
+  names:
+  - NTR字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 79
+    raw: //NTR  - NTR字幕组
+- code: NYA
+  kind: translation
+  names:
+  - Nyamazing字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 43
+    raw: //NYA  - Nyamazing字幕组
+- code: POPG
+  kind: translation
+  names:
+  - 漫游字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 50
+    raw: //POPG - 漫游字幕组
+- code: PS
+  kind: translation
+  names:
+  - 紫音字母组
+  aliases:
+  - PS sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 61
+    raw: //PS   - 紫音字母组       //PS sub
+- code: PUS
+  kind: translation
+  names:
+  - Pus字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 39
+    raw: //PUS  - Pus字幕组
+- code: QY
+  kind: translation
+  names:
+  - 青翼字幕组
+  aliases:
+  - QY sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 64
+    raw: //QY   - 青翼字幕组       //QY sub
+- code: RATH
+  kind: translation
+  names:
+  - 拉斯观察组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 83
+    raw: //RATH - 拉斯观察组
+- code: RH
+  kind: translation
+  names:
+  - RH字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 66
+    raw: //RH   - RH字幕组
+- code: SC
+  kind: translation
+  names:
+  - Sakura❀Cafe
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 80
+    raw: //SC   - Sakura❀Cafe
+- code: SCOL
+  kind: translation
+  names:
+  - 雪酷字幕组
+  aliases:
+  - SC-OL
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 77
+    raw: //SCOL - 雪酷字幕组       //SC-OL
+- code: SGS
+  kind: translation
+  names:
+  - 曙光字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 78
+    raw: //SGS  - 曙光字幕组
+- code: SK
+  kind: translation
+  names:
+  - 铃凤字幕组
+  aliases:
+  - Suzu Kaze
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 27
+    raw: //SK   - 铃凤字幕组       //Suzu Kaze
+- code: SKT
+  kind: translation
+  names:
+  - SkyTree
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 88
+    raw: //SKT  - SkyTree
+- code: SOSG
+  kind: translation
+  names: []
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 97
+    raw: //SOSG
+- code: ST
+  kind: translation
+  names:
+  - 樱都字幕组
+  aliases:
+  - Sakurato.sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 30
+    raw: //ST   - 樱都字幕组       //Sakurato.sub
+- code: SY
+  kind: translation
+  names:
+  - 时雨字幕组
+  aliases:
+  - Shigure
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 62
+    raw: //SY   - 时雨字幕组       //Shigure
+- code: TGTD
+  kind: translation
+  names:
+  - TGTDG
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 94
+    raw: //TGTD - TGTDG
+- code: TNDR
+  kind: translation
+  names:
+  - 傲娇字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 85
+    raw: //TNDR - 傲娇字幕组
+- code: TNH
+  kind: translation
+  names:
+  - 东京不够热字幕组
+  aliases:
+  - TokyoNotHot
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 22
+    raw: //TNH  - 东京不够热字幕组 //TokyoNotHot
+- code: TOD
+  kind: translation
+  names:
+  - 野生菌字幕组
+  aliases:
+  - Todokoi
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 54
+    raw: //TOD  - 野生菌字幕组     //Todokoi
+- code: TSDM
+  kind: translation
+  names:
+  - 天使动漫
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 45
+    raw: //TSDM - 天使动漫
+- code: TSRJ
+  kind: translation
+  names:
+  - 间人字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 90
+    raw: //TSRJ - 间人字幕组
+- code: TUC
+  kind: translation
+  names:
+  - TUcaptions字幕组
+  - 台湾团结字幕组
+  aliases:
+  - TUcaptions
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 38
+    raw: //TUC  - TUcaptions字幕组
+  - file: data/source/Animation/Note.h
+    line: 75
+    raw: //TUC  - 台湾团结字幕组   //TUcaptions
+- code: TUZI
+  kind: translation
+  names:
+  - 兔子字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 91
+    raw: //TUZI - 兔子字幕组
+- code: TX
+  kind: translation
+  names:
+  - 天香字幕组
+  aliases:
+  - Txxz
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 70
+    raw: //TX   - 天香字幕组　     //Txxz
+- code: UHAW
+  kind: translation
+  names:
+  - 悠哈璃羽字幕社
+  aliases:
+  - UHA-Wings
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 23
+    raw: //UHAW - 悠哈璃羽字幕社   //UHA-Wings
+- code: WLGO
+  kind: translation
+  names:
+  - WLGO字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 89
+    raw: //WLGO - WLGO字幕组
+- code: WM
+  kind: translation
+  names:
+  - 风车字幕组
+  aliases:
+  - WMSub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 73
+    raw: //WM   - 风车字幕组       //WMSub
+- code: WOLF
+  kind: translation
+  names:
+  - Wolf字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 26
+    raw: //WOLF - Wolf字幕组
+- code: WY
+  kind: translation
+  names:
+  - 月光恋曲字幕组
+  aliases:
+  - 52wy
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 84
+    raw: //WY   - 月光恋曲字幕组   //52wy
+- code: X2
+  kind: translation
+  names: []
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 96
+    raw: //X2
+- code: XXXX
+  kind: translation
+  names:
+  - 不明字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 28
+    raw: //XXXX - 不明字幕组
+- code: YA
+  kind: translation
+  names:
+  - YA字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 93
+    raw: //YA   - YA字幕组
+- code: YG
+  kind: translation
+  names:
+  - 银光字幕组
+  aliases:
+  - YG Sub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 35
+    raw: //YG   - 银光字幕组       //YG Sub
+- code: YL
+  kind: translation
+  names:
+  - 音律字幕组
+  aliases:
+  - YlbudSub
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 69
+    raw: //YL   - 音律字幕组　　　 //YlbudSub
+- code: YUI7
+  kind: translation
+  names:
+  - 西农YUI汉化组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 55
+    raw: //YUI7 - 西农YUI汉化组
+- code: YYDM
+  kind: translation
+  names:
+  - 异域字幕组
+  aliases: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 82
+    raw: //YYDM - 异域字幕组
+combinations:
+- code: AJZF
+  kind: combination
+  members:
+  - AJZ
+  - FREE
+  raw_members:
+  - AJZ
+  - FREE
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 140
+    raw: //AJZF = AJZ + FREE
+  release_groups: []
+  translation_groups:
+  - AJZ
+  - FREE
+  unknown_members: []
+  classifier_family: ''
+- code: ANKA
+  kind: combination
+  members:
+  - ANK
+  - AI
+  raw_members:
+  - ANK
+  - AI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 141
+    raw: //ANKA = ANK + AI
+  release_groups:
+  - ANK
+  - AI
+  translation_groups: []
+  unknown_members: []
+  classifier_family: ''
+- code: ANKE
+  kind: combination
+  members:
+  - ANK
+  - EP
+  raw_members:
+  - ANK
+  - EP
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 142
+    raw: //ANKE = ANK + EP
+  release_groups:
+  - ANK
+  - EP
+  translation_groups: []
+  unknown_members: []
+  classifier_family: ''
+- code: ANKK
+  kind: combination
+  members:
+  - ANK
+  - KNA
+  raw_members:
+  - ANK
+  - KNA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 143
+    raw: //ANKK = ANK + KNA
+  release_groups:
+  - ANK
+  translation_groups:
+  - KNA
+  unknown_members: []
+  classifier_family: ANK
+- code: ANKL
+  kind: combination
+  members:
+  - ANK
+  - LB
+  raw_members:
+  - ANK
+  - LB
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 144
+    raw: //ANKL = ANK + LB
+  release_groups:
+  - ANK
+  - LB
+  translation_groups: []
+  unknown_members: []
+  classifier_family: ''
+- code: ANKM
+  kind: combination
+  members:
+  - ANK
+  - MT
+  raw_members:
+  - ANK
+  - MT
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 145
+    raw: //ANKM = ANK + MT
+  release_groups:
+  - ANK
+  translation_groups:
+  - MT
+  unknown_members: []
+  classifier_family: ANK
+- code: ATHA
+  kind: combination
+  members:
+  - AT
+  - HA
+  raw_members:
+  - AT
+  - HA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 146
+    raw: //ATHA = AT + HA
+  release_groups: []
+  translation_groups:
+  - AT
+  - HA
+  unknown_members: []
+  classifier_family: ''
+- code: ATLF
+  kind: combination
+  members:
+  - AT
+  - LF2
+  raw_members:
+  - AT
+  - LF2
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 147
+    raw: //ATLF = AT + LF2
+  release_groups: []
+  translation_groups:
+  - AT
+  - LF2
+  unknown_members: []
+  classifier_family: ''
+- code: ATLL
+  kind: combination
+  members:
+  - AT
+  - LOLI
+  raw_members:
+  - AT
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 148
+    raw: //ATLL = AT + LOLI
+  release_groups: []
+  translation_groups:
+  - AT
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: ATPP
+  kind: combination
+  members:
+  - AT
+  - POPG
+  raw_members:
+  - AT
+  - POPG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 149
+    raw: //ATPP = AT + POPG
+  release_groups: []
+  translation_groups:
+  - AT
+  - POPG
+  unknown_members: []
+  classifier_family: ''
+- code: BEFZ
+  kind: combination
+  members:
+  - BEAN
+  - FZSD
+  raw_members:
+  - BEAN
+  - FZSD
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 150
+    raw: //BEFZ = BEAN + FZSD
+  release_groups: []
+  translation_groups:
+  - BEAN
+  - FZSD
+  unknown_members: []
+  classifier_family: ''
+- code: BFL
+  kind: combination
+  members:
+  - BEAN
+  - FZSD
+  - LOLI
+  raw_members:
+  - BEAN
+  - FZSD
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 151
+    raw: //BFL  = BEAN + FZSD + LOLI
+  release_groups: []
+  translation_groups:
+  - BEAN
+  - FZSD
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: BNLL
+  kind: combination
+  members:
+  - BEAN
+  - LOLI
+  raw_members:
+  - BEAN
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 152
+    raw: //BNLL = BEAN + LOLI
+  release_groups: []
+  translation_groups:
+  - BEAN
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: CCKI
+  kind: combination
+  members:
+  - CCAT
+  - KISS
+  raw_members:
+  - CCAT
+  - KISS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 153
+    raw: //CCKI = CCAT + KISS
+  release_groups: []
+  translation_groups:
+  - CCAT
+  - KISS
+  unknown_members: []
+  classifier_family: ''
+- code: CKCA
+  kind: combination
+  members:
+  - CK
+  - CASO
+  - AL
+  raw_members:
+  - CK
+  - CASO
+  - AL
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 154
+    raw: //CKCA = CK + CASO + AL
+  release_groups: []
+  translation_groups:
+  - CK
+  - CASO
+  - AL
+  unknown_members: []
+  classifier_family: ''
+- code: CKCF
+  kind: combination
+  members:
+  - CK
+  - CASO
+  - FL
+  raw_members:
+  - CK
+  - CASO
+  - FL
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 155
+    raw: //CKCF = CK + CASO + FL
+  release_groups: []
+  translation_groups:
+  - CK
+  - CASO
+  - FL
+  unknown_members: []
+  classifier_family: ''
+- code: CKCH
+  kind: combination
+  members:
+  - CK
+  - CASO
+  - HKG
+  raw_members:
+  - CK
+  - CASO
+  - HKG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 156
+    raw: //CKCH = CK + CASO + HKG
+  release_groups: []
+  translation_groups:
+  - CK
+  - CASO
+  - HKG
+  unknown_members: []
+  classifier_family: ''
+- code: CKCS
+  kind: combination
+  members:
+  - CK
+  - CASO
+  raw_members:
+  - CK
+  - CASO
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 157
+    raw: //CKCS = CK + CASO
+  release_groups: []
+  translation_groups:
+  - CK
+  - CASO
+  unknown_members: []
+  classifier_family: ''
+- code: CKDG
+  kind: combination
+  members:
+  - CK
+  - DMG
+  raw_members:
+  - CK
+  - DMG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 158
+    raw: //CKDG = CK + DMG
+  release_groups: []
+  translation_groups:
+  - CK
+  - DMG
+  unknown_members: []
+  classifier_family: ''
+- code: CKFL
+  kind: combination
+  members:
+  - CK
+  - FL
+  raw_members:
+  - CK
+  - FL
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 159
+    raw: //CKFL = CK + FL
+  release_groups: []
+  translation_groups:
+  - CK
+  - FL
+  unknown_members: []
+  classifier_family: ''
+- code: CKJY
+  kind: combination
+  members:
+  - CK
+  - JY
+  raw_members:
+  - CK
+  - JY
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 160
+    raw: //CKJY = CK + JY
+  release_groups: []
+  translation_groups:
+  - CK
+  - JY
+  unknown_members: []
+  classifier_family: ''
+- code: CKMO
+  kind: combination
+  members:
+  - CK
+  - MOON
+  raw_members:
+  - CK
+  - MOON
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 161
+    raw: //CKMO = CK + MOON
+  release_groups: []
+  translation_groups:
+  - CK
+  - MOON
+  unknown_members: []
+  classifier_family: ''
+- code: CKSG
+  kind: combination
+  members:
+  - CK
+  - SGS
+  raw_members:
+  - CK
+  - SGS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 162
+    raw: //CKSG = CK + SGS
+  release_groups: []
+  translation_groups:
+  - CK
+  - SGS
+  unknown_members: []
+  classifier_family: ''
+- code: CKWL
+  kind: combination
+  members:
+  - CK
+  - WOLF
+  raw_members:
+  - CK
+  - WOLF
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 163
+    raw: //CKWL = CK + WOLF
+  release_groups: []
+  translation_groups:
+  - CK
+  - WOLF
+  unknown_members: []
+  classifier_family: ''
+- code: CSFL
+  kind: combination
+  members:
+  - CASO
+  - FL
+  raw_members:
+  - CASO
+  - FL
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 164
+    raw: //CSFL = CASO + FL
+  release_groups: []
+  translation_groups:
+  - CASO
+  - FL
+  unknown_members: []
+  classifier_family: ''
+- code: CSHK
+  kind: combination
+  members:
+  - CASO
+  - HKG
+  raw_members:
+  - CASO
+  - HKG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 165
+    raw: //CSHK = CASO + HKG
+  release_groups: []
+  translation_groups:
+  - CASO
+  - HKG
+  unknown_members: []
+  classifier_family: ''
+- code: CSIA
+  kind: combination
+  members:
+  - CASO
+  - IG
+  - ACG7
+  raw_members:
+  - CASO
+  - IG
+  - ACG7
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 166
+    raw: //CSIA = CASO + IG + ACG7
+  release_groups: []
+  translation_groups:
+  - CASO
+  - IG
+  - ACG7
+  unknown_members: []
+  classifier_family: ''
+- code: CSIG
+  kind: combination
+  members:
+  - CASO
+  - IG
+  raw_members:
+  - CASO
+  - IG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 167
+    raw: //CSIG = CASO + IG
+  release_groups: []
+  translation_groups:
+  - CASO
+  - IG
+  unknown_members: []
+  classifier_family: ''
+- code: CSKM
+  kind: combination
+  members:
+  - CASO
+  - KAMI
+  raw_members:
+  - CASO
+  - KAMI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 168
+    raw: //CSKM = CASO + KAMI
+  release_groups: []
+  translation_groups:
+  - CASO
+  - KAMI
+  unknown_members: []
+  classifier_family: ''
+- code: CSSG
+  kind: combination
+  members:
+  - CASO
+  - SGS
+  raw_members:
+  - CASO
+  - SGS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 169
+    raw: //CSSG = CASO + SGS
+  release_groups: []
+  translation_groups:
+  - CASO
+  - SGS
+  unknown_members: []
+  classifier_family: ''
+- code: CSX2
+  kind: combination
+  members:
+  - CASO
+  - X2
+  raw_members:
+  - CASO
+  - X2
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 170
+    raw: //CSX2 = CASO + X2
+  release_groups: []
+  translation_groups:
+  - CASO
+  - X2
+  unknown_members: []
+  classifier_family: ''
+- code: CSYA
+  kind: combination
+  members:
+  - CASO
+  - YA
+  raw_members:
+  - CASO
+  - YA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 171
+    raw: //CSYA = CASO + YA
+  release_groups: []
+  translation_groups:
+  - CASO
+  - YA
+  unknown_members: []
+  classifier_family: ''
+- code: DFL
+  kind: combination
+  members:
+  - DHR
+  - FZ
+  - LKDS
+  raw_members:
+  - DHR
+  - FZ
+  - LKDS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 172
+    raw: //DFL  = DHR + FZ + LKDS
+  release_groups: []
+  translation_groups:
+  - DHR
+  - FZ
+  - LKDS
+  unknown_members: []
+  classifier_family: ''
+- code: DHFM
+  kind: combination
+  members:
+  - DHR
+  - FREE
+  - MH
+  raw_members:
+  - DHR
+  - FREE
+  - MH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 173
+    raw: //DHFM = DHR + FREE + MH
+  release_groups: []
+  translation_groups:
+  - DHR
+  - FREE
+  - MH
+  unknown_members: []
+  classifier_family: ''
+- code: DHRA
+  kind: combination
+  members:
+  - DHR
+  - ANK
+  raw_members:
+  - DHR
+  - ANK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 174
+    raw: //DHRA = DHR + ANK
+  release_groups:
+  - ANK
+  translation_groups:
+  - DHR
+  unknown_members: []
+  classifier_family: ANK
+- code: DHRD
+  kind: combination
+  members:
+  - DHR
+  - DMG
+  raw_members:
+  - DHR
+  - DMG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 175
+    raw: //DHRD = DHR + DMG
+  release_groups: []
+  translation_groups:
+  - DHR
+  - DMG
+  unknown_members: []
+  classifier_family: ''
+- code: DHRK
+  kind: combination
+  members:
+  - DHR
+  - KNA
+  raw_members:
+  - DHR
+  - KNA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 176
+    raw: //DHRK = DHR + KNA
+  release_groups: []
+  translation_groups:
+  - DHR
+  - KNA
+  unknown_members: []
+  classifier_family: ''
+- code: DHRL
+  kind: combination
+  members:
+  - DHR
+  - LK
+  raw_members:
+  - DHR
+  - LK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 177
+    raw: //DHRL = DHR + LK
+  release_groups: []
+  translation_groups:
+  - DHR
+  - LK
+  unknown_members: []
+  classifier_family: ''
+- code: DHRM
+  kind: combination
+  members:
+  - DHR
+  - MH
+  raw_members:
+  - DHR
+  - MH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 178
+    raw: //DHRM = DHR + MH
+  release_groups: []
+  translation_groups:
+  - DHR
+  - MH
+  unknown_members: []
+  classifier_family: ''
+- code: DHRT
+  kind: combination
+  members:
+  - DHR
+  - AT
+  raw_members:
+  - DHR
+  - AT
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 179
+    raw: //DHRT = DHR + AT
+  release_groups: []
+  translation_groups:
+  - DHR
+  - AT
+  unknown_members: []
+  classifier_family: ''
+- code: DMAL
+  kind: combination
+  members:
+  - DHR
+  - MH
+  - AT
+  - LOLI
+  raw_members:
+  - DHR
+  - MH
+  - AT
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 180
+    raw: //DMAL = DHR + MH + AT + LOLI
+  release_groups: []
+  translation_groups:
+  - DHR
+  - MH
+  - AT
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: DMGJ
+  kind: combination
+  members:
+  - DMG
+  - JY
+  raw_members:
+  - DMG
+  - JY
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 184
+    raw: //DMGJ = DMG + JY
+  release_groups: []
+  translation_groups:
+  - DMG
+  - JY
+  unknown_members: []
+  classifier_family: ''
+- code: DMGL
+  kind: combination
+  members:
+  - DMG
+  - LK
+  raw_members:
+  - DMG
+  - LK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 185
+    raw: //DMGL = DMG + LK
+  release_groups: []
+  translation_groups:
+  - DMG
+  - LK
+  unknown_members: []
+  classifier_family: ''
+- code: DMGM
+  kind: combination
+  members:
+  - DMG
+  - MA
+  raw_members:
+  - DMG
+  - MA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 186
+    raw: //DMGM = DMG + MA
+  release_groups: []
+  translation_groups:
+  - DMG
+  - MA
+  unknown_members: []
+  classifier_family: ''
+- code: DML
+  kind: combination
+  members:
+  - DHR
+  - MH
+  - LOLI
+  raw_members:
+  - DHR
+  - MH
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 181
+    raw: //DML  = DHR + MH + LOLI
+  release_groups: []
+  translation_groups:
+  - DHR
+  - MH
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: DMLL
+  kind: combination
+  members:
+  - DMHY
+  - LOLI
+  raw_members:
+  - DMHY
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 187
+    raw: //DMLL = DMHY + LOLI
+  release_groups: []
+  translation_groups:
+  - DMHY
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: DNS
+  kind: combination
+  members:
+  - DHR
+  - NTR
+  - SC
+  raw_members:
+  - DHR
+  - NTR
+  - SC
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 182
+    raw: //DNS  = DHR + NTR + SC
+  release_groups: []
+  translation_groups:
+  - DHR
+  - NTR
+  - SC
+  unknown_members: []
+  classifier_family: ''
+- code: DNT
+  kind: combination
+  members:
+  - DHR
+  - NTR
+  - TSRJ
+  raw_members:
+  - DHR
+  - NTR
+  - TSRJ
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 183
+    raw: //DNT  = DHR + NTR + TSRJ
+  release_groups: []
+  translation_groups:
+  - DHR
+  - NTR
+  - TSRJ
+  unknown_members: []
+  classifier_family: ''
+- code: FLTG
+  kind: combination
+  members:
+  - FL
+  - TGTD
+  raw_members:
+  - FL
+  - TGTDS
+  corrections:
+  - from: TGTDS
+    to: TGTD
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 188
+    raw: //FLTG = FL + TGTDS
+  release_groups: []
+  translation_groups:
+  - FL
+  - TGTD
+  unknown_members: []
+  classifier_family: ''
+- code: HKGP
+  kind: combination
+  members:
+  - HKG
+  - POPG
+  raw_members:
+  - HKG
+  - POPG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 189
+    raw: //HKGP = HKG + POPG
+  release_groups: []
+  translation_groups:
+  - HKG
+  - POPG
+  unknown_members: []
+  classifier_family: ''
+- code: HKGX
+  kind: combination
+  members:
+  - HKG
+  - X2
+  raw_members:
+  - HKG
+  - X2
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 190
+    raw: //HKGX = HKG + X2
+  release_groups: []
+  translation_groups:
+  - HKG
+  - X2
+  unknown_members: []
+  classifier_family: ''
+- code: HYNH
+  kind: combination
+  members:
+  - HY
+  - TNH
+  raw_members:
+  - HY
+  - TNH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 191
+    raw: //HYNH = HY + TNH
+  release_groups: []
+  translation_groups:
+  - HY
+  - TNH
+  unknown_members: []
+  classifier_family: ''
+- code: JYHK
+  kind: combination
+  members:
+  - JY
+  - HKG
+  raw_members:
+  - JY
+  - HKG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 192
+    raw: //JYHK = JY + HKG
+  release_groups: []
+  translation_groups:
+  - JY
+  - HKG
+  unknown_members: []
+  classifier_family: ''
+- code: KFLL
+  kind: combination
+  members:
+  - KISS
+  - FZSD
+  - LOLI
+  raw_members:
+  - KISS
+  - FZSD
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 193
+    raw: //KFLL = KISS + FZSD + LOLI
+  release_groups: []
+  translation_groups:
+  - KISS
+  - FZSD
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: KFX
+  kind: combination
+  members:
+  - KISS
+  - FZSD
+  - XRIP
+  raw_members:
+  - KISS
+  - FZSD
+  - XRIP
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 194
+    raw: //KFX  = KISS + FZSD + XRIP
+  release_groups:
+  - XRIP
+  translation_groups:
+  - KISS
+  - FZSD
+  unknown_members: []
+  classifier_family: XRIP
+- code: KSFZ
+  kind: combination
+  members:
+  - KISS
+  - FZSD
+  raw_members:
+  - KISS
+  - FZSD
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 195
+    raw: //KSFZ = KISS + FZSD
+  release_groups: []
+  translation_groups:
+  - KISS
+  - FZSD
+  unknown_members: []
+  classifier_family: ''
+- code: MAFV
+  kind: combination
+  members:
+  - MH
+  - AT
+  - FZSD
+  - VCB
+  raw_members:
+  - MH
+  - AT
+  - FZSD
+  - VCB
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 196
+    raw: //MAFV = MH + AT + FZSD + VCB
+  release_groups:
+  - VCB
+  translation_groups:
+  - MH
+  - AT
+  - FZSD
+  unknown_members: []
+  classifier_family: VCB
+- code: MALB
+  kind: combination
+  members:
+  - MAHO
+  - LB
+  raw_members:
+  - MAHO
+  - LB
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 197
+    raw: //MALB = MAHO + LB
+  release_groups:
+  - LB
+  translation_groups:
+  - MAHO
+  unknown_members: []
+  classifier_family: LB
+- code: MFL
+  kind: combination
+  members:
+  - MH
+  - FZSD
+  - LOLI
+  raw_members:
+  - MH
+  - FZSD
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 198
+    raw: //MFL  = MH + FZSD + LOLI
+  release_groups: []
+  translation_groups:
+  - MH
+  - FZSD
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: MRTD
+  kind: combination
+  members:
+  - MSR
+  - TOD
+  raw_members:
+  - MSR
+  - TOD
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 199
+    raw: //MRTD = MSR + TOD
+  release_groups: []
+  translation_groups:
+  - MSR
+  - TOD
+  unknown_members: []
+  classifier_family: ''
+- code: NKLL
+  kind: combination
+  members:
+  - NK
+  - LOLI
+  raw_members:
+  - NK
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 200
+    raw: //NKLL = NK + LOLI
+  release_groups: []
+  translation_groups:
+  - NK
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: PUHK
+  kind: combination
+  members:
+  - PUS
+  - HK
+  raw_members:
+  - PUS
+  - HK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 201
+    raw: //PUHK = PUS + HK
+  release_groups: []
+  translation_groups:
+  - PUS
+  - HK
+  unknown_members: []
+  classifier_family: ''
+- code: SCSG
+  kind: combination
+  members:
+  - SCOL
+  - SGS
+  raw_members:
+  - SCOL
+  - SGS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 202
+    raw: //SCSG = SCOL + SGS
+  release_groups: []
+  translation_groups:
+  - SCOL
+  - SGS
+  unknown_members: []
+  classifier_family: ''
+- code: SGSW
+  kind: combination
+  members:
+  - SGS
+  - WLGO
+  raw_members:
+  - SGS
+  - WLGO
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 203
+    raw: //SGSW = SGS + WLGO
+  release_groups: []
+  translation_groups:
+  - SGS
+  - WLGO
+  unknown_members: []
+  classifier_family: ''
+- code: SKLL
+  kind: combination
+  members:
+  - SK
+  - LOLI
+  raw_members:
+  - SK
+  - LOLI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 204
+    raw: //SKLL = SK + LOLI
+  release_groups: []
+  translation_groups:
+  - SK
+  - LOLI
+  unknown_members: []
+  classifier_family: ''
+- code: STA
+  kind: combination
+  members:
+  - ST
+  - ACG7
+  raw_members:
+  - ST
+  - ACG7
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 206
+    raw: //STA  = ST + ACG7
+  release_groups: []
+  translation_groups:
+  - ST
+  - ACG7
+  unknown_members: []
+  classifier_family: ''
+- code: STFS
+  kind: combination
+  members:
+  - ST
+  - FS
+  raw_members:
+  - ST
+  - FS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 205
+    raw: //STFS = ST + FS
+  release_groups:
+  - FS
+  translation_groups:
+  - ST
+  unknown_members: []
+  classifier_family: FS
+- code: TSX
+  kind: combination
+  members:
+  - TSDM
+  - XRIP
+  raw_members:
+  - TSDM
+  - XRIP
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 207
+    raw: //TSX  = TSDM + XRIP
+  release_groups:
+  - XRIP
+  translation_groups:
+  - TSDM
+  unknown_members: []
+  classifier_family: XRIP
+- code: TXAI
+  kind: combination
+  members:
+  - TX
+  - AIR
+  raw_members:
+  - TX
+  - AIR
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 208
+    raw: //TXAI = TX + AIR
+  release_groups: []
+  translation_groups:
+  - TX
+  - AIR
+  unknown_members: []
+  classifier_family: ''
+- code: TXXA
+  kind: combination
+  members:
+  - TX
+  - X2
+  - AIR
+  raw_members:
+  - TX
+  - X2
+  - AIR
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 209
+    raw: //TXXA = TX + X2 + AIR
+  release_groups: []
+  translation_groups:
+  - TX
+  - X2
+  - AIR
+  unknown_members: []
+  classifier_family: ''
+- code: UHAA
+  kind: combination
+  members:
+  - UHAW
+  - ANK
+  raw_members:
+  - UHAW
+  - ANK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 210
+    raw: //UHAA = UHAW + ANK
+  release_groups:
+  - ANK
+  translation_groups:
+  - UHAW
+  unknown_members: []
+  classifier_family: ANK
+- code: VA
+  kind: combination
+  members:
+  - VCB
+  - ANK
+  raw_members:
+  - VCB
+  - ANK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 211
+    raw: //VA   = VCB + ANK
+  release_groups:
+  - VCB
+  - ANK
+  translation_groups: []
+  unknown_members: []
+  classifier_family: VCB
+- code: VAF
+  kind: combination
+  members:
+  - VCB
+  - ANK
+  - FREE
+  raw_members:
+  - VCB
+  - ANK
+  - FREE
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 212
+    raw: //VAF  = VCB + ANK  + FREE
+  release_groups:
+  - VCB
+  - ANK
+  translation_groups:
+  - FREE
+  unknown_members: []
+  classifier_family: VCB
+- code: VAL
+  kind: combination
+  members:
+  - VCB
+  - ANK
+  - LYUN
+  raw_members:
+  - VCB
+  - ANK
+  - LYUN
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 213
+    raw: //VAL  = VCB + ANK  + LYUN
+  release_groups:
+  - VCB
+  - ANK
+  translation_groups:
+  - LYUN
+  unknown_members: []
+  classifier_family: VCB
+- code: VBD
+  kind: combination
+  members:
+  - VCB
+  - BY
+  - DMG
+  raw_members:
+  - VCB
+  - BY
+  - DMG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 214
+    raw: //VBD  = VCB + BY + DMG
+  release_groups:
+  - VCB
+  translation_groups:
+  - BY
+  - DMG
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBA
+  kind: combination
+  members:
+  - VCB
+  - NYA
+  raw_members:
+  - VCB
+  - NYA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 219
+    raw: //VCBA = VCB + NYA
+  release_groups:
+  - VCB
+  translation_groups:
+  - NYA
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBB
+  kind: combination
+  members:
+  - VCB
+  - BY
+  raw_members:
+  - VCB
+  - BY
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 220
+    raw: //VCBB = VCB + BY
+  release_groups:
+  - VCB
+  translation_groups:
+  - BY
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBC
+  kind: combination
+  members:
+  - VCB
+  - TUC
+  raw_members:
+  - VCB
+  - TUC
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 221
+    raw: //VCBC = VCB + TUC
+  release_groups:
+  - VCB
+  translation_groups:
+  - TUC
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBD
+  kind: combination
+  members:
+  - VCB
+  - DMG
+  raw_members:
+  - VCB
+  - DMG
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 222
+    raw: //VCBD = VCB + DMG
+  release_groups:
+  - VCB
+  translation_groups:
+  - DMG
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBE
+  kind: combination
+  members:
+  - VCB
+  - EP
+  raw_members:
+  - VCP
+  - EP
+  corrections:
+  - from: VCP
+    to: VCB
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 223
+    raw: //VCBE = VCP + EP
+  release_groups:
+  - VCB
+  - EP
+  translation_groups: []
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBF
+  kind: combination
+  members:
+  - VCB
+  - FREE
+  raw_members:
+  - VCB
+  - FREE
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 224
+    raw: //VCBF = VCB + FREE
+  release_groups:
+  - VCB
+  translation_groups:
+  - FREE
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBJ
+  kind: combination
+  members:
+  - VCB
+  - JY
+  raw_members:
+  - VCB
+  - JY
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 225
+    raw: //VCBJ = VCB + JY
+  release_groups:
+  - VCB
+  translation_groups:
+  - JY
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBK
+  kind: combination
+  members:
+  - VCB
+  - KAMI
+  raw_members:
+  - VCB
+  - KAMI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 226
+    raw: //VCBK = VCB + KAMI
+  release_groups:
+  - VCB
+  translation_groups:
+  - KAMI
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBL
+  kind: combination
+  members:
+  - VCB
+  - LYUN
+  raw_members:
+  - VCB
+  - LYUN
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 227
+    raw: //VCBL = VCB + LYUN
+  release_groups:
+  - VCB
+  translation_groups:
+  - LYUN
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBM
+  kind: combination
+  members:
+  - VCB
+  - NK
+  raw_members:
+  - VCB
+  - NK
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 228
+    raw: //VCBM = VCB + NK
+  release_groups:
+  - VCB
+  translation_groups:
+  - NK
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBN
+  kind: combination
+  members:
+  - VCB
+  - NQ
+  raw_members:
+  - VCB
+  - NQ
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 229
+    raw: //VCBN = VCB + NQ
+  release_groups:
+  - VCB
+  translation_groups:
+  - NQ
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBO
+  kind: combination
+  members:
+  - VCB
+  - MA
+  raw_members:
+  - VCB
+  - MA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 230
+    raw: //VCBO = VCB + MA
+  release_groups:
+  - VCB
+  translation_groups:
+  - MA
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBP
+  kind: combination
+  members:
+  - VCB
+  - PHI
+  raw_members:
+  - VCB
+  - PHI
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 231
+    raw: //VCBP = VCB + PHI
+  release_groups:
+  - VCB
+  - PHI
+  translation_groups: []
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBS
+  kind: combination
+  members:
+  - VCB
+  - PS
+  raw_members:
+  - VCB
+  - PS
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 232
+    raw: //VCBS = VCB + PS
+  release_groups:
+  - VCB
+  translation_groups:
+  - PS
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBT
+  kind: combination
+  members:
+  - VCB
+  - AT
+  raw_members:
+  - VCB
+  - AT
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 233
+    raw: //VCBT = VCB + AT
+  release_groups:
+  - VCB
+  translation_groups:
+  - AT
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBU
+  kind: combination
+  members:
+  - VCB
+  - UHAW
+  raw_members:
+  - VCB
+  - UHAW
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 234
+    raw: //VCBU = VCB + UHAW
+  release_groups:
+  - VCB
+  translation_groups:
+  - UHAW
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBV
+  kind: combination
+  members:
+  - VCB
+  - YYDM
+  raw_members:
+  - VCB
+  - YYDM
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 235
+    raw: //VCBV = VCB + YYDM
+  release_groups:
+  - VCB
+  translation_groups:
+  - YYDM
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBX
+  kind: combination
+  members:
+  - VCB
+  - TX
+  raw_members:
+  - VCB
+  - TX
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 236
+    raw: //VCBX = VCB + TX
+  release_groups:
+  - VCB
+  translation_groups:
+  - TX
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBY
+  kind: combination
+  members:
+  - VCB
+  - YL
+  raw_members:
+  - VCB
+  - YL
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 237
+    raw: //VCBY = VCB + YL
+  release_groups:
+  - VCB
+  translation_groups:
+  - YL
+  unknown_members: []
+  classifier_family: VCB
+- code: VCBZ
+  kind: combination
+  members:
+  - VCB
+  - MMZY
+  raw_members:
+  - VCB
+  - MMZY
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 238
+    raw: //VCBZ = VCB + MMZY
+  release_groups:
+  - VCB
+  translation_groups:
+  - MMZY
+  unknown_members: []
+  classifier_family: VCB
+- code: VCDM
+  kind: combination
+  members:
+  - VCB
+  - DHR
+  - MH
+  raw_members:
+  - VCB
+  - DHR
+  - MH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 239
+    raw: //VCDM = VCB + DHR + MH
+  release_groups:
+  - VCB
+  translation_groups:
+  - DHR
+  - MH
+  unknown_members: []
+  classifier_family: VCB
+- code: VCUR
+  kind: combination
+  members:
+  - VCB
+  - UHAW
+  - RATH
+  raw_members:
+  - VCB
+  - UHAW
+  - RATH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 240
+    raw: //VCUR = VCB + UHAW + RATH
+  release_groups:
+  - VCB
+  translation_groups:
+  - UHAW
+  - RATH
+  unknown_members: []
+  classifier_family: VCB
+- code: VKM
+  kind: combination
+  members:
+  - VCB
+  - KAMI
+  - MA
+  raw_members:
+  - VCB
+  - KAMI
+  - MA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 215
+    raw: //VKM  = VCB + KAMI + MA
+  release_groups:
+  - VCB
+  translation_groups:
+  - KAMI
+  - MA
+  unknown_members: []
+  classifier_family: VCB
+- code: VMK
+  kind: combination
+  members:
+  - VCB
+  - MKH
+  - KNA
+  raw_members:
+  - VCB
+  - MKH
+  - KNA
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 216
+    raw: //VMK  = VCB + MKH + KNA
+  release_groups:
+  - VCB
+  translation_groups:
+  - MKH
+  - KNA
+  unknown_members: []
+  classifier_family: VCB
+- code: VPM
+  kind: combination
+  members:
+  - VCB
+  - PHI
+  - MKH
+  raw_members:
+  - VCB
+  - PHI
+  - MKH
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 217
+    raw: //VPM  = VCB + PHI  + MKH
+  release_groups:
+  - VCB
+  - PHI
+  translation_groups:
+  - MKH
+  unknown_members: []
+  classifier_family: VCB
+- code: VTL
+  kind: combination
+  members:
+  - VCB
+  - TSDM
+  - LYUN
+  raw_members:
+  - VCB
+  - TSDM
+  - LYUN
+  corrections: []
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 218
+    raw: //VTL  = VCB + TSDM + LYUN
+  release_groups:
+  - VCB
+  translation_groups:
+  - TSDM
+  - LYUN
+  unknown_members: []
+  classifier_family: VCB
+catalog_only_groups:
+- code: ACT
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: AME
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: CAFL
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: CKHK
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: DMZJ
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: EMD
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: FN
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: HQR
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: KUNO
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: LV1
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: LY
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: PD
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: QTS
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: SEFO
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: SLOW
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+- code: ZERO
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
+review_required:
+- code: MM
+  reason: Note.h contains multiple definitions; names and aliases were retained
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 65
+    raw: //MM   - 咪梦动漫组
+  - file: data/source/Animation/Note.h
+    line: 101
+    raw: //MM   - 漫迷字幕组
+- code: TUC
+  reason: Note.h contains multiple definitions; names and aliases were retained
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 38
+    raw: //TUC  - TUcaptions字幕组
+  - file: data/source/Animation/Note.h
+    line: 75
+    raw: //TUC  - 台湾团结字幕组   //TUcaptions
+- code: FLTG
+  reason: undefined historic member spelling was normalized
+  corrections:
+  - from: TGTDS
+    to: TGTD
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 188
+    raw: //FLTG = FL + TGTDS
+- code: VCBE
+  reason: undefined historic member spelling was normalized
+  corrections:
+  - from: VCP
+    to: VCB
+  sources:
+  - file: data/source/Animation/Note.h
+    line: 223
+    raw: //VCBE = VCP + EP
+press_group_codes:
+- ACG7
+- ACT
+- AI
+- AIR
+- AJZ
+- AJZF
+- AL
+- ALK
+- AME
+- ANK
+- ANKA
+- ANKE
+- ANKK
+- ANKL
+- ANKM
+- AS
+- AT
+- ATHA
+- ATLF
+- ATLL
+- ATPP
+- BEAN
+- BEAT
+- BEFZ
+- BFL
+- BL
+- BNLL
+- BY
+- CAFL
+- CASO
+- CC
+- CCAT
+- CCKI
+- CENT
+- CFS
+- CK
+- CKCA
+- CKCF
+- CKCH
+- CKCS
+- CKDG
+- CKFL
+- CKHK
+- CKJY
+- CKMO
+- CKSG
+- CKWL
+- CSFL
+- CSHK
+- CSIA
+- CSIG
+- CSKM
+- CSSG
+- CSX2
+- CSYA
+- CX
+- DBD
+- DFL
+- DHFM
+- DHR
+- DHRA
+- DHRD
+- DHRK
+- DHRL
+- DHRM
+- DHRT
+- DMAL
+- DMG
+- DMGJ
+- DMGL
+- DMGM
+- DMHY
+- DML
+- DMLL
+- DMZJ
+- DNS
+- DNT
+- DYMY
+- EMD
+- EP
+- FL
+- FLTG
+- FN
+- FREE
+- FS
+- FSKY
+- FZ
+- FZSD
+- HA
+- HK
+- HKAC
+- HKG
+- HKGP
+- HKGX
+- HORR
+- HQR
+- HSUB
+- HY
+- HYNH
+- IG
+- JSUM
+- JY
+- JYHK
+- KAGU
+- KAMI
+- KFLL
+- KFX
+- KH
+- KISS
+- KNA
+- KOEI
+- KRS
+- KSFZ
+- KUNO
+- KWK
+- LB
+- LEO
+- LF2
+- LILI
+- LK
+- LKDS
+- LOLI
+- LS
+- LV1
+- LXG
+- LY
+- LYR
+- LYUN
+- MA
+- MAFV
+- MAHO
+- MALB
+- MFL
+- MGSQ
+- MH
+- MKH
+- MM
+- MMCH
+- MMZY
+- MOON
+- MRTD
+- MSR
+- MT
+- MW
+- MZ
+- NK
+- NKLL
+- NQ
+- NTR
+- NYA
+- PD
+- PHI
+- POPG
+- PS
+- PUHK
+- PUS
+- QTS
+- QY
+- RATH
+- RF
+- RH
+- SC
+- SCOL
+- SCSG
+- SEFO
+- SFEO
+- SGS
+- SGSW
+- SK
+- SKLL
+- SKT
+- SLED
+- SLOW
+- SNOW
+- SOSG
+- ST
+- STA
+- STFS
+- SY
+- TD
+- TGTD
+- TNDR
+- TNH
+- TOD
+- TSDM
+- TSRJ
+- TSX
+- TUC
+- TUZI
+- TX
+- TXAI
+- TXXA
+- U2
+- UCC
+- UHAA
+- UHAW
+- VA
+- VAF
+- VAL
+- VBD
+- VCB
+- VCBA
+- VCBB
+- VCBC
+- VCBD
+- VCBE
+- VCBF
+- VCBJ
+- VCBK
+- VCBL
+- VCBM
+- VCBN
+- VCBO
+- VCBP
+- VCBS
+- VCBT
+- VCBU
+- VCBV
+- VCBX
+- VCBY
+- VCBZ
+- VCDM
+- VCUR
+- VKM
+- VMK
+- VPM
+- VTL
+- WLGO
+- WM
+- WOLF
+- WY
+- X2
+- XRIP
+- XXXX
+- YA
+- YG
+- YL
+- YS
+- YUI7
+- YYDM
+- ZAZA
+- ZERO
+statistics:
+  release_group_count: 31
+  translation_group_count: 94
+  combination_count: 101
+  catalog_only_group_count: 16
+  press_group_code_count: 242
+  observed_catalog_code_count: 143

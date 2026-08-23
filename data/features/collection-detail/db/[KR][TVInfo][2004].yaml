@@ -1,0 +1,38 @@
+- attributes:
+  - type: date
+    data:
+      start: '20040119'
+      end: '20040309'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\新娘18岁
+      collectioned:
+      - press_format: 384p
+        press_group: '----'
+        press_path: 新娘18岁_384p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 新娘18岁
+- attributes:
+  - type: date
+    data:
+      start: '20040728'
+      end: '20040923'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\嫂嫂19岁
+      collectioned:
+      - press_format: 480p
+        press_group: '----'
+        press_path: 嫂嫂19岁_480p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 嫂嫂19岁

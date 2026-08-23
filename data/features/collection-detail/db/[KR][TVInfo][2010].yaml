@@ -1,0 +1,60 @@
+- attributes:
+  - type: date
+    data:
+      start: '20100104'
+      end: '20100316'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\摘星星给我
+      collectioned:
+      - press_format: 360p
+        press_group: '----'
+        press_path: 摘星星给我_360p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 摘星星给我
+- attributes:
+  - type: date
+    data:
+      start: '20100331'
+      end: '20100520'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\个人取向
+      collectioned:
+      - press_format: 576p
+        press_group: '----'
+        press_path: 个人取向_576p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 个人取向
+- attributes:
+  - type: date
+    data:
+      start: '20101113'
+      end: '20110122'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\秘密花园
+      collectioned:
+      - press_format: 432p
+        press_group: '----'
+        press_path: 秘密花园_432p
+      - press_format: 720p 国语
+        press_group: '----'
+        press_path: 秘密花园_720p 国语
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 秘密花园

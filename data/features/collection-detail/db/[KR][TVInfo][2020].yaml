@@ -1,0 +1,288 @@
+- attributes:
+  - type: date
+    data:
+      start: '20200106'
+      end: '20200225'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫医生金师傅
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫医生金师傅2_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫医生金师傅2
+- attributes:
+  - type: date
+    data:
+      start: '20200129'
+      end: '20200319'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\森林
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 森林_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 森林
+- attributes:
+  - type: date
+    data:
+      start: '20200131'
+      end: '20200321'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\梨泰院Class
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 梨泰院Class_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 梨泰院Class
+- attributes:
+  - type: date
+    data:
+      start: '20200312'
+      end: '20200528'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\机智的医生生活
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 机智的医生生活_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 机智的医生生活_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 机智的医生生活
+- attributes:
+  - type: date
+    data:
+      start: '20200318'
+      end: '20200513'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\那个男人的记忆法
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 那个男人的记忆法_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 那个男人的记忆法
+- attributes:
+  - type: date
+    data:
+      start: '20200323'
+      end: '20200428'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\365：逆转命运的1年
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 365：逆转命运的1年_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 365：逆转命运的1年
+- attributes:
+  - type: date
+    data:
+      start: '20200323'
+      end: '20200428'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\半之半
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 半之半_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 半之半
+- attributes:
+  - type: date
+    data:
+      start: '20200328'
+      end: '20200913'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\结过一次了
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 结过一次了_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 结过一次了
+- attributes:
+  - type: date
+    data:
+      start: '20200417'
+      end: '20200612'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\国王：永远的君主
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 国王：永远的君主_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 国王：永远的君主
+- attributes:
+  - type: date
+    data:
+      start: '20200620'
+      end: '20200809'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\虽然是精神病但没关系
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 虽然是精神病但没关系_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 虽然是精神病但没关系
+- attributes:
+  - type: date
+    data:
+      start: '20200701'
+      end: '20200820'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\出师表
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 出师表_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 出师表
+- attributes:
+  - type: date
+    data:
+      start: '20200831'
+      end: '20201020'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\你喜欢勃拉姆斯吗
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 你喜欢勃拉姆斯吗_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 你喜欢勃拉姆斯吗
+- attributes:
+  - type: date
+    data:
+      start: '20200921'
+      end: '20201027'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\僵尸侦探
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 僵尸侦探_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 僵尸侦探
+- attributes:
+  - type: date
+    data:
+      start: '20201117'
+      end: '20210112'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Live On
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Live On_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Live On
+- attributes:
+  - type: date
+    data:
+      start: '20201216'
+      end: '20210204'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\奔向爱情
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 奔向爱情_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 奔向爱情

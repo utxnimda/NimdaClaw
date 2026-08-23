@@ -1,3 +1,27 @@
+function ensureFeatureRegistry() {
+  if (typeof window === "undefined") return null;
+  var registry = window.JpTvBrowseFeatureRegistry || {};
+  if (!Array.isArray(registry.features)) registry.features = [];
+  registry.register = function (feature) {
+    if (!feature || !feature.id) return;
+    var features = Array.isArray(this.features) ? this.features : (this.features = []);
+    for (var i = 0; i < features.length; i++) {
+      if (features[i] && features[i].id === feature.id) {
+        if (features[i] !== feature && typeof features[i].dispose === "function") {
+          try {
+            features[i].dispose();
+          } catch (_e) {}
+        }
+        features[i] = feature;
+        return;
+      }
+    }
+    features.push(feature);
+  };
+  window.JpTvBrowseFeatureRegistry = registry;
+  return registry;
+}
+
 export default {
   name: "NimdaApp",
   data() {
@@ -6,14 +30,16 @@ export default {
     };
   },
   mounted() {
+    ensureFeatureRegistry();
     this.mountLegacyShell();
   },
   methods: {
     async mountLegacyShell() {
       try {
-        await import("/features/collection-detail/index.js?v=115");
-        await import("/features/collection-info/index.js?v=115");
-        await import("./legacy/shell.js?v=115");
+        await import("/features/collection-detail/index.js?v=126");
+        await import("/features/collection-info/index.js?v=126");
+        await import("/features/media-directory-organizer/index.js?v=126");
+        await import("./legacy/shell.js?v=126");
       } catch (error) {
         this.legacyError = error && error.message ? error.message : String(error);
       }
@@ -62,6 +88,14 @@ export default {
         <button type="button" class="app-tab" id="tab-collection-info" data-tab="collection-info">
           收集情况
         </button>
+        <button
+          type="button"
+          class="app-tab"
+          id="tab-media-directory-organizer"
+          data-tab="media-directory-organizer"
+        >
+          目录整理
+        </button>
       </nav>
 
       <main id="collection-detail-view" class="feature-view">
@@ -82,11 +116,7 @@ export default {
                 <input id="cfg-history-root" type="text" readonly />
               </label>
               <label>
-                索引媒体根目录
-                <input id="cfg-link-media-root" type="text" readonly />
-              </label>
-              <label>
-                索引输出目录
+                索引输出目录（全部分类）
                 <input id="cfg-link-shortcut-root" type="text" readonly />
               </label>
               <label>
@@ -196,6 +226,7 @@ export default {
       </main>
 
       <main id="collection-info-view" class="collection-info-view collection-records-view" hidden></main>
+      <main id="media-directory-organizer-view" class="media-directory-organizer-view" hidden></main>
       <p v-if="legacyError" class="status err">Vue 挂载旧功能失败：{{ legacyError }}</p>
       <footer class="foot muted" aria-hidden="true">&nbsp;</footer>
     </div>

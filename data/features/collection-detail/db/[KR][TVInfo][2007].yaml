@@ -1,0 +1,19 @@
+- attributes:
+  - type: date
+    data:
+      start: '20070201'
+      end: '20070401'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\为爱疯狂
+      collectioned:
+      - press_format: 620p
+        press_group: '----'
+        press_path: 为爱疯狂_620p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 为爱疯狂

@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any
 
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route, Router
@@ -42,15 +42,14 @@ from collection_detail.save import (
     history_catalog_root,
 )
 from collection_detail.link_index import (
-    apply_link_index_associations_from_ui_body,
     apply_link_index_target_fixes_from_ui_body,
     collection_link_index_config_json,
     collection_link_index_payload,
+    generate_link_index_files_from_ui_body,
     generate_link_index_from_ui_body,
-    link_index_association_payload,
+    open_collection_press_path_from_ui_body,
     open_link_index_path_from_ui_body,
     preview_link_index_from_ui_body,
-    reject_link_index_association_from_ui_body,
     resource_libraries_node_payload,
     resolve_link_index_path_from_ui_body,
     resource_libraries_cached_payload,
@@ -58,7 +57,19 @@ from collection_detail.link_index import (
     save_resource_library_roots_from_ui_body,
     save_link_index_from_ui_body,
     scan_resource_libraries_payload,
+    validate_link_index_from_ui_body,
 )
+from media_directory_organizer.web import (
+    apply_organizer_landing_from_ui_body,
+    apply_organizer_landing_shortcuts_from_ui_body,
+    apply_organizer_from_ui_body,
+    organizer_config_payload,
+    preview_organizer_landing_from_ui_body,
+    preview_organizer_landing_shortcuts_from_ui_body,
+    preview_organizer_from_ui_body,
+    suggest_organizer_landing_from_ui_body,
+)
+from work_catalog_yaml.media_groups import media_group_registry_api_payload
 from work_catalog_yaml.jp_tv.browse_settings import (
     JpTvBrowseSettings,
     browse_config_candidates_hmsg,
@@ -66,6 +77,10 @@ from work_catalog_yaml.jp_tv.browse_settings import (
     jp_tv_browse_app_config_json,
     jp_tv_browse_merged_enum_bundle_for_api,
     jp_tv_yaml_catalog_relpath,
+)
+from work_catalog_yaml.jp_tv.browse_security import (
+    is_loopback_hostname,
+    mutation_source_is_allowed,
 )
 from work_catalog_yaml.jp_tv.validate import load_jp_tv_entries_from_yaml
 from work_catalog_yaml.yaml_io import load_yaml_string
@@ -198,6 +213,44 @@ class _BrowseNoCacheStaticMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class _BrowseLocalApiSecurityMiddleware(BaseHTTPMiddleware):
+    """Keep the local filesystem API local and reject cross-site mutations."""
+
+    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        allow_remote = os.environ.get("JP_TV_BROWSE_ALLOW_REMOTE", "").strip() == "1"
+        if not allow_remote and not is_loopback_hostname(request.url.hostname):
+            return JSONResponse(
+                {"ok": False, "error": "仅允许通过 localhost / 环回地址访问本地应用"},
+                status_code=403,
+            )
+
+        is_api_mutation = request.url.path.startswith("/api") and request.method.upper() not in {
+            "GET",
+            "HEAD",
+            "OPTIONS",
+        }
+        if is_api_mutation:
+            fetch_site = request.headers.get("sec-fetch-site", "").strip().casefold()
+            if fetch_site == "cross-site":
+                return JSONResponse(
+                    {"ok": False, "error": "已拒绝跨站 API 请求"},
+                    status_code=403,
+                )
+            origin = request.headers.get("origin", "").strip()
+            if not mutation_source_is_allowed(
+                fetch_site=fetch_site,
+                origin=origin,
+                request_scheme=request.url.scheme,
+                request_host=request.headers.get("host", ""),
+            ):
+                return JSONResponse(
+                    {"ok": False, "error": "API 请求来源与当前应用不一致"},
+                    status_code=403,
+                )
+
+        return await call_next(request)
+
+
 async def _get_config_api(_: Request) -> JSONResponse:
     try:
         st, cfg_path = get_resolved_browse_settings()
@@ -228,6 +281,15 @@ async def _get_config_api(_: Request) -> JSONResponse:
             status_code=500,
         )
     eo_json, el_json, esl_json = jp_tv_browse_merged_enum_bundle_for_api(st)
+    group_registry = media_group_registry_api_payload()
+    registered_codes = [str(code) for code in group_registry.get("press_group_codes", [])]
+    existing_group_codes = list(eo_json.get("press_group") or [])
+    eo_json["press_group"] = list(dict.fromkeys([*existing_group_codes, *registered_codes]))
+    group_labels = dict(el_json.get("press_group") or {})
+    for option in group_registry.get("options", []):
+        if isinstance(option, dict) and option.get("code"):
+            group_labels[str(option["code"])] = str(option.get("label") or option["code"])
+    el_json["press_group"] = group_labels
     cat_rels = [k for k, _ in _canonical_catalog_yaml_entries(st)]
     nl = len(cat_rels)
     hist_root_s = ""
@@ -255,6 +317,7 @@ async def _get_config_api(_: Request) -> JSONResponse:
             "enum_options": eo_json,
             "enum_labels": el_json,
             "enum_section_labels": esl_json,
+            "group_registry": group_registry,
             "app": jp_tv_browse_app_config_json(st),
         }
     )
@@ -649,6 +712,50 @@ async def _post_collection_detail_link_index_generate_api(request: Request) -> J
         return JSONResponse({"ok": False, "error": f"write shortcut failed: {e}"}, status_code=500)
 
 
+async def _post_collection_detail_link_index_generate_files_api(request: Request) -> JSONResponse:
+    try:
+        body_any = await request.json()
+        if not isinstance(body_any, dict):
+            raise TypeError()
+        body = body_any
+    except Exception:
+        return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
+    try:
+        st, _cfg_used = get_resolved_browse_settings()
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+    try:
+        return JSONResponse({"ok": True, **generate_link_index_files_from_ui_body(body, settings=st)})
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+    except PermissionError as e:
+        return JSONResponse({"ok": False, "error": f"generate link index files denied: {e}"}, status_code=403)
+    except OSError as e:
+        return JSONResponse({"ok": False, "error": f"generate link index files failed: {e}"}, status_code=500)
+
+
+async def _post_collection_detail_link_index_validate_api(request: Request) -> JSONResponse:
+    try:
+        body_any = await request.json()
+        if not isinstance(body_any, dict):
+            raise TypeError()
+        body = body_any
+    except Exception:
+        return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
+    try:
+        st, _cfg_used = get_resolved_browse_settings()
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+    try:
+        return JSONResponse({"ok": True, **validate_link_index_from_ui_body(body, settings=st)})
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+    except PermissionError as e:
+        return JSONResponse({"ok": False, "error": f"validate link index denied: {e}"}, status_code=403)
+    except OSError as e:
+        return JSONResponse({"ok": False, "error": f"validate link index failed: {e}"}, status_code=500)
+
+
 async def _post_collection_detail_link_index_open_api(request: Request) -> JSONResponse:
     try:
         body_any = await request.json()
@@ -659,6 +766,24 @@ async def _post_collection_detail_link_index_open_api(request: Request) -> JSONR
         return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
     try:
         return JSONResponse({"ok": True, **open_link_index_path_from_ui_body(body)})
+    except ValueError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+    except FileNotFoundError as e:
+        return JSONResponse({"ok": False, "error": f"路径不存在：{e}"}, status_code=404)
+    except OSError as e:
+        return JSONResponse({"ok": False, "error": f"open path failed: {e}"}, status_code=500)
+
+
+async def _post_collection_detail_press_open_api(request: Request) -> JSONResponse:
+    try:
+        body_any = await request.json()
+        if not isinstance(body_any, dict):
+            raise TypeError()
+        body = body_any
+    except Exception:
+        return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
+    try:
+        return JSONResponse({"ok": True, **open_collection_press_path_from_ui_body(body)})
     except ValueError as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
     except FileNotFoundError as e:
@@ -683,67 +808,6 @@ async def _post_collection_detail_link_index_resolve_api(request: Request) -> JS
         return JSONResponse({"ok": False, "error": f"路径不存在：{e}"}, status_code=404)
     except OSError as e:
         return JSONResponse({"ok": False, "error": f"resolve link failed: {e}"}, status_code=500)
-
-
-async def _get_collection_detail_link_index_associations_api(request: Request) -> JSONResponse:
-    try:
-        st, _cfg_used = get_resolved_browse_settings()
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-    try:
-        resolve_targets = str(request.query_params.get("resolve_targets") or "").lower() in {"1", "true", "yes"}
-        refresh_links = str(request.query_params.get("refresh_links") or "").lower() in {"1", "true", "yes"}
-        return JSONResponse(
-            link_index_association_payload(st, resolve_targets=resolve_targets, refresh_links=refresh_links)
-        )
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
-    except OSError as e:
-        return JSONResponse({"ok": False, "error": f"read link associations failed: {e}"}, status_code=500)
-
-
-async def _post_collection_detail_link_index_associations_apply_api(request: Request) -> JSONResponse:
-    try:
-        body_any = await request.json()
-        if not isinstance(body_any, dict):
-            raise TypeError()
-        body = body_any
-    except Exception:
-        return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
-    try:
-        st, _cfg_used = get_resolved_browse_settings()
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-    try:
-        return JSONResponse({"ok": True, **apply_link_index_associations_from_ui_body(body, settings=st)})
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
-    except PermissionError as e:
-        return JSONResponse({"ok": False, "error": f"write link associations denied: {e}"}, status_code=403)
-    except OSError as e:
-        return JSONResponse({"ok": False, "error": f"write link associations failed: {e}"}, status_code=500)
-
-
-async def _post_collection_detail_link_index_associations_reject_api(request: Request) -> JSONResponse:
-    try:
-        body_any = await request.json()
-        if not isinstance(body_any, dict):
-            raise TypeError()
-        body = body_any
-    except Exception:
-        return JSONResponse({"ok": False, "error": "request body must be a JSON object"}, status_code=400)
-    try:
-        st, _cfg_used = get_resolved_browse_settings()
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
-    try:
-        return JSONResponse({"ok": True, **reject_link_index_association_from_ui_body(body, settings=st)})
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
-    except PermissionError as e:
-        return JSONResponse({"ok": False, "error": f"write link association reject denied: {e}"}, status_code=403)
-    except OSError as e:
-        return JSONResponse({"ok": False, "error": f"write link association reject failed: {e}"}, status_code=500)
 
 
 async def _post_collection_detail_link_index_fixes_apply_api(request: Request) -> JSONResponse:
@@ -828,10 +892,128 @@ async def _get_collection_detail_resource_libraries_search_api(request: Request)
         return JSONResponse({"ok": False, "error": f"search resource libraries failed: {e}"}, status_code=500)
 
 
+async def _get_media_directory_organizer_config_api(_: Request) -> JSONResponse:
+    try:
+        return JSONResponse(organizer_config_payload())
+    except (ValueError, OSError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+async def _organizer_json_body(request: Request) -> dict[str, Any]:
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise TypeError("请求体须为 JSON 对象")
+    return body
+
+
+async def _post_media_directory_organizer_preview_api(request: Request) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(preview_organizer_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"目录预览失败：{exc}"}, status_code=500)
+
+
+async def _post_media_directory_organizer_apply_api(request: Request) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(apply_organizer_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except PermissionError as exc:
+        return JSONResponse({"ok": False, "error": f"目录整理无权限：{exc}"}, status_code=403)
+    except FileExistsError as exc:
+        return JSONResponse({"ok": False, "error": f"目标文件冲突：{exc}"}, status_code=409)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"目录整理执行失败：{exc}"}, status_code=500)
+
+
+async def _post_media_directory_organizer_landing_preview_api(request: Request) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(preview_organizer_landing_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"完整落地预览失败：{exc}"}, status_code=500)
+
+
+async def _post_media_directory_organizer_landing_suggest_api(request: Request) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        # Bangumi uses a synchronous stdlib HTTPS client.  Keep it off the
+        # event loop so a provider timeout cannot freeze the local UI/API.
+        payload = await run_in_threadpool(suggest_organizer_landing_from_ui_body, body)
+        return JSONResponse(payload)
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"智能识别失败：{exc}"}, status_code=500)
+
+
+async def _post_media_directory_organizer_landing_apply_api(request: Request) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(apply_organizer_landing_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except PermissionError as exc:
+        return JSONResponse({"ok": False, "error": f"完整落地无权限：{exc}"}, status_code=403)
+    except FileExistsError as exc:
+        return JSONResponse({"ok": False, "error": f"完整落地目标冲突：{exc}"}, status_code=409)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"完整落地失败：{exc}"}, status_code=500)
+
+
+async def _post_media_directory_organizer_landing_shortcuts_preview_api(
+    request: Request,
+) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(preview_organizer_landing_shortcuts_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except OSError as exc:
+        return JSONResponse(
+            {"ok": False, "error": f"快捷方式重试预览失败：{exc}"},
+            status_code=500,
+        )
+
+
+async def _post_media_directory_organizer_landing_shortcuts_apply_api(
+    request: Request,
+) -> JSONResponse:
+    try:
+        body = await _organizer_json_body(request)
+        return JSONResponse(apply_organizer_landing_shortcuts_from_ui_body(body))
+    except (TypeError, ValueError, FileNotFoundError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except PermissionError as exc:
+        return JSONResponse(
+            {"ok": False, "error": f"快捷方式重试无权限：{exc}"},
+            status_code=403,
+        )
+    except FileExistsError as exc:
+        return JSONResponse(
+            {"ok": False, "error": f"快捷方式路径冲突：{exc}"},
+            status_code=409,
+        )
+    except OSError as exc:
+        return JSONResponse(
+            {"ok": False, "error": f"快捷方式重试失败：{exc}"},
+            status_code=500,
+        )
+
+
 def build_jp_tv_browse_app() -> Starlette:
     static_dir = str(_resolve_browse_static_dir())
     collection_detail_frontend = str(_resolve_feature_frontend_dir("collection-detail"))
     collection_info_frontend = str(_resolve_feature_frontend_dir("collection-info"))
+    media_directory_organizer_frontend = str(
+        _resolve_feature_frontend_dir("media-directory-organizer")
+    )
     jp_tv_browse_api = Router(
         routes=[
             Route("/config", endpoint=_get_config_api, methods=["GET"]),
@@ -864,28 +1046,28 @@ def build_jp_tv_browse_app() -> Starlette:
                 methods=["POST"],
             ),
             Route(
+                "/collection-detail/link-index/generate-files",
+                endpoint=_post_collection_detail_link_index_generate_files_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/collection-detail/link-index/validate",
+                endpoint=_post_collection_detail_link_index_validate_api,
+                methods=["POST"],
+            ),
+            Route(
                 "/collection-detail/link-index/open",
                 endpoint=_post_collection_detail_link_index_open_api,
                 methods=["POST"],
             ),
             Route(
+                "/collection-detail/press/open",
+                endpoint=_post_collection_detail_press_open_api,
+                methods=["POST"],
+            ),
+            Route(
                 "/collection-detail/link-index/resolve",
                 endpoint=_post_collection_detail_link_index_resolve_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/collection-detail/link-index/associations",
-                endpoint=_get_collection_detail_link_index_associations_api,
-                methods=["GET"],
-            ),
-            Route(
-                "/collection-detail/link-index/associations/apply",
-                endpoint=_post_collection_detail_link_index_associations_apply_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/collection-detail/link-index/associations/reject",
-                endpoint=_post_collection_detail_link_index_associations_reject_api,
                 methods=["POST"],
             ),
             Route(
@@ -918,6 +1100,46 @@ def build_jp_tv_browse_app() -> Starlette:
                 endpoint=_get_collection_detail_resource_libraries_search_api,
                 methods=["GET"],
             ),
+            Route(
+                "/media-directory-organizer/config",
+                endpoint=_get_media_directory_organizer_config_api,
+                methods=["GET"],
+            ),
+            Route(
+                "/media-directory-organizer/preview",
+                endpoint=_post_media_directory_organizer_preview_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/apply",
+                endpoint=_post_media_directory_organizer_apply_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/landing/suggest",
+                endpoint=_post_media_directory_organizer_landing_suggest_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/landing/preview",
+                endpoint=_post_media_directory_organizer_landing_preview_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/landing/apply",
+                endpoint=_post_media_directory_organizer_landing_apply_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/landing/shortcuts/preview",
+                endpoint=_post_media_directory_organizer_landing_shortcuts_preview_api,
+                methods=["POST"],
+            ),
+            Route(
+                "/media-directory-organizer/landing/shortcuts/apply",
+                endpoint=_post_media_directory_organizer_landing_shortcuts_apply_api,
+                methods=["POST"],
+            ),
             Route("/browse", endpoint=_post_browse_api, methods=["POST"]),
         ],
     )
@@ -934,6 +1156,11 @@ def build_jp_tv_browse_app() -> Starlette:
             name="collection_info_frontend",
         ),
         Mount(
+            "/features/media-directory-organizer",
+            app=StaticFiles(directory=media_directory_organizer_frontend),
+            name="media_directory_organizer_frontend",
+        ),
+        Mount(
             "/",
             app=StaticFiles(directory=static_dir, html=True),
             name="jp_tv_browse_static",
@@ -942,7 +1169,7 @@ def build_jp_tv_browse_app() -> Starlette:
     return Starlette(
         routes=routes,
         middleware=[
-            Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]),
+            Middleware(_BrowseLocalApiSecurityMiddleware),
             Middleware(_BrowseNoCacheStaticMiddleware),
         ],
     )

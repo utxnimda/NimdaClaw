@@ -10,7 +10,9 @@
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
+        press_path: ギャグマンガ日和＋_DVDRip
       markers: []
+      path: S:\ギャグマンガ日和
   - type: country
     data: japan
   - type: name
@@ -155,9 +157,12 @@
       collectioned:
       - press_format: BDRip
         press_group: CASO
+        press_path: ひだまりスケッチ×☆☆☆_BDRip
       - press_format: BDRip
         press_group: RF
+        press_path: ひだまりスケッチ×☆☆☆_BDRip(RF)
       markers: []
+      path: S:\ひだまりスケッチ
   - type: country
     data: japan
   - type: name
@@ -300,6 +305,7 @@
         press_path: 一騎当千 Xtreme Xecutor_BDRip(DMZJ)
       - press_format: BDRip
         press_group: ALK
+        press_path: 一騎当千 Xtreme Xecutor_BDRip
       - press_format: 480p
         press_group: DMZJ
         press_path: 一騎当千 Xtreme Xecutor_480p
@@ -321,6 +327,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: おおきく振りかぶって ~夏の大会編~_BDRip
       - press_format: BDRip
         press_group: KAMI
         press_path: おおきく振りかぶって ~夏の大会編~_BDRip(KAMI)
@@ -414,6 +421,7 @@
         press_path: Angel Beats!_BDRip(PHI)
       - press_format: BDRip
         press_group: CK
+        press_path: Angel Beats!_BDRip
       - press_format: 720p
         press_group: CK
         press_path: Angel Beats!_720p
@@ -475,6 +483,7 @@
         press_path: いちばんうしろの大魔王_BDRip(ANK)
       - press_format: BDRip
         press_group: CK
+        press_path: いちばんうしろの大魔王_BDRip
       - press_format: 720p
         press_group: CK
         press_path: いちばんうしろの大魔王_720p
@@ -496,9 +505,12 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBP
+        press_path: KissXSis_BDRip(VCB)
       - press_format: BDRip
         press_group: CKCH
+        press_path: KissXSis_BDRip
       markers: []
+      path: Z:\KissXSis
   - type: country
     data: japan
   - type: name
@@ -537,6 +549,7 @@
         press_path: K-ON!!_BDRip(VCB)
       - press_format: BDRip
         press_group: SOSG
+        press_path: K-ON!!_BDRip
       - press_format: 720p
         press_group: SOSG
         press_path: K-ON!!_720p
@@ -621,7 +634,9 @@
       collectioned:
       - press_format: BDRip
         press_group: CSHK
+        press_path: オオカミさんと七人の仲間たち_BDRip
       markers: []
+      path: Z:\オオカミさんと七人の仲間たち
   - type: country
     data: japan
   - type: name
@@ -688,6 +703,7 @@
         press_path: 生徒会役員共_BDRip(CK)
       - press_format: BDRip
         press_group: JSUM
+        press_path: 生徒会役員共_BDRip
       - press_format: 720p
         press_group: CK
         press_path: 生徒会役員共_720p
@@ -870,6 +886,7 @@
         press_path: あそびにいくヨ！_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: あそびにいくヨ！_BDRip
       - press_format: 720p
         press_group: CK
         press_path: あそびにいくヨ！_720p
@@ -909,6 +926,7 @@
         press_path: そらのおとしものForte_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: そらのおとしものForte_BDRip
       - press_format: 720p
         press_group: CK
         press_path: そらのおとしものForte_720p
@@ -955,6 +973,7 @@
         press_path: えむえむっ！_BDRip(ANK)
       - press_format: BDRip
         press_group: CKCS
+        press_path: えむえむっ！_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: えむえむっ！_720p
@@ -976,9 +995,12 @@
       collectioned:
       - press_format: DVDRip
         press_group: AI
+        press_path: Letter Bee Reverse_BDRip
       - press_format: 720p
         press_group: CASO
+        press_path: Letter Bee Reverse_720p
       markers: []
+      path: S:\Letter Bee
   - type: country
     data: japan
   - type: name
@@ -998,6 +1020,10 @@
         press_path: バクマン。_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: バクマン。_BDRip
+      - press_format: 720p
+        press_group: DMG
+        press_path: バクマン。_720p
       markers: []
       path: Y:\バクマン。
   - type: country
@@ -1035,9 +1061,12 @@
       collectioned:
       - press_format: BDRip
         press_group: MZ
+        press_path: 荒川アンダー ザ ブリッジ×ブリッジ_BDRip
       - press_format: 720p
         press_group: CASO
+        press_path: 荒川アンダー ザ ブリッジ×ブリッジ_720p
       markers: []
+      path: S:\荒川アンダー ザ ブリッジ
   - type: country
     data: japan
   - type: name
@@ -1208,6 +1237,7 @@
         press_path: Fortune Arterial 赤い約束_BDRip(ANK)
       - press_format: BDRip
         press_group: CK
+        press_path: Fortune Arterial 赤い約束_BDRip
       - press_format: 720p
         press_group: CK
         press_path: Fortune Arterial 赤い約束_720p
@@ -1232,6 +1262,7 @@
         press_path: とある魔術の禁書目録 II_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: とある魔術の禁書目録 II_BDRip
       - press_format: 720p
         press_group: CK
         press_path: とある魔術の禁書目録 II_720p

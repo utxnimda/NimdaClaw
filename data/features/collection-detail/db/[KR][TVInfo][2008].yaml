@@ -1,0 +1,19 @@
+- attributes:
+  - type: date
+    data:
+      start: '20080305'
+      end: '20080501'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\你是谁
+      collectioned:
+      - press_format: 480p
+        press_group: '----'
+        press_path: 你是谁_480p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 你是谁

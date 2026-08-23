@@ -141,7 +141,9 @@
       collectioned:
       - press_format: BDRip
         press_group: '----'
+        press_path: AKB0048 Next Stage_BDRip
       markers: []
+      path: S:\AKB0048
   - type: country
     data: japan
   - type: name
@@ -210,6 +212,7 @@
         press_path: Love Live!_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live!_BDRip
       markers: []
       path: U:\Love Live!
   - type: country
@@ -292,7 +295,9 @@
         press_group: RF
       - press_format: BDRip
         press_group: '----'
+        press_path: 生徒会の一存 Lv.2_BDRip
       markers: []
+      path: T:\生徒会の一存
   - type: country
     data: japan
   - type: name
@@ -312,6 +317,7 @@
         press_path: たまこまーけっと_720p
       - press_format: BDRip
         press_group: CASO
+        press_path: たまこまーけっと_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: たまこまーけっと_BDRip(VCB)
@@ -443,6 +449,7 @@
         press_path: 問題児たちが異世界から来るそうですよ？_720p
       - press_format: BDRip
         press_group: DHRD
+        press_path: 問題児たちが異世界から来るそうですよ？_BDRip
       - press_format: BDRip
         press_group: SNOW
         press_path: 問題児たちが異世界から来るそうですよ？_BDRip(SNOW)
@@ -482,6 +489,7 @@
         press_path: Red Data Girl_720p
       - press_format: BDRip
         press_group: TSX
+        press_path: Red Data Girl_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Red Data Girl_BDRip(VCB)
@@ -570,8 +578,10 @@
         press_path: やはり俺の青春ラブコメはまちがっている。_720p
       - press_format: BDRip
         press_group: CK
+        press_path: やはり俺の青春ラブコメはまちがっている。_BDRip
       - press_format: BDRip
         press_group: VCBK
+        press_path: やはり俺の青春ラブコメはまちがっている。_BDRip(VCB)
       markers: []
       path: Z:\やはり俺の青春ラブコメはまちがっている
   - type: country
@@ -615,6 +625,7 @@
         press_path: Devil Survivor 2_720p
       - press_format: BDRip
         press_group: MZ
+        press_path: Devil Survivor 2_BDRip(PHI)
       - press_format: BDRip
         press_group: '----'
         press_path: Devil Survivor 2_BDRip
@@ -680,8 +691,10 @@
         press_path: Date A Live_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: Date A Live_BDRip
       - press_format: BDRip
         press_group: VCBP
+        press_path: Date A Live_BDRip(VCB)
       markers: []
       path: V:\Japan\Date A Live
   - type: country
@@ -703,8 +716,10 @@
         press_path: 俺の妹がこんなに可愛いわけがない。_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 俺の妹がこんなに可愛いわけがない。_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 俺の妹がこんなに可愛いわけがない。_BDRip(VCB)
       markers: []
       path: S:\俺の妹がこんなに可愛いわけがない
   - type: country
@@ -742,8 +757,10 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 進撃の巨人_BDRip
       - press_format: BDRip
         press_group: CASO
+        press_path: 進撃の巨人_BDRip(CASO)
       - press_format: 1080p
         press_group: KAMI
         press_path: 進撃の巨人_1080p
@@ -954,8 +971,10 @@
         press_path: 変態王子と笑わない猫。_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 変態王子と笑わない猫。_BDRip
       - press_format: BDRip
         press_group: VCBZ
+        press_path: 変態王子と笑わない猫。_BDRip(VCB)
       markers: []
       path: Z:\変態王子と笑わない猫。
   - type: country
@@ -977,8 +996,10 @@
         press_path: とある科学の超電磁砲 S_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: とある科学の超電磁砲 S_BDRip
       - press_format: BDRip
         press_group: VCBL
+        press_path: とある科学の超電磁砲 S_BDRip(VCB)
       markers: []
       path: V:\Japan\とある科学の超電磁砲
   - type: country
@@ -1118,6 +1139,7 @@
         press_path: Rozen Maiden 2013_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: Rozen Maiden 2013_BDRip
       markers: []
       path: Y:\Rozen Maiden
   - type: country
@@ -1182,6 +1204,7 @@
         press_path: Servant×Service_720p
       - press_format: BDRip
         press_group: KAMI
+        press_path: Servant×Service_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Servant×Service_BDRip(VCB)
@@ -1420,6 +1443,7 @@
       collectioned:
       - press_format: 720p
         press_group: FL
+        press_path: げんしけん 二代目_720p
       - press_format: BDRip
         press_group: FL
         press_path: げんしけん 二代目_BDRip
@@ -1608,8 +1632,10 @@
         press_path: 銀の匙_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 銀の匙_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 銀の匙_BDRip(VCB)
       markers: []
       path: S:\銀の匙
   - type: country
@@ -1671,6 +1697,7 @@
         press_path: 超次元ゲイム ネプテューヌ_BDRip(PHI)
       - press_format: BDRip
         press_group: CK
+        press_path: 超次元ゲイム ネプテューヌ_BDRip
       - press_format: 720p
         press_group: CK
         press_path: 超次元ゲイム ネプテューヌ_720p
@@ -1947,8 +1974,10 @@
         press_path: Strike The Blood_720p
       - press_format: BDRip
         press_group: CK
+        press_path: Strike The Blood_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: Strike The Blood_BDRip(VCB)
       markers: []
       path: Z:\Strike The Blood
   - type: country
@@ -1967,13 +1996,16 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Little Busters! Refrain_BDRip(Jsum)
       - press_format: BDRip
         press_group: VCB
+        press_path: Little Busters! Refrain_BDRip(VCBM)
       markers: []
+      path: U:\Little Busters!
   - type: country
     data: japan
   - type: name
-    data: Little Busters! ～Refrain～
+    data: Little Busters! Refrain
 - attributes:
   - type: date
     data:
@@ -1989,6 +2021,7 @@
         press_path: White Album 2_1080p
       - press_format: BDRip
         press_group: VCBS
+        press_path: White Album 2_BDRip
       markers: []
       path: S:\White Album
   - type: country
@@ -2092,6 +2125,7 @@
         press_path: Walkure Romanze_720p
       - press_format: BDRip
         press_group: CK
+        press_path: Walkure Romanze_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Walkure Romanze_BDRip(VCB)
@@ -2226,8 +2260,10 @@
         press_path: 機巧少女は傷つかない_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 機巧少女は傷つかない_BDRip
       - press_format: BDRip
         press_group: VCBD
+        press_path: 機巧少女は傷つかない_BDRip(VCB)
       markers: []
       path: Z:\機巧少女は傷つかない
   - type: country
@@ -2331,8 +2367,10 @@
         press_path: 東京レイヴンズ_720p
       - press_format: BDRip
         press_group: DMG
+        press_path: 東京レイヴンズ_BDRip
       - press_format: BDRip
         press_group: VCBZ
+        press_path: 東京レイヴンズ_BDRip(VCB)
       markers: []
       path: Z:\東京レイヴンズ
   - type: country
@@ -2394,7 +2432,9 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBL
+        press_path: 革命機ヴァルヴレイヴ 2_BDRip
       markers: []
+      path: T:\革命機ヴァルヴレイヴ
   - type: country
     data: japan
   - type: name
@@ -2467,9 +2507,12 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: Sword Art Online Extra Edition_BDRip(VCB)
       - press_format: BDRip
-        press_group: VCB
+        press_group: JSUM
+        press_path: Sword Art Online Extra Edition_BDRip
       markers: []
+      path: U:\Sword Art Online
   - type: country
     data: japan
   - type: name

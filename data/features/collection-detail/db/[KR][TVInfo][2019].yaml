@@ -1,0 +1,335 @@
+- attributes:
+  - type: date
+    data:
+      start: '20190211'
+      end: '20190319'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\耀眼
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 耀眼_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 耀眼
+- attributes:
+  - type: date
+    data:
+      start: '20190313'
+      end: '20190512'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\自白
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 自白_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 自白
+- attributes:
+  - type: date
+    data:
+      start: '20190320'
+      end: '20190515'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\囚犯医生
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 囚犯医生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 囚犯医生
+- attributes:
+  - type: date
+    data:
+      start: '20190323'
+      end: '20190428'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Kill It
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Kill It_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Kill It
+- attributes:
+  - type: date
+    data:
+      start: '20190401'
+      end: '20190530'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\他的私生活
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 他的私生活_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 他的私生活
+- attributes:
+  - type: date
+    data:
+      start: '20190614'
+      end: '20190713'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\辅佐官
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 辅佐官2_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 辅佐官2
+- attributes:
+  - type: date
+    data:
+      start: '20190713'
+      end: '20190901'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\德鲁纳酒店
+      collectioned:
+      - press_format: 2160p
+        press_group: '----'
+        press_path: 德鲁纳酒店_2160p
+      - press_format: 2160p Ver.2
+        press_group: '----'
+        press_path: 德鲁纳酒店_2160p Ver.2
+      - press_format: 720p
+        press_group: '----'
+        press_path: 德鲁纳酒店_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 德鲁纳酒店
+- attributes:
+  - type: date
+    data:
+      start: '20190809'
+      end: '20190928'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫的体质
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫的体质_1080p
+      - press_format: 1080p Ver.2
+        press_group: '----'
+        press_path: 浪漫的体质_1080p Ver.2
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫的体质
+- attributes:
+  - type: date
+    data:
+      start: '20190918'
+      end: '20191121'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\山茶花开时
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 山茶花开时_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 山茶花开时
+- attributes:
+  - type: date
+    data:
+      start: '20191021'
+      end: '20191210'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\抓住幽灵
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 抓住幽灵_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 抓住幽灵
+- attributes:
+  - type: date
+    data:
+      start: '20191111'
+      end: '20191210'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\辅佐官
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 辅佐官_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 辅佐官
+- attributes:
+  - type: date
+    data:
+      start: '20191120'
+      end: '20200109'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\精神变态日记
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 精神变态日记_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 精神变态日记
+- attributes:
+  - type: date
+    data:
+      start: '20191127'
+      end: '20200116'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\有瑕疵的人们
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 有瑕疵的人们_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 有瑕疵的人们
+- attributes:
+  - type: date
+    data:
+      start: '20191129'
+      end: '20200118'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\巧克力
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 巧克力_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 巧克力
+- attributes:
+  - type: date
+    data:
+      start: '20191213'
+      end: '20200214'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Stove League
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Stove League_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: Stove League_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Stove League
+- attributes:
+  - type: date
+    data:
+      start: '20191214'
+      end: '20200216'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\爱的迫降
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 爱的迫降_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 爱的迫降
+- attributes:
+  - type: date
+    data:
+      start: '20191216'
+      end: '20200211'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\检察官内传
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 检察官内传_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 检察官内传

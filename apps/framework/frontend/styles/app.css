@@ -1605,6 +1605,14 @@ table.sheet {
   font-variant-numeric: tabular-nums;
 }
 
+table.sheet.sheet-cols-managed {
+  table-layout: fixed;
+}
+
+table.sheet.sheet-cols-managed thead th.sheet-th-combo {
+  min-width: 0;
+}
+
 table.sheet thead th {
   position: sticky;
   top: 0;
@@ -1627,6 +1635,39 @@ table.sheet thead th.sheet-th-combo {
   white-space: normal;
   vertical-align: middle;
   min-width: 5.5rem;
+}
+
+.sheet-col-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  z-index: 270;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.sheet-col-resizer::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.sheet-col-resizer:hover::after,
+.sheet-col-resizer:focus-visible::after,
+body.sheet-col-resizing .sheet-col-resizer::after {
+  background: color-mix(in srgb, var(--accent) 72%, var(--border));
+}
+
+body.sheet-col-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 /** 下拉打开时整格抬到同行的其它 th/td 之上，避免后续列压住浮层（同行默认 z-index 相同，后绘制者在上） */
@@ -1806,6 +1847,21 @@ table.sheet tbody td {
   max-width: 14rem;
 }
 
+table.sheet.sheet-cols-managed tbody td {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+table.sheet.sheet-cols-managed tbody td.col-date,
+table.sheet.sheet-cols-managed tbody td.col-name,
+table.sheet.sheet-cols-managed tbody td.col-tax,
+table.sheet.sheet-cols-managed tbody td.cell-tags {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
 table.sheet.sheet-editing tbody td {
   padding: 0.26rem 0.38rem;
 }
@@ -1825,20 +1881,29 @@ table.sheet .col-idx {
 }
 
 table.sheet .col-date {
+  width: 1%;
+  max-width: 5.4rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 table.sheet .col-name {
-  max-width: 13rem;
+  width: 9rem;
+  max-width: 9rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 table.sheet .col-tax {
+  width: 1%;
+  max-width: 5.2rem;
   white-space: nowrap;
   font-size: 0.8rem;
   color: var(--tax-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 table.sheet .col-actions {
@@ -1859,25 +1924,38 @@ table.sheet tbody tr:hover td {
 }
 
 .cell-tags {
-  min-width: 3.5rem;
-  max-width: 18rem;
-  overflow-x: auto;
+  min-width: 2.8rem;
+  max-width: 10rem;
+  overflow-x: hidden;
   overflow-y: hidden;
   vertical-align: middle;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cell-tags .tag-row {
   flex-wrap: nowrap;
 }
 
-.cell-press-aggregate {
-  min-width: 4rem;
-  max-width: 20rem;
+table.sheet tbody td.cell-press-aggregate {
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
   vertical-align: middle;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: visible;
   white-space: nowrap;
+}
+
+table.sheet.sheet-cols-managed tbody td.cell-press-aggregate {
+  width: auto;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.cell-tags-press:not(.cell-press-aggregate) {
+  max-width: 8rem;
+  overflow-x: hidden;
 }
 
 .tag-row.tag-row-press-agg {
@@ -1897,10 +1975,6 @@ table.sheet tbody tr:hover td {
 .tag-row.tag-row-press-agg .pill-press-agg .sheet-pair-plain {
   font-size: inherit;
   line-height: inherit;
-}
-
-.tag-row.tag-row-press-agg .pill-press-agg-ed[data-action="edit-press-link"] {
-  cursor: pointer;
 }
 
 .pill-pair[data-action="edit-press-item"] {
@@ -2129,7 +2203,6 @@ table.sheet td.cell-tags-press .pill-pair.fmt-agg-s11 {
 
 .row-delete-btn,
 .press-item-delete-btn,
-.press-link-edit-btn,
 .enum-row-delete-btn,
 .enum-add-btn {
   min-height: 1.7rem;
@@ -2143,8 +2216,7 @@ table.sheet td.cell-tags-press .pill-pair.fmt-agg-s11 {
 }
 
 .sheet-editing .row-delete-btn,
-.sheet-editing .press-item-delete-btn,
-.sheet-editing .press-link-edit-btn {
+.sheet-editing .press-item-delete-btn {
   min-height: 1.28rem;
   padding: 0.06rem 0.32rem;
   font-size: 0.68rem;
@@ -2274,13 +2346,6 @@ table.sheet td.cell-tags-press .pill-pair.fmt-agg-s11 {
   cursor: pointer;
 }
 
-.press-link-edit-btn {
-  min-width: 2.1rem;
-  border-radius: 999px;
-  background: var(--btn-secondary-bg);
-  color: var(--text);
-}
-
 .sheet-edit-trigger {
   cursor: pointer;
 }
@@ -2288,37 +2353,6 @@ table.sheet td.cell-tags-press .pill-pair.fmt-agg-s11 {
 .sheet-edit-trigger:hover {
   text-decoration: underline;
   text-underline-offset: 0.12em;
-}
-
-.press-link-state {
-  margin-left: 0.12rem;
-  min-height: auto;
-  min-width: 2.2rem;
-  padding: 0.02rem 0.28rem;
-  font-size: 0.62rem;
-  line-height: 1.2;
-  cursor: default;
-}
-
-button.press-link-state {
-  cursor: pointer;
-}
-
-table.sheet.sheet-editing .press-link-state {
-  min-height: 0;
-  padding: 0.02rem 0.28rem;
-  font-size: 0.62rem;
-  line-height: 1.2;
-}
-
-.press-link-state.is-linked {
-  border-color: color-mix(in srgb, #16a34a 58%, var(--border));
-  color: color-mix(in srgb, #16a34a 74%, var(--text));
-}
-
-.press-link-state.is-empty {
-  border-color: color-mix(in srgb, var(--muted) 45%, var(--border));
-  color: var(--muted);
 }
 
 .press-item-delete-btn {
@@ -2471,6 +2505,64 @@ table.sheet.sheet-editing .press-item-delete-btn:focus-visible {
   background: var(--pill-other-bg);
   border-color: var(--pill-other-bdr);
   color: var(--pill-other-fg);
+}
+
+table.sheet td.cell-tags-press .pill-pair.press-link-configured,
+table.sheet td.cell-tags-press .pill-pair.press-link-partial {
+  position: relative;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, #16a34a 82%, var(--accent));
+}
+
+table.sheet td.cell-tags-press .pill-pair.press-link-configured {
+  border-style: solid;
+}
+
+table.sheet td.cell-tags-press .pill-pair.press-link-partial {
+  border-style: dotted;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, #f59e0b 78%, var(--accent));
+}
+
+table.sheet td.cell-tags-press .pill-pair.press-link-empty {
+  border-style: dashed;
+  opacity: 0.62;
+}
+
+.press-open-folder-btn {
+  position: absolute;
+  right: 0.12rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: calc(100% - 0.14rem);
+  min-height: 0.9rem;
+  max-height: 1.25rem;
+  padding: 0 0.28rem;
+  border: 1px solid color-mix(in srgb, #16a34a 68%, var(--border));
+  border-radius: 5px;
+  background: color-mix(in srgb, #16a34a 20%, var(--panel));
+  color: var(--text);
+  font: inherit;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+table.sheet td.cell-tags-press .pill-pair.press-link-configured:hover .press-open-folder-btn,
+table.sheet td.cell-tags-press .pill-pair.press-link-configured:focus-within .press-open-folder-btn,
+.press-open-folder-btn:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0.45s;
+}
+
+.press-open-folder-btn:hover,
+.press-open-folder-btn:focus-visible {
+  background: color-mix(in srgb, #16a34a 34%, var(--panel));
+  border-color: color-mix(in srgb, #16a34a 82%, var(--border));
 }
 
 .pair-sep {

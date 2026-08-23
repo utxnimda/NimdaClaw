@@ -1,0 +1,19 @@
+- attributes:
+  - type: date
+    data:
+      start: '20260102'
+      end: '20260214'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\法官李汉英
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 法官李汉英_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 法官李汉英

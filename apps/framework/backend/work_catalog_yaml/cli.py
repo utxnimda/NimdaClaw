@@ -13,6 +13,7 @@ from work_catalog_yaml.catalog import (
     preview_tree,
 )
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
+from work_catalog_yaml.jp_tv.browse_security import is_loopback_hostname
 from work_catalog_yaml.jp_tv.parse import (
     JpTvParseError,
     infer_txt_relpath_for_materialize,
@@ -176,6 +177,16 @@ def _cmd_jp_tv_browse(args: argparse.Namespace) -> None:
         sys.exit(f"请先安装：`pip install 'work-catalog-yaml[web]'`（{e}）")
 
     host = str(args.host or "127.0.0.1")
+    allow_remote = bool(getattr(args, "allow_remote", False))
+    if not is_loopback_hostname(host) and not allow_remote:
+        sys.exit(
+            "拒绝监听非本机地址。若已配置网络防护并确认需要远程访问，"
+            "请显式添加 --allow-remote。"
+        )
+    if allow_remote:
+        os.environ["JP_TV_BROWSE_ALLOW_REMOTE"] = "1"
+    else:
+        os.environ.pop("JP_TV_BROWSE_ALLOW_REMOTE", None)
     preferred = int(args.port)
     if getattr(args, "strict_port", False):
         port = preferred
@@ -289,6 +300,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="本地 Web：上传 JP TV 作品数组 YAML（需安装 [web] 可选依赖）",
     )
     p_jpv.add_argument("--host", default="127.0.0.1", help="监听地址，默认 127.0.0.1")
+    p_jpv.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="显式允许监听非环回地址；请仅在可信网络及额外访问控制下使用",
+    )
     p_jpv.add_argument("--port", type=int, default=8765, help="首选端口，默认 8765（被占用时自动递增，除非 --strict-port）")
     p_jpv.add_argument(
         "--strict-port",

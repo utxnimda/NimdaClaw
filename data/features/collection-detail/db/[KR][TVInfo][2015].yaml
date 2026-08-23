@@ -1,0 +1,95 @@
+- attributes:
+  - type: date
+    data:
+      start: '20150107'
+      end: '20150312'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Kill Me Heal Me
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Kill Me Heal Me_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Kill Me Heal Me
+- attributes:
+  - type: date
+    data:
+      start: '20150427'
+      end: '20150616'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Who Are You－学校2015
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Who Are You－学校2015_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Who Are You－学校2015
+- attributes:
+  - type: date
+    data:
+      start: '20150515'
+      end: '20150626'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\制作人
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 制作人_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 制作人
+- attributes:
+  - type: date
+    data:
+      start: '20150805'
+      end: '20151001'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\龙八夷
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 龙八夷_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 龙八夷
+- attributes:
+  - type: date
+    data:
+      start: '20151106'
+      end: '20160106'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\请回答1988
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 请回答1988_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 请回答1988

@@ -90,6 +90,7 @@ class JpTvBrowseEditTest(unittest.TestCase):
                 [
                     ("collection-detail", "作品数据", 10),
                     ("collection-info", "收集情况", 20),
+                    ("media-directory-organizer", "目录整理", 30),
                 ],
             )
 

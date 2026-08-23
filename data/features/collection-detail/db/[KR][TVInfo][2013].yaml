@@ -1,0 +1,98 @@
+- attributes:
+  - type: date
+    data:
+      start: '20130107'
+      end: '20130226'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\邻家花美男
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 邻家花美男_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 邻家花美男
+- attributes:
+  - type: date
+    data:
+      start: '20130309'
+      end: '20130825'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\最佳李存信
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 最佳李存信_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 最佳李存信
+- attributes:
+  - type: date
+    data:
+      start: '20130406'
+      end: '20130922'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\金子轻松出来吧
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 金子轻松出来吧_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 金子轻松出来吧
+- attributes:
+  - type: date
+    data:
+      start: '20131009'
+      end: '20131212'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\继承者们
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 继承者们_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 继承者们_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 继承者们
+- attributes:
+  - type: date
+    data:
+      start: '20131018'
+      end: '20140103'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\请回答1994
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 请回答1994_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 请回答1994

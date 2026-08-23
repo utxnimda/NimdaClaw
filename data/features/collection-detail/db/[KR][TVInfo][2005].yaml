@@ -1,0 +1,38 @@
+- attributes:
+  - type: date
+    data:
+      start: '20050601'
+      end: '20050721'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我叫金三顺
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我叫金三顺_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我叫金三顺
+- attributes:
+  - type: date
+    data:
+      start: '20051214'
+      end: '20060202'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我的女孩
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我的女孩_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的女孩

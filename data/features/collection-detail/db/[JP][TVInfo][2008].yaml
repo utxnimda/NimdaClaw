@@ -132,6 +132,7 @@
         press_path: True Tears_BDRip(FL)
       - press_format: BDRip
         press_group: CK
+        press_path: True Tears_BDRip
       - press_format: 720p
         press_group: CK
         press_path: True Tears_720p
@@ -209,6 +210,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Aria The Origination_BDRip
       - press_format: BDRip
         press_group: MZ
         press_path: Aria The Origination_BDRip(MZ)
@@ -233,8 +235,10 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 狼と香辛料_BDRip(VCB)
       - press_format: BDRip
         press_group: CSIG
+        press_path: 狼と香辛料_BDRip
       - press_format: 720p
         press_group: CSIG
         press_path: 狼と香辛料_720p
@@ -275,7 +279,9 @@
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
+        press_path: ギャグマンガ日和3_DVDRip
       markers: []
+      path: S:\ギャグマンガ日和
   - type: country
     data: japan
   - type: name
@@ -361,11 +367,13 @@
       collectioned:
       - press_format: BDRip
         press_group: PHI
+        press_path: Macross Frontier_BDRip(VCB)
       markers: []
+      path: U:\Macross
   - type: country
     data: japan
   - type: name
-    data: MacrossF
+    data: Macross Frontier
 - attributes:
   - type: date
     data:
@@ -504,9 +512,12 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: Code Geass 反逆のルルーシュ R2_BDRip(ANK)
       - press_format: BDRip
         press_group: YS
+        press_path: Code Geass 反逆のルルーシュ R2_BDRip
       markers: []
+      path: S:\Code Geass 反逆のルルーシュ
   - type: country
     data: japan
   - type: name
@@ -649,6 +660,7 @@
         press_path: 一騎当千 Great Guardians_BDRip(Jsum)
       - press_format: BDRip
         press_group: ALK
+        press_path: 一騎当千 Great Guardians_BDRip
       - press_format: DVDRip
         press_group: DMZJ
         press_path: 一騎当千 Great Guardians_DVDRip
@@ -755,8 +767,10 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: ひだまりスケッチ×365_BDRip(ANK)
       - press_format: BDRip
         press_group: RF
+        press_path: ひだまりスケッチ×365_BDRip
       - press_format: 720p
         press_group: CASO
         press_path: ひだまりスケッチ×365_720p
@@ -882,6 +896,7 @@
         press_path: 乃木坂春香の秘密_BDRip(ANK)
       - press_format: BDRip
         press_group: CK
+        press_path: 乃木坂春香の秘密_BDRip
       - press_format: DVDRip
         press_group: CK
         press_path: 乃木坂春香の秘密_DVDRip
@@ -959,6 +974,7 @@
         press_path: とらドラ!_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: とらドラ!_BDRip
       - press_format: 720p
         press_group: CK
         press_path: とらドラ!_720p
@@ -1046,6 +1062,7 @@
         press_path: Clannad -After Story-_BDRip(PHI)
       - press_format: BDRip
         press_group: CK
+        press_path: Clannad -After Story-_BDRip
       - press_format: 720p
         press_group: CK
         press_path: Clannad -After Story-_720p
@@ -1089,6 +1106,7 @@
         press_path: かんなぎ_BDRip(ANK)
       - press_format: BDRip
         press_group: CSIG
+        press_path: かんなぎ_BDRip
       - press_format: DVDRip
         press_group: CK
         press_path: かんなぎ_DVDRip
@@ -1113,6 +1131,7 @@
         press_path: 地獄少女 三鼎_DVDRip(AI)
       - press_format: DVDRip
         press_group: U2
+        press_path: 地獄少女 三鼎_DVDRip
       - press_format: 720p
         press_group: DMZJ
         press_path: 地獄少女 三鼎_720p
@@ -1216,6 +1235,7 @@
         press_path: Chaos;Head_BDRip(PHI)
       - press_format: BDRip
         press_group: CKCH
+        press_path: Chaos;Head_BDRip
       - press_format: 720p
         press_group: CKCH
         press_path: Chaos;Head_720p
@@ -1240,6 +1260,7 @@
         press_path: とある魔術の禁書目録_BDRip(VCB)
       - press_format: BDRip
         press_group: CKJY
+        press_path: とある魔術の禁書目録_BDRip
       - press_format: 720p
         press_group: CKJY
         press_path: とある魔術の禁書目録_720p

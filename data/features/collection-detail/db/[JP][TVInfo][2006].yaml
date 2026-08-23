@@ -609,6 +609,7 @@
         press_path: xxxHolic_DVDRip(AI)
       - press_format: DVDRip
         press_group: CASO
+        press_path: xxxHolic_DVDRip
       - press_format: 480p
         press_group: CASO
         press_path: xxxHolic_480p
@@ -763,6 +764,7 @@
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: 砂沙美☆魔法少女クラブ 1_DVDRip
       - press_format: 360p
         press_group: '----'
         press_path: 砂沙美☆魔法少女クラブ 1_360p
@@ -964,6 +966,7 @@
         press_path: となグラ!_DVDRip
       - press_format: DVDRip
         press_group: HKG
+        press_path: となグラ!_DVDRip(HKG)
       markers: []
       path: Y:\となグラ!
   - type: country
@@ -1004,7 +1007,9 @@
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
+        press_path: ギャグマンガ日和2_DVDRip
       markers: []
+      path: S:\ギャグマンガ日和
   - type: country
     data: japan
   - type: name
@@ -1116,6 +1121,7 @@
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: 砂沙美☆魔法少女クラブ 2_DVDRip
       - press_format: 480p
         press_group: WOLF
         press_path: 砂沙美☆魔法少女クラブ 2_400p
@@ -1544,6 +1550,7 @@
       collectioned:
       - press_format: BDRip
         press_group: CASO
+        press_path: Rozen Maiden Ouverture_BDRip
       - press_format: DVDRip
         press_group: CASO
         press_path: Rozen Maiden Ouverture_DVDRip

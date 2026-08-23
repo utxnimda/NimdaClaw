@@ -1,0 +1,361 @@
+- attributes:
+  - type: date
+    data:
+      start: '20230114'
+      end: '20230305'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫速成班
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫速成班_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫速成班
+- attributes:
+  - type: date
+    data:
+      start: '20230210'
+      end: '20230210'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\恋爱大战
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 恋爱大战_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 恋爱大战
+- attributes:
+  - type: date
+    data:
+      start: '20230304'
+      end: '20230409'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\离婚律师申晟瀚
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 离婚律师申晟瀚_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 离婚律师申晟瀚
+- attributes:
+  - type: date
+    data:
+      start: '20230417'
+      end: '20230617'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫医生金师傅
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫医生金师傅3_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫医生金师傅3
+- attributes:
+  - type: date
+    data:
+      start: '20230423'
+      end: '20231123'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\烈女朴氏契约结婚传
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 烈女朴氏契约结婚传_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 烈女朴氏契约结婚传
+- attributes:
+  - type: date
+    data:
+      start: '20230426'
+      end: '20230608'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\坏妈妈
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 坏妈妈_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 坏妈妈
+- attributes:
+  - type: date
+    data:
+      start: '20230617'
+      end: '20230723'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\今生也请多指教
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 今生也请多指教_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 今生也请多指教
+- attributes:
+  - type: date
+    data:
+      start: '20230617'
+      end: '20230806'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\欢迎来到王之国
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 欢迎来到王之国_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 欢迎来到王之国
+- attributes:
+  - type: date
+    data:
+      start: '20230623'
+      end: '20230729'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\恶鬼
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 恶鬼_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 恶鬼
+- attributes:
+  - type: date
+    data:
+      start: '20230731'
+      end: '20230919'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\没用的谎言
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 没用的谎言_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 没用的谎言
+- attributes:
+  - type: date
+    data:
+      start: '20230809'
+      end: '20230920'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\超异能族
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 超异能族_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 超异能族
+- attributes:
+  - type: date
+    data:
+      start: '20230925'
+      end: '20231114'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\闪亮的西瓜
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 闪亮的西瓜_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 闪亮的西瓜
+- attributes:
+  - type: date
+    data:
+      start: '20231020'
+      end: '20231020'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我的女神室友斗娜
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我的女神室友斗娜_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的女神室友斗娜
+- attributes:
+  - type: date
+    data:
+      start: '20231028'
+      end: '20231203'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\完美婚姻的定式
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 完美婚姻的定式_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 完美婚姻的定式
+- attributes:
+  - type: date
+    data:
+      start: '20231028'
+      end: '20231203'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\无人岛的Diva
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 无人岛的Diva_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 无人岛的Diva
+- attributes:
+  - type: date
+    data:
+      start: '20231124'
+      end: '20240120'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\与恶魔有约
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 与恶魔有约_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 与恶魔有约
+- attributes:
+  - type: date
+    data:
+      start: '20231202'
+      end: '20240121'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\欢迎回到三达里
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 欢迎回到三达里_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 欢迎回到三达里
+- attributes:
+  - type: date
+    data:
+      start: '20231209'
+      end: '20240114'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\大指挥家：弦上的真相
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 大指挥家：弦上的真相_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 大指挥家：弦上的真相
+- attributes:
+  - type: date
+    data:
+      start: '20231215'
+      end: '20240105'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\死期将至
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 死期将至_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 死期将至

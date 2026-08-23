@@ -57,6 +57,7 @@
         press_path: 魔法少女まどか☆マギカ_BDRip(VCB)
       - press_format: BDRip
         press_group: CKCS
+        press_path: 魔法少女まどか☆マギカ_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: 魔法少女まどか☆マギカ_720p
@@ -81,6 +82,7 @@
         press_path: Gosick_BDRip(PHI)
       - press_format: BDRip
         press_group: CK
+        press_path: Gosick_BDRip
       - press_format: 720p
         press_group: CK
         press_path: Gosick_720p
@@ -143,9 +145,12 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBE
+        press_path: Freezing_BDRip(VCB)
       - press_format: BDRip
         press_group: CASO
+        press_path: Freezing_BDRip
       markers: []
+      path: T:\Freezing
   - type: country
     data: japan
   - type: name
@@ -240,6 +245,7 @@
       collectioned:
       - press_format: BDRip
         press_group: CASO
+        press_path: Fractale_BDRip
       - press_format: BDRip
         press_group: ANK
         press_path: Fractale_BDRip(ANK)
@@ -267,6 +273,7 @@
         press_path: 放浪息子_BDRip(VCB)
       - press_format: BDRip
         press_group: CKCS
+        press_path: 放浪息子_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: 放浪息子_720p
@@ -291,6 +298,7 @@
         press_path: Dog Days_BDRip(FL)
       - press_format: BDRip
         press_group: CASO
+        press_path: Dog Days_BDRip
       - press_format: 720p
         press_group: CASO
         press_path: Dog Days_720p
@@ -359,8 +367,10 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBL
+        press_path: 花咲くいろは_BDRip(VCB)
       - press_format: BDRip
         press_group: CKCS
+        press_path: 花咲くいろは_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: 花咲くいろは_720p
@@ -502,9 +512,12 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 変ゼミ_BDRip(Jsum)
       - press_format: BDRip
         press_group: CASO
+        press_path: 変ゼミ_BDRip
       markers: []
+      path: Z:\変ゼミ
   - type: country
     data: japan
   - type: name
@@ -672,6 +685,7 @@
         press_path: 緋弾のアリア_BDRip(VCB)
       - press_format: BDRip
         press_group: CKCS
+        press_path: 緋弾のアリア_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: 緋弾のアリア_720p
@@ -797,8 +811,10 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 神様のメモ帳_BDRip
       - press_format: BDRip
         press_group: CKCS
+        press_path: 神様のメモ帳_BDRip(CK)
       - press_format: 720p
         press_group: CKCS
         press_path: 神様のメモ帳_720p
@@ -820,6 +836,7 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: 異国迷路のクロワーゼ_BDRip
       - press_format: BDRip
         press_group: KAMI
         press_path: 異国迷路のクロワーゼ_BDRip(KAMI)
@@ -844,8 +861,10 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ゆるゆり_BDRip(VCB)
       - press_format: BDRip
         press_group: CASO
+        press_path: ゆるゆり_BDRip
       - press_format: 720p
         press_group: CASO
         press_path: ゆるゆり_720p
@@ -884,6 +903,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 神様Dolls_BDRip
       - press_format: BDRip
         press_group: ANK
         press_path: 神様Dolls_BDRip(ANK)
@@ -949,6 +969,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: バカとテストと召喚獣にっ！_BDRip
       - press_format: BDRip
         press_group: ANK
         press_path: バカとテストと召喚獣にっ！_BDRip(ANK)
@@ -998,6 +1019,7 @@
         press_path: まよチキ!_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: まよチキ!_BDRip
       - press_format: 720p
         press_group: CK
         press_path: まよチキ!_720P
@@ -1161,11 +1183,15 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 侵略！？イカ娘_BDRip
       - press_format: BDRip
         press_group: FL
+        press_path: 侵略！？イカ娘_BDRip(FL)
       - press_format: 720p
         press_group: FL
+        press_path: 侵略！？イカ娘_720p
       markers: []
+      path: S:\侵略！イカ娘
   - type: country
     data: japan
   - type: name
@@ -1182,8 +1208,10 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: C3 -シーキューブ-_BDRip
       - press_format: BDRip
         press_group: CK
+        press_path: C3 -シーキューブ-_BDRip(CK)
       - press_format: 720p
         press_group: CK
         press_path: C3 -シーキューブ-_720p
@@ -1267,6 +1295,10 @@
         press_path: バクマン。2_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: バクマン。2_BDRip
+      - press_format: 720p
+        press_group: DMG
+        press_path: バクマン。2_720p
       markers: []
       path: Y:\バクマン。
   - type: country
@@ -1307,6 +1339,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 真剣で私に恋しなさい！！_BDRip
       - press_format: BDRip
         press_group: DMG
         press_path: 真剣で私に恋しなさい！！_BDRip(DMG)
@@ -1334,6 +1367,7 @@
         press_path: たまゆら ～Hitotose～_720p
       - press_format: BDRip
         press_group: CASO
+        press_path: たまゆら ～Hitotose～_BDRip
       - press_format: BDRip
         press_group: VCB
       markers: []
@@ -1373,6 +1407,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ましろ色シンフォニー_BDRip
       - press_format: BDRip
         press_group: CK
         press_path: ましろ色シンフォニー_BDRip(CK)
@@ -1416,8 +1451,10 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 僕は友達が少ない_BDRip
       - press_format: BDRip
         press_group: CKCS
+        press_path: 僕は友達が少ない_BDRip(CKCS)
       - press_format: 720p
         press_group: CKCS
         press_path: 僕は友達が少ない_720p
@@ -1442,6 +1479,7 @@
         press_path: 灼眼のシャナIII -Final-_BDRip(PHI)
       - press_format: BDRip
         press_group: CKJY
+        press_path: 灼眼のシャナIII -Final-_BDRip
       - press_format: 720p
         press_group: CKJY
         press_path: 灼眼のシャナIII -Final-_720p
@@ -1501,8 +1539,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
-      - press_format: BDRip
-        press_group: SNOW
+        press_path: 未来日記_BDRip
       - press_format: 720p
         press_group: SCSG
         press_path: 未来日記_720p
@@ -1543,6 +1580,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Un-Go_BDRip
       - press_format: BDRip
         press_group: MZ
         press_path: Un-Go_BDRip(MZ)
@@ -1589,9 +1627,12 @@
       collectioned:
       - press_format: BDRip
         press_group: CASO
+        press_path: ひだまりスケッチ×SP_BDRip
       - press_format: BDRip
         press_group: RF
+        press_path: ひだまりスケッチ×SP_BDRip(RF)
       markers: []
+      path: S:\ひだまりスケッチ
   - type: country
     data: japan
   - type: name

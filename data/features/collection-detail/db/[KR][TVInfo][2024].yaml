@@ -1,0 +1,323 @@
+- attributes:
+  - type: date
+    data:
+      start: '20240117'
+      end: '20240207'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\杀人者的购物中心
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 杀人者的购物中心_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 杀人者的购物中心
+- attributes:
+  - type: date
+    data:
+      start: '20240127'
+      end: '20240317'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\低谷医生
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 低谷医生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 低谷医生
+- attributes:
+  - type: date
+    data:
+      start: '20240315'
+      end: '20240315'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\炸鸡块奇遇记
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 炸鸡块奇遇记_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 炸鸡块奇遇记
+- attributes:
+  - type: date
+    data:
+      start: '20240405'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\寄生兽：灰色部队
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 寄生兽：灰色部队_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 寄生兽：灰色部队
+- attributes:
+  - type: date
+    data:
+      start: '20240408'
+      end: '20240528'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\背着善在跑吧
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 背着善在跑吧_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 背着善在跑吧
+- attributes:
+  - type: date
+    data:
+      start: '20240525'
+      end: '20240706'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\联结
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 联结_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 联结
+- attributes:
+  - type: date
+    data:
+      start: '20240529'
+      end: '20240619'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\黑社会的我成为了高中生
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 黑社会的我成为了高中生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 黑社会的我成为了高中生
+- attributes:
+  - type: date
+    data:
+      start: '20240615'
+      end: '20240804'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\她的日与夜
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 她的日与夜_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 她的日与夜
+- attributes:
+  - type: date
+    data:
+      start: '20240722'
+      end: '20240813'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\是偶然吗
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 是偶然吗_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 是偶然吗
+- attributes:
+  - type: date
+    data:
+      start: '20240802'
+      end: '20240921'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\坏记忆橡皮擦
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 坏记忆橡皮擦_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 坏记忆橡皮擦
+- attributes:
+  - type: date
+    data:
+      start: '20240810'
+      end: '20240915'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫这一家
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫这一家_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫这一家
+- attributes:
+  - type: date
+    data:
+      start: '20240824'
+      end: '20240922'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\凌晨两点的灰姑娘
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 凌晨两点的灰姑娘_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 凌晨两点的灰姑娘
+- attributes:
+  - type: date
+    data:
+      start: '20240921'
+      end: '20241102'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\来自地狱的法官
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 来自地狱的法官_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 来自地狱的法官
+- attributes:
+  - type: date
+    data:
+      start: '20241108'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浮游先生
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浮游先生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浮游先生
+- attributes:
+  - type: date
+    data:
+      start: '20241122'
+      end: '20250104'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\现在拨打的电话
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 现在拨打的电话_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 现在拨打的电话
+- attributes:
+  - type: date
+    data:
+      start: '20241129'
+      end: '20241129'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\一箱情缘
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 一箱情缘_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 一箱情缘
+- attributes:
+  - type: date
+    data:
+      start: '20241204'
+      end: '20241218'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\照明商店
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 照明商店_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 照明商店

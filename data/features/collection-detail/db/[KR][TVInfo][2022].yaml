@@ -1,0 +1,348 @@
+- attributes:
+  - type: date
+    data:
+      start: '20220103'
+      end: '20220222'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\幽灵医生
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 幽灵医生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 幽灵医生
+- attributes:
+  - type: date
+    data:
+      start: '20220126'
+      end: '20220316'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\你和我的警察课堂
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 你和我的警察课堂_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 你和我的警察课堂
+- attributes:
+  - type: date
+    data:
+      start: '20220212'
+      end: '20220403'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\二十五，二十一
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 二十五，二十一_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 二十五，二十一
+- attributes:
+  - type: date
+    data:
+      start: '20220212'
+      end: '20220403'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\气象厅的人们：社内恋爱残酷史篇
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 气象厅的人们：社内恋爱残酷史篇_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 气象厅的人们：社内恋爱残酷史篇_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 气象厅的人们：社内恋爱残酷史篇
+- attributes:
+  - type: date
+    data:
+      start: '20220228'
+      end: '20220405'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\社内相亲
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 社内相亲_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 社内相亲
+- attributes:
+  - type: date
+    data:
+      start: '20220307'
+      end: '20220426'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\疯狂爱上你
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 疯狂爱上你_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 疯狂爱上你
+- attributes:
+  - type: date
+    data:
+      start: '20220402'
+      end: '20220918'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\现在很美丽
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 现在很美丽_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 现在很美丽
+- attributes:
+  - type: date
+    data:
+      start: '20220409'
+      end: '20220529'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我的出走日记
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我的出走日记_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 我的出走日记_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的出走日记
+- attributes:
+  - type: date
+    data:
+      start: '20220423'
+      end: '20220612'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\现在开始是Showtime！
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 现在开始是Showtime！_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 现在开始是Showtime！
+- attributes:
+  - type: date
+    data:
+      start: '20220506'
+      end: '20220506'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\魔幻之音
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 魔幻之音_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 魔幻之音
+- attributes:
+  - type: date
+    data:
+      start: '20220629'
+      end: '20220818'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\非常律师禹英禑
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 非常律师禹英禑_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 非常律师禹英禑
+- attributes:
+  - type: date
+    data:
+      start: '20220729'
+      end: '20220917'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\黑话律师
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 黑话律师_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 黑话律师
+- attributes:
+  - type: date
+    data:
+      start: '20220903'
+      end: '20221009'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\小小姐们
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 小小姐们_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 小小姐们
+- attributes:
+  - type: date
+    data:
+      start: '20220923'
+      end: '20221111'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\千元律师
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 千元律师_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 千元律师
+- attributes:
+  - type: date
+    data:
+      start: '20221116'
+      end: '20221229'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\柔美的细胞小将
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 柔美的细胞小将2_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 柔美的细胞小将2
+- attributes:
+  - type: date
+    data:
+      start: '20221118'
+      end: '20221225'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\财阀家的小儿子
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 财阀家的小儿子_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 财阀家的小儿子
+- attributes:
+  - type: date
+    data:
+      start: '20221121'
+      end: '20221227'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\什么都不想做
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 什么都不想做_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 什么都不想做
+- attributes:
+  - type: date
+    data:
+      start: '20221221'
+      end: '20230209'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\爱情的理解
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 爱情的理解_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 爱情的理解

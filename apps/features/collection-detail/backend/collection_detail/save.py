@@ -1,7 +1,14 @@
 """从浏览页写回 JP TV 数据 YAML，并在 ``History`` 目录保留带时间戳的备份。"""
 from __future__ import annotations
 
+import hashlib
+import os
+import re
 import shutil
+import tempfile
+import threading
+import unicodedata
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -18,9 +25,16 @@ from work_catalog_yaml.jp_tv.validate import (
     TV_JP_PRESS_GROUP_KEY,
     TV_JP_PRESS_PATH_KEY,
     TV_JP_RELEASE_TYPE_KEY,
+    entry_air_dates,
+    entry_collection_type_data,
+    entry_country_slug,
+    entry_display_name,
+    entry_domain_slug,
+    entry_release_type_slug,
     load_jp_tv_entries_from_yaml,
 )
 from work_catalog_yaml.layout import feature_data_root
+from work_catalog_yaml.media_groups import media_group_code_known
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml_string
 
 
@@ -189,16 +203,6 @@ def _row_ref_from_body_item(raw: Any, *, label: str) -> tuple[str, int]:
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{label}.index_in_file 非法：{idx!r}") from exc
     return rel_s, ii
-
-
-def _row_rel_from_body_item(raw: Any, *, label: str) -> str:
-    if not isinstance(raw, dict):
-        raise ValueError(f"{label} 须为对象")
-    ysr = raw.get("yaml_source_rel")
-    rel_s = ysr.strip().replace("\\", "/") if isinstance(ysr, str) else ""
-    if not rel_s:
-        raise ValueError(f"{label}.yaml_source_rel 须为非空字符串")
-    return rel_s
 
 
 def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
@@ -416,6 +420,295 @@ def browse_save_yaml_from_ui_body(
         out.append((target, hist_name))
 
     return out
+
+
+_CATALOG_APPEND_LOCK = threading.RLock()
+_ISO_DATE_RE = re.compile(r"^(?P<year>(?:19|20)\d{2})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
+_COUNTRY_FILE_CODES = {
+    "japan": "JP",
+    "korea": "KR",
+    "china": "CN",
+    "usa": "US",
+    "uk": "UK",
+}
+
+
+@dataclass(frozen=True)
+class CatalogAppendReceipt:
+    target: Path
+    target_existed: bool
+    previous_bytes: bytes
+    history_path: Path | None
+    work_ref: dict[str, Any]
+
+
+def _normalized_catalog_identity(value: Any) -> str:
+    normalized = unicodedata.normalize("NFKC", str(value or "")).casefold()
+    return "".join(ch for ch in normalized if ch.isalnum())
+
+
+def catalog_relpath_for_new_work(country: str, begin_date: str) -> str:
+    country_key = str(country or "").strip().casefold()
+    country_code = _COUNTRY_FILE_CODES.get(country_key)
+    if country_code is None:
+        raise ValueError(f"新增作品暂不支持国家代码：{country}")
+    matched = _ISO_DATE_RE.fullmatch(str(begin_date or "").strip())
+    if matched is None:
+        raise ValueError("新增作品开始日期必须为 YYYY-MM-DD")
+    return f"[{country_code}][TVInfo][{matched.group('year')}].yaml"
+
+
+def _strict_new_work_patch(patch: Any) -> dict[str, Any]:
+    if not isinstance(patch, dict):
+        raise ValueError("新增作品信息必须是对象")
+    name = patch.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("新增作品名不能为空")
+    date = patch.get("date")
+    if not isinstance(date, dict):
+        raise ValueError("新增作品必须填写日期")
+    begin_date = str(date.get("start") or "").strip()
+    end_date = str(date.get("end") or "").strip()
+    if _ISO_DATE_RE.fullmatch(begin_date) is None:
+        raise ValueError("新增作品开始日期必须为 YYYY-MM-DD")
+    if end_date and _ISO_DATE_RE.fullmatch(end_date) is None:
+        raise ValueError("新增作品结束日期必须为 YYYY-MM-DD 或留空")
+    if end_date and end_date < begin_date:
+        raise ValueError("新增作品结束日期不能早于开始日期")
+    path = patch.get("path")
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("新增作品 path 不能为空")
+    domain = patch.get(TV_JP_DOMAIN_KEY)
+    release_type = patch.get(TV_JP_RELEASE_TYPE_KEY)
+    country = patch.get("country")
+    for label, value in (
+        ("domain", domain),
+        ("country", country),
+        ("release_type", release_type),
+    ):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"新增作品 {label} 不能为空")
+    presses = patch.get("collectioned_ordered")
+    if not isinstance(presses, list) or not presses:
+        raise ValueError("新增作品至少需要一个压制记录")
+    normalized_presses: list[dict[str, Any]] = []
+    press_keys: set[tuple[str, str]] = set()
+    for index, raw in enumerate(presses):
+        if not isinstance(raw, dict):
+            raise ValueError(f"新增作品压制记录 {index + 1} 必须是对象")
+        press_format = str(raw.get(TV_JP_PRESS_FORMAT_KEY) or "").strip()
+        press_group = str(raw.get(TV_JP_PRESS_GROUP_KEY) or "").strip().upper()
+        press_path_raw = raw.get(TV_JP_PRESS_PATH_KEY)
+        if not isinstance(press_path_raw, str):
+            press_path = ""
+        else:
+            candidate = press_path_raw.strip().replace("\\", "/")
+            if candidate.startswith("/") or re.match(r"^[A-Za-z]:", candidate):
+                raise ValueError(f"新增作品压制记录 {index + 1} 的目标目录必须是相对路径")
+            parts = candidate.strip("/").split("/")
+            if any(part in {"", ".", ".."} for part in parts):
+                raise ValueError(f"新增作品压制记录 {index + 1} 的目标目录包含非法路径片段")
+            press_path = "/".join(parts)
+        if not press_format or not press_group or not press_path:
+            raise ValueError(f"新增作品压制记录 {index + 1} 必须填写格式、组简称和目标目录")
+        if not media_group_code_known(press_group):
+            raise ValueError(f"新增作品压制记录 {index + 1} 使用了未登记的组简称：{press_group}")
+        key = (press_format.casefold(), press_group.casefold())
+        if key in press_keys:
+            raise ValueError(f"新增作品存在重复压制记录：{press_format}/{press_group}")
+        press_keys.add(key)
+        normalized_presses.append(
+            {
+                TV_JP_PRESS_FORMAT_KEY: press_format,
+                TV_JP_PRESS_GROUP_KEY: press_group,
+                TV_JP_PRESS_PATH_KEY: press_path,
+            }
+        )
+    return {
+        **patch,
+        "name": name.strip(),
+        "date": {"start": begin_date, "end": end_date},
+        "path": path.strip(),
+        TV_JP_DOMAIN_KEY: str(domain).strip(),
+        "country": str(country).strip().casefold(),
+        TV_JP_RELEASE_TYPE_KEY: str(release_type).strip(),
+        "collectioned_ordered": normalized_presses,
+    }
+
+
+def _catalog_files(settings: JpTvBrowseSettings) -> list[Path]:
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 collection-detail filesystem_root")
+    root = settings.filesystem_root.resolve()
+    return [path.resolve() for path in sorted(root.glob("*.yaml")) if path.is_file()]
+
+
+def _existing_catalog_match(
+    patch: dict[str, Any],
+    settings: JpTvBrowseSettings,
+) -> tuple[Path, int, bool] | None:
+    wanted_name = _normalized_catalog_identity(patch["name"])
+    wanted_path = os.path.normcase(os.path.abspath(str(patch["path"])))
+    wanted_presses = {
+        (
+            str(row[TV_JP_PRESS_FORMAT_KEY]).casefold(),
+            str(row[TV_JP_PRESS_GROUP_KEY]).casefold(),
+            str(row[TV_JP_PRESS_PATH_KEY]).replace("\\", "/").casefold(),
+        )
+        for row in patch["collectioned_ordered"]
+    }
+    for yaml_path in _catalog_files(settings):
+        raw_text = yaml_path.read_text(encoding="utf-8")
+        entries = load_jp_tv_entries_from_yaml(load_yaml_string(raw_text))
+        for index, entry in enumerate(entries):
+            name_matches = _normalized_catalog_identity(entry_display_name(entry)) == wanted_name
+            data = entry_collection_type_data(entry)
+            existing_path = str(data.get("path") or "").strip()
+            path_matches = bool(existing_path) and os.path.normcase(os.path.abspath(existing_path)) == wanted_path
+            if not name_matches and not path_matches:
+                continue
+            if name_matches != path_matches:
+                raise ValueError(
+                    "数据库中已有同名作品或相同 path，但两者没有同时匹配；请先在作品数据库中人工核对"
+                )
+            existing_presses = {
+                (
+                    str(row.get(TV_JP_PRESS_FORMAT_KEY) or "").strip().casefold(),
+                    str(row.get(TV_JP_PRESS_GROUP_KEY) or "").strip().casefold(),
+                    str(row.get(TV_JP_PRESS_PATH_KEY) or "").strip().replace("\\", "/").casefold(),
+                )
+                for row in data.get("collectioned", [])
+                if isinstance(row, dict)
+            }
+            existing_start, existing_end = entry_air_dates(entry)
+            normalize_date = lambda value: re.sub(r"[^0-9]", "", str(value or ""))
+            metadata_matches = (
+                entry_country_slug(entry).strip().casefold() == patch["country"].casefold()
+                and entry_domain_slug(entry).strip().casefold() == patch[TV_JP_DOMAIN_KEY].casefold()
+                and entry_release_type_slug(entry).strip().casefold()
+                == patch[TV_JP_RELEASE_TYPE_KEY].casefold()
+                and normalize_date(existing_start) == normalize_date(patch["date"]["start"])
+                and normalize_date(existing_end) == normalize_date(patch["date"]["end"])
+            )
+            return (
+                yaml_path,
+                index,
+                metadata_matches and wanted_presses.issubset(existing_presses),
+            )
+    return None
+
+
+def _file_sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def preview_catalog_work_append(
+    patch: Any,
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    normalized = _strict_new_work_patch(patch)
+    existing = _existing_catalog_match(normalized, settings)
+    if existing is not None:
+        yaml_path, index, exact = existing
+        if not exact:
+            raise ValueError("数据库中已有该作品，但作品信息或压制记录不同；请先在作品数据库中核对并合并")
+        return {
+            "action": "already_exists",
+            "target": str(yaml_path),
+            "yaml_source_rel": yaml_path.name,
+            "index_in_file": index,
+            "before_sha256": _file_sha256(yaml_path.read_bytes()),
+            "after_sha256": _file_sha256(yaml_path.read_bytes()),
+            "patch": normalized,
+        }
+
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 collection-detail filesystem_root")
+    relpath = catalog_relpath_for_new_work(normalized["country"], normalized["date"]["start"])
+    target = resolve_safe_yaml_under_root(settings.filesystem_root, relpath).resolve()
+    previous = target.read_bytes() if target.is_file() else b""
+    doc = load_yaml_string(previous.decode("utf-8")) if previous else []
+    works = _works_list_mut(doc)
+    index = len(works)
+    works.append(_new_work_from_row_patch(normalized))
+    after_text = dump_yaml_string(doc)
+    load_jp_tv_entries_from_yaml(load_yaml_string(after_text))
+    return {
+        "action": "append",
+        "target": str(target),
+        "yaml_source_rel": relpath,
+        "index_in_file": index,
+        "before_sha256": _file_sha256(previous),
+        "after_sha256": _file_sha256(after_text.encode("utf-8")),
+        "patch": normalized,
+        "_after_text": after_text,
+    }
+
+
+def _atomic_write_bytes(target: Path, data: bytes) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary_raw = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+    temporary = Path(temporary_raw)
+    try:
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(target)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def append_catalog_work_from_preview(
+    patch: Any,
+    *,
+    settings: JpTvBrowseSettings,
+    expected_before_sha256: str,
+) -> tuple[dict[str, Any], CatalogAppendReceipt | None]:
+    with _CATALOG_APPEND_LOCK:
+        preview = preview_catalog_work_append(patch, settings=settings)
+        if str(preview["before_sha256"]) != str(expected_before_sha256):
+            raise ValueError("作品数据库在预览后发生变化，尚未写入；请重新预览")
+        if preview["action"] == "already_exists":
+            public = {key: value for key, value in preview.items() if not key.startswith("_")}
+            return public, None
+        target = Path(str(preview["target"])).resolve()
+        target_existed = target.is_file()
+        previous = target.read_bytes() if target_existed else b""
+        if _file_sha256(previous) != expected_before_sha256:
+            raise ValueError("作品数据库在写入前再次发生变化，尚未写入")
+        history_path: Path | None = None
+        if target_existed:
+            history_root = history_catalog_root(settings)
+            history_root.mkdir(parents=True, exist_ok=True)
+            history_path = history_root / history_snapshot_name(target)
+            shutil.copy2(target, history_path)
+        _atomic_write_bytes(target, str(preview["_after_text"]).encode("utf-8"))
+        work_ref = {
+            "yaml_source_rel": preview["yaml_source_rel"],
+            "index_in_file": preview["index_in_file"],
+        }
+        receipt = CatalogAppendReceipt(
+            target=target,
+            target_existed=target_existed,
+            previous_bytes=previous,
+            history_path=history_path,
+            work_ref=work_ref,
+        )
+        public = {key: value for key, value in preview.items() if not key.startswith("_")}
+        return public, receipt
+
+
+def rollback_catalog_work_append(receipt: CatalogAppendReceipt | None) -> None:
+    if receipt is None:
+        return
+    with _CATALOG_APPEND_LOCK:
+        if receipt.target_existed:
+            _atomic_write_bytes(receipt.target, receipt.previous_bytes)
+        else:
+            receipt.target.unlink(missing_ok=True)
 
 
 _ENUM_EDIT_KEYS = {TV_JP_PRESS_FORMAT_KEY, TV_JP_PRESS_GROUP_KEY}

@@ -1,0 +1,345 @@
+- attributes:
+  - type: date
+    data:
+      start: '20160104'
+      end: '20160301'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\奶酪陷阱
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 奶酪陷阱_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 奶酪陷阱
+- attributes:
+  - type: date
+    data:
+      start: '20160213'
+      end: '20160821'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\对，就是那样
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 对，就是那样_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 对，就是那样
+- attributes:
+  - type: date
+    data:
+      start: '20160224'
+      end: '20160414'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\回来吧!大叔
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 回来吧!大叔_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 回来吧!大叔
+- attributes:
+  - type: date
+    data:
+      start: '20160318'
+      end: '20160507'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\玉氏南正基
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 玉氏南正基_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 玉氏南正基
+- attributes:
+  - type: date
+    data:
+      start: '20160318'
+      end: '20160507'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\记忆
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 记忆_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 记忆
+- attributes:
+  - type: date
+    data:
+      start: '20160502'
+      end: '20160628'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\又是吴海英
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 又是吴海英_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 又是吴海英
+- attributes:
+  - type: date
+    data:
+      start: '20160620'
+      end: '20160802'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\美丽心灵
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: Beautiful Mind_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Beautiful Mind
+- attributes:
+  - type: date
+    data:
+      start: '20160620'
+      end: '20160823'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Doctors
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Doctors_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Doctors
+- attributes:
+  - type: date
+    data:
+      start: '20160720'
+      end: '20160914'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\W-两个世界
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: W-两个世界_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: W-两个世界
+- attributes:
+  - type: date
+    data:
+      start: '20160824'
+      end: '20161110'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\嫉妒的化身
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 嫉妒的化身_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 嫉妒的化身
+- attributes:
+  - type: date
+    data:
+      start: '20160923'
+      end: '20161112'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\The K2
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: The K2_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: The K2
+- attributes:
+  - type: date
+    data:
+      start: '20161005'
+      end: '20161124'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\1%的可能性
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 1%的可能性_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 1%的可能性
+- attributes:
+  - type: date
+    data:
+      start: '20161107'
+      end: '20170117'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\浪漫医生金师傅
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 浪漫医生金师傅_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 浪漫医生金师傅
+- attributes:
+  - type: date
+    data:
+      start: '20161116'
+      end: '20170111'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\举重妖精金福珠
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 举重妖精金福珠_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 举重妖精金福珠
+- attributes:
+  - type: date
+    data:
+      start: '20161116'
+      end: '20170125'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\蓝色大海的传说
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 蓝色大海的传说_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 蓝色大海的传说
+- attributes:
+  - type: date
+    data:
+      start: '20161128'
+      end: '20170526'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\闪耀的恩秀
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 闪耀的恩秀_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 闪耀的恩秀
+- attributes:
+  - type: date
+    data:
+      start: '20161202'
+      end: '20170121'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\孤单又灿烂的神-鬼怪
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 1080p
+      - press_format: 1080p Ver.2
+        press_group: '----'
+        press_path: 1080p Ver.2
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 孤单又灿烂的神-鬼怪
+- attributes:
+  - type: date
+    data:
+      start: '20161107'
+      end: '20170106'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\心里的声音
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 心里的声音_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 心里的声音

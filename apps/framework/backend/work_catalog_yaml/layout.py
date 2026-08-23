@@ -17,8 +17,13 @@ and small tests.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+
+_APPLICATION_ROOT_ENV = "NIMDA_APPLICATION_ROOT"
+_WORKSPACE_ROOT_ENV = "NIMDA_WORKSPACE_ROOT"
 
 
 def code_repo_root() -> Path:
@@ -26,8 +31,31 @@ def code_repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def application_root() -> Path:
+    """Return the root containing the application's bundled ``apps`` resources."""
+    configured = os.environ.get(_APPLICATION_ROOT_ENV, "").strip()
+    if configured:
+        root = Path(configured).expanduser().resolve()
+        if not (root / "apps").is_dir():
+            raise ValueError(
+                f"{_APPLICATION_ROOT_ENV} is not a valid Nimda application root: {root} "
+                "(missing apps)"
+            )
+        return root
+    return workspace_root()
+
+
 def workspace_root() -> Path:
-    """Return the ``nimda`` workspace root when the project uses the new layout."""
+    """Return the mutable workspace containing shared config and data."""
+    configured = os.environ.get(_WORKSPACE_ROOT_ENV, "").strip()
+    if configured:
+        root = Path(configured).expanduser().resolve()
+        missing = [name for name in ("config", "data") if not (root / name).is_dir()]
+        if missing:
+            raise ValueError(
+                f"{_WORKSPACE_ROOT_ENV} 不是有效的 Nimda 工作区：{root}（缺少 {', '.join(missing)}）"
+            )
+        return root
     repo = code_repo_root()
     for cand in (repo, *repo.parents):
         if cand.name == "nimda" and (cand / "apps").is_dir() and (cand / "data").is_dir():
@@ -64,7 +92,7 @@ def workspace_config_root() -> Path:
 
 
 def framework_frontend_root() -> Path:
-    return workspace_root() / "apps" / "framework" / "frontend"
+    return application_root() / "apps" / "framework" / "frontend"
 
 
 def framework_config_path() -> Path:
@@ -72,7 +100,7 @@ def framework_config_path() -> Path:
 
 
 def feature_root(feature_id: str) -> Path:
-    return workspace_root() / "apps" / "features" / feature_id
+    return application_root() / "apps" / "features" / feature_id
 
 
 def feature_frontend_root(feature_id: str) -> Path:
@@ -92,7 +120,7 @@ def feature_data_root(feature_id: str) -> Path:
 
 
 def ensure_feature_backend_paths() -> None:
-    features_dir = workspace_root() / "apps" / "features"
+    features_dir = application_root() / "apps" / "features"
     if not features_dir.is_dir():
         return
     for backend in sorted(features_dir.glob("*/backend")):

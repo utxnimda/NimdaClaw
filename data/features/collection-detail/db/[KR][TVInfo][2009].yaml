@@ -1,0 +1,66 @@
+- attributes:
+  - type: date
+    data:
+      start: '20090105'
+      end: '20090331'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\花样男子
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 花样男子_1080p
+      - press_format: 1080p Ver.2
+        press_group: '----'
+        press_path: 花样男子_1080p Ver.2
+      - press_format: 720p
+        press_group: '----'
+        press_path: 花样男子_720p
+      - press_format: 720p Ver.2
+        press_group: '----'
+        press_path: 花样男子_720p Ver.2
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 花样男子
+- attributes:
+  - type: date
+    data:
+      start: '20090429'
+      end: '20090616'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\偶然結婚
+      collectioned:
+      - press_format: 360p
+        press_group: '----'
+        press_path: 偶然結婚_360p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 偶然結婚
+- attributes:
+  - type: date
+    data:
+      start: '20090907'
+      end: '20100319'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\穿透屋顶的High Kick！
+      collectioned:
+      - press_format: 480p
+        press_group: '----'
+        press_path: 穿透屋顶的High Kick！_480p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 穿透屋顶的High Kick！

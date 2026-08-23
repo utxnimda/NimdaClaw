@@ -3,5 +3,5 @@ version: 1
 
 paths:
   finish_dir: "E:/LinkVideo/[ACG] Japan/Finish"
-  database_path: "E:/Project/nimda/data/features/collection-info/db/collection-info.yaml"
-  history_root: "E:/Project/nimda/data/features/collection-info/history"
+  database_path: "data/features/collection-info/db/collection-info.yaml"
+  history_root: "data/features/collection-info/history"

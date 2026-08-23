@@ -1,4 +1,7 @@
-﻿(function () {
+(function () {
+  if (window.__NimdaLegacyShellMounted) return;
+  window.__NimdaLegacyShellMounted = true;
+
   const THEME_KEY = "jp-tv-browse-theme";
   const FONT_KEY = "jp-tv-browse-font";
   const THEME_IDS = [
@@ -204,6 +207,11 @@
   const SHEET_PRESS_AGG_SORT_KEY = "press_fmt_agg";
   /** localStorage：逐项压制分列是否勾选显示 */
   const LS_KEY_PRESS_SPLIT_VISIBLE = "jp-tv-browse-press-split-visible";
+  const LS_KEY_SHEET_COL_WIDTHS = "nimda.collectionDetail.sheetColWidths.v3";
+  var sheetManualColWidths = loadSheetManualColWidths();
+  var sheetColumnResizeBound = false;
+  var sheetColumnFitRaf = 0;
+  var sheetMeasureEl = null;
 
   /** 表格列排序：null 表示按数据文件 + 文件内 index_in_file；同一列再次点击切换升序/降序 */
   let sheetSortKey = null;
@@ -424,6 +432,447 @@
     return true;
   }
 
+  function loadSheetManualColWidths() {
+    try {
+      var raw = localStorage.getItem(LS_KEY_SHEET_COL_WIDTHS);
+      var parsed = raw ? JSON.parse(raw) : {};
+      var out = Object.create(null);
+      if (parsed && typeof parsed === "object") {
+        Object.keys(parsed).forEach(function (k) {
+          var n = Number(parsed[k]);
+          if (Number.isFinite(n) && n >= 36 && n <= 1200) out[k] = n;
+        });
+      }
+      return out;
+    } catch (e) {
+      return Object.create(null);
+    }
+  }
+
+  function saveSheetManualColWidths() {
+    try {
+      localStorage.setItem(
+        LS_KEY_SHEET_COL_WIDTHS,
+        JSON.stringify(sheetManualColWidths || {}),
+      );
+    } catch (e) {}
+  }
+
+  function sheetColumnKeysForVisiblePress(fmColsVisible) {
+    var keys = [
+      "domain",
+      "release_type",
+      "date_start",
+      "date_end",
+      "country",
+      "name",
+      "markers",
+      SHEET_PRESS_AGG_SORT_KEY,
+    ];
+    var cols = fmColsVisible || [];
+    var i;
+    for (i = 0; i < cols.length; i++) {
+      keys.push(FMT_SORT_PREFIX + encodeURIComponent(String(cols[i] == null ? "" : cols[i])));
+    }
+    return keys;
+  }
+
+  function renderSheetColGroup(fmColsVisible) {
+    var keys = sheetColumnKeysForVisiblePress(fmColsVisible);
+    var h = "<colgroup>";
+    var i;
+    for (i = 0; i < keys.length; i++) {
+      h += '<col data-col-key="' + esc(keys[i]) + '" />';
+    }
+    return h + "</colgroup>";
+  }
+
+  function sheetColumnHardMin(key) {
+    if (key === SHEET_PRESS_AGG_SORT_KEY) return 118;
+    if (key === "name") return 84;
+    if (key === "markers") return 54;
+    if (key === "date_start" || key === "date_end") return 64;
+    if (key === "domain" || key === "release_type" || key === "country") return 54;
+    if (typeof key === "string" && key.indexOf(FMT_SORT_PREFIX) === 0) return 62;
+    return 48;
+  }
+
+  function sheetHeaderNeedCap(key) {
+    if (key === "release_type" || key === "markers") return 92;
+    if (key === "date_start" || key === "date_end") return 78;
+    if (key === "domain" || key === "country") return 70;
+    if (key === "name") return 92;
+    if (key === SHEET_PRESS_AGG_SORT_KEY) return 150;
+    if (typeof key === "string" && key.indexOf(FMT_SORT_PREFIX) === 0) return 96;
+    return 92;
+  }
+
+  function sheetTableAvailableWidth(table) {
+    if (!table) return 0;
+    var wrap = table.closest(".sheet-wrap");
+    var rect = wrap ? wrap.getBoundingClientRect() : table.getBoundingClientRect();
+    var left = rect && Number.isFinite(rect.left) ? Math.max(0, rect.left) : 0;
+    var viewport = Math.max(320, document.documentElement.clientWidth || window.innerWidth || 0);
+    return Math.max(320, Math.floor(viewport - left - 12));
+  }
+
+  function sheetVisibleRows(table) {
+    return arrSlice.call(table.querySelectorAll("tbody tr.sheet-row")).filter(function (tr) {
+      return tr.style.display !== "none";
+    });
+  }
+
+  function sheetCellsForColumn(table, key) {
+    var out = [];
+    var ths = arrSlice.call(table.querySelectorAll('thead th[data-col-key]'));
+    var i;
+    for (i = 0; i < ths.length; i++) {
+      if (ths[i].getAttribute("data-col-key") === key) out.push(ths[i]);
+    }
+    var rows = sheetVisibleRows(table);
+    for (i = 0; i < rows.length; i++) {
+      var cells = rows[i].cells || [];
+      var j;
+      for (j = 0; j < cells.length; j++) {
+        if (cells[j].getAttribute("data-col-key") === key) {
+          out.push(cells[j]);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+
+  function sheetCellInlineExtra(cell) {
+    if (!cell) return 0;
+    var cs = window.getComputedStyle(cell);
+    function px(name) {
+      var n = parseFloat(cs.getPropertyValue(name));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return px("padding-left") + px("padding-right") + px("border-left-width") + px("border-right-width") + 2;
+  }
+
+  function sheetMeasureTextNeed(cell, text, preserveSpaces) {
+    var raw =
+      text == null
+        ? ""
+        : preserveSpaces
+          ? String(text).replace(/[\r\n\t]/g, " ")
+          : String(text).replace(/\s+/g, " ").trim();
+    if (!String(raw).trim()) return 0;
+    if (!sheetMeasureEl) {
+      sheetMeasureEl = document.createElement("span");
+      sheetMeasureEl.style.position = "fixed";
+      sheetMeasureEl.style.left = "-10000px";
+      sheetMeasureEl.style.top = "-10000px";
+      sheetMeasureEl.style.visibility = "hidden";
+      sheetMeasureEl.style.whiteSpace = "pre";
+      sheetMeasureEl.style.pointerEvents = "none";
+      document.body.appendChild(sheetMeasureEl);
+    }
+    var cs = window.getComputedStyle(cell);
+    sheetMeasureEl.style.font = cs.font;
+    sheetMeasureEl.style.letterSpacing = cs.letterSpacing;
+    sheetMeasureEl.textContent = raw;
+    return Math.ceil(sheetMeasureEl.getBoundingClientRect().width + sheetCellInlineExtra(cell));
+  }
+
+  function sheetIsVisibleElement(el) {
+    if (!el || el.nodeType !== 1) return false;
+    var cs = window.getComputedStyle(el);
+    return cs.display !== "none" && cs.visibility !== "hidden";
+  }
+
+  function sheetCssGap(el) {
+    if (!el) return 0;
+    var cs = window.getComputedStyle(el);
+    var raw = cs.columnGap || cs.gap || "0";
+    var n = Number(String(raw).replace("px", ""));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function sheetHeaderContentNeed(th) {
+    if (!th) return 0;
+    var inner = th.querySelector(".sheet-th-combo-inner");
+    if (!inner) {
+      return sheetMeasureTextNeed(th, th.innerText || th.textContent || "");
+    }
+    var gap = sheetCssGap(inner);
+    var kids = arrSlice.call(inner.children || []);
+    var total = sheetCellInlineExtra(th);
+    var visibleKids = 0;
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      var child = kids[i];
+      if (!sheetIsVisibleElement(child)) continue;
+      var txt =
+        child.innerText ||
+        child.textContent ||
+        child.getAttribute("aria-label") ||
+        "";
+      var part = sheetMeasureTextNeed(child, txt);
+      if (!part) part = Math.ceil(child.scrollWidth || 0);
+      if (part <= 0) continue;
+      if (visibleKids) total += gap;
+      total += part;
+      visibleKids++;
+    }
+    return Math.ceil(total + 6);
+  }
+
+  function sheetLabelTextForCell(cell, key) {
+    if (!cell) return "";
+    if (key === "name") {
+      return cell.getAttribute("title") || cell.innerText || cell.textContent || "";
+    }
+    var plain = cell.querySelector(
+      ".sheet-plain-scalar, .sheet-plain-val, .cell-empty",
+    );
+    return plain ? plain.textContent || "" : cell.innerText || cell.textContent || "";
+  }
+
+  function sheetTagChildLabel(child) {
+    if (!child) return "";
+    var label = child.querySelector(
+      ".pill-agg-fmt-gp, .pill-fmt-plain-pad, .enum-plain, .sheet-pair-plain, .sheet-plain-val",
+    );
+    return label ? label.textContent || "" : child.innerText || child.textContent || "";
+  }
+
+  function sheetTagRowContentNeed(cell) {
+    var row = cell ? cell.querySelector(".tag-row") : null;
+    if (!row) return 0;
+    var gap = sheetCssGap(row);
+    var kids = arrSlice.call(row.children || []);
+    var total = sheetCellInlineExtra(cell);
+    var visibleKids = 0;
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      var child = kids[i];
+      if (!sheetIsVisibleElement(child)) continue;
+      var label = sheetTagChildLabel(child);
+      var preserve = !!(
+        child.classList &&
+        (child.classList.contains("pill-equal-pre") ||
+          child.querySelector(".pill-equal-pre"))
+      );
+      var part = Math.ceil(child.getBoundingClientRect().width || 0);
+      if (!part) part = sheetMeasureTextNeed(child, label, preserve);
+      if (!part && child.tagName && String(child.tagName).toLowerCase() === "button") {
+        part = Math.ceil(child.getBoundingClientRect().width || child.scrollWidth || 0);
+      }
+      if (part <= 0) continue;
+      if (visibleKids) total += gap;
+      total += part;
+      visibleKids++;
+    }
+    return Math.ceil(total + 2);
+  }
+
+  function sheetPressAggregateContentNeed(cell) {
+    var row = cell ? cell.querySelector(".tag-row-press-agg") : null;
+    if (!row) return 0;
+    var gap = sheetCssGap(row);
+    var kids = arrSlice.call(row.children || []);
+    var total = sheetCellInlineExtra(cell);
+    var visibleKids = 0;
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      var child = kids[i];
+      if (!sheetIsVisibleElement(child)) continue;
+      var part = 0;
+      if (child.classList && child.classList.contains("pill-press-agg")) {
+        part = Math.ceil(child.getBoundingClientRect().width || 0);
+        var labelNode = child.querySelector(".pill-agg-fmt-gp");
+        if (!part) {
+          part = sheetMeasureTextNeed(
+            child,
+            labelNode ? labelNode.textContent || "" : child.textContent || "",
+            true,
+          );
+        }
+      } else {
+        part = Math.ceil(Math.max(child.scrollWidth || 0, child.getBoundingClientRect().width || 0));
+      }
+      if (part <= 0) continue;
+      if (visibleKids) total += gap;
+      total += part;
+      visibleKids++;
+    }
+    return Math.ceil(total + 2);
+  }
+
+  function sheetColumnContentNeed(table, key) {
+    var cells = sheetCellsForColumn(table, key);
+    var maxNeed = sheetColumnHardMin(key);
+    var i;
+    for (i = 0; i < cells.length; i++) {
+      var cell = cells[i];
+      if (
+        key === SHEET_PRESS_AGG_SORT_KEY &&
+        cell.tagName &&
+        String(cell.tagName).toLowerCase() === "th"
+      ) {
+        continue;
+      }
+      var need = 0;
+      var tagName = cell.tagName ? String(cell.tagName).toLowerCase() : "";
+      if (tagName === "th") {
+        need = Math.min(sheetHeaderContentNeed(cell), sheetHeaderNeedCap(key));
+      } else if (cell.classList && cell.classList.contains("cell-press-aggregate")) {
+        need = sheetPressAggregateContentNeed(cell);
+      } else if (cell.querySelector && cell.querySelector(".tag-row")) {
+        need = sheetTagRowContentNeed(cell);
+      } else {
+        var textNeed = sheetMeasureTextNeed(
+          cell,
+          sheetLabelTextForCell(cell, key),
+          key === "name",
+        );
+        if (textNeed) need = textNeed;
+      }
+      maxNeed = Math.max(maxNeed, need + 2);
+    }
+    return maxNeed;
+  }
+
+  function applySheetColumnWidths(table, cols) {
+    var total = 0;
+    var colNodes = arrSlice.call(table.querySelectorAll("col[data-col-key]"));
+    var i;
+    for (i = 0; i < cols.length; i++) {
+      var w = Math.max(sheetColumnHardMin(cols[i].key), Math.round(cols[i].width || 0));
+      cols[i].width = w;
+      total += w;
+      var c;
+      for (c = 0; c < colNodes.length; c++) {
+        if (colNodes[c].getAttribute("data-col-key") === cols[i].key) {
+          colNodes[c].style.width = w + "px";
+          break;
+        }
+      }
+    }
+    table.classList.add("sheet-cols-managed");
+    table.style.width = total + "px";
+    table.style.minWidth = total + "px";
+  }
+
+  function shrinkSheetColumns(cols, shrinkNeeded, allowManual, useHardMin) {
+    var guard = 0;
+    while (shrinkNeeded > 0.5 && guard < 80) {
+      guard++;
+      var candidates = cols
+        .filter(function (c) {
+          if (c.key === SHEET_PRESS_AGG_SORT_KEY) return false;
+          if (!allowManual && c.manual) return false;
+          var floor = useHardMin ? c.hardMin : Math.min(c.fitNeed, c.width);
+          return c.width - floor > 0.5;
+        })
+        .sort(function (a, b) {
+          var af = useHardMin ? a.hardMin : Math.min(a.fitNeed, a.width);
+          var bf = useHardMin ? b.hardMin : Math.min(b.fitNeed, b.width);
+          return b.width - bf - (a.width - af);
+        });
+      if (!candidates.length) break;
+      var top = candidates[0];
+      var floorTop = useHardMin ? top.hardMin : Math.min(top.fitNeed, top.width);
+      var take = Math.min(shrinkNeeded, Math.max(0, top.width - floorTop));
+      top.width -= take;
+      shrinkNeeded -= take;
+    }
+    return shrinkNeeded;
+  }
+
+  function fitSheetColumnsNow() {
+    if (!$view) return;
+    var table = $view.querySelector("table.sheet");
+    if (!table) return;
+    var colNodes = arrSlice.call(table.querySelectorAll("col[data-col-key]"));
+    if (!colNodes.length) return;
+    table.classList.remove("sheet-cols-managed");
+    table.style.width = "";
+    table.style.minWidth = "";
+    var clearI;
+    for (clearI = 0; clearI < colNodes.length; clearI++) {
+      colNodes[clearI].style.width = "";
+    }
+    var cols = colNodes.map(function (col) {
+      var key = col.getAttribute("data-col-key") || "";
+      var th = table.querySelector('thead th[data-col-key="' + key.replace(/"/g, '\\"') + '"]');
+      var measured = th ? sheetHeaderContentNeed(th) : 0;
+      var fitNeed = sheetColumnContentNeed(table, key);
+      var hardMin = sheetColumnHardMin(key);
+      var manual = Object.prototype.hasOwnProperty.call(sheetManualColWidths, key);
+      var width = manual ? Number(sheetManualColWidths[key]) : Math.max(measured, fitNeed, hardMin);
+      return {
+        key: key,
+        width: Math.max(hardMin, width),
+        fitNeed: Math.max(hardMin, fitNeed),
+        hardMin: hardMin,
+        manual: manual,
+      };
+    });
+    var total = cols.reduce(function (acc, c) { return acc + c.width; }, 0);
+    var available = sheetTableAvailableWidth(table);
+    var overflow = Math.max(0, total - available);
+    overflow = shrinkSheetColumns(cols, overflow, false, false);
+    applySheetColumnWidths(table, cols);
+  }
+
+  function scheduleSheetColumnFit() {
+    if (sheetColumnFitRaf) return;
+    sheetColumnFitRaf = requestAnimationFrame(function () {
+      sheetColumnFitRaf = 0;
+      fitSheetColumnsNow();
+    });
+  }
+
+  function bindSheetColumnResizeOnce() {
+    if (sheetColumnResizeBound || !$view) return;
+    sheetColumnResizeBound = true;
+    window.addEventListener("resize", scheduleSheetColumnFit);
+    $view.addEventListener("dblclick", function (ev) {
+      var handle = ev.target && ev.target.closest ? ev.target.closest(".sheet-col-resizer") : null;
+      if (!handle || !$view.contains(handle)) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var th = handle.closest("th[data-col-key]");
+      var key = th ? th.getAttribute("data-col-key") : "";
+      if (!key) return;
+      delete sheetManualColWidths[key];
+      saveSheetManualColWidths();
+      scheduleSheetColumnFit();
+    });
+    $view.addEventListener("pointerdown", function (ev) {
+      var handle = ev.target && ev.target.closest ? ev.target.closest(".sheet-col-resizer") : null;
+      if (!handle || !$view.contains(handle)) return;
+      var th = handle.closest("th[data-col-key]");
+      var key = th ? th.getAttribute("data-col-key") : "";
+      var table = th ? th.closest("table.sheet") : null;
+      if (!key || !table) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var startX = ev.clientX;
+      var startW = Math.ceil(th.getBoundingClientRect().width || sheetColumnHardMin(key));
+      var minW = sheetColumnHardMin(key);
+      document.body.classList.add("sheet-col-resizing");
+      function onMove(moveEv) {
+        var next = Math.max(minW, Math.round(startW + moveEv.clientX - startX));
+        sheetManualColWidths[key] = next;
+        saveSheetManualColWidths();
+        fitSheetColumnsNow();
+      }
+      function onUp() {
+        document.body.classList.remove("sheet-col-resizing");
+        window.removeEventListener("pointermove", onMove, true);
+        window.removeEventListener("pointerup", onUp, true);
+      }
+      window.addEventListener("pointermove", onMove, true);
+      window.addEventListener("pointerup", onUp, true);
+    });
+  }
+
   function filterPopoverTextBodyHtml(sortKey, placeholder) {
     var raw =
       persistedSheetFilters[sortKey] != null
@@ -567,7 +1016,9 @@
         : '<p class="sheet-filter-popover-hint">' + esc(hintTxtSw) + "</p>";
 
     return (
-      '<th scope="col" class="sheet-sort-col sheet-th-combo">' +
+      '<th scope="col" class="sheet-sort-col sheet-th-combo" data-col-key="' +
+      esc(sortKey) +
+      '">' +
       '<div class="sheet-th-combo-inner">' +
       '<span class="sheet-th-sort sheet-th-sortable' +
       actClassSw +
@@ -596,6 +1047,7 @@
       filtHintBlk +
       innerSw +
       "</div>" +
+      '<span class="sheet-col-resizer" role="separator" aria-hidden="true" title="拖动调整列宽，双击恢复自动宽度"></span>' +
       "</th>"
     );
   }
@@ -1152,53 +1604,60 @@
     );
   }
 
-  function renderPressLinkEditButton(rowIndexNum, yamlRelEsc, sourceOrd, pressPath) {
-    var path = pressPath == null ? "" : String(pressPath).trim();
-    var label = path ? "已连" : "未连";
-    var title = path ? "连接路径：" + path : "未配置连接路径";
-    if (!sheetEditMode) {
+  function trimPathValue(v) {
+    return v == null ? "" : String(v).trim();
+  }
+
+  function joinPressTargetForUi(workPath, pressPath) {
+    var work = trimPathValue(workPath);
+    var press = trimPathValue(pressPath);
+    if (!work) return press;
+    if (!press) return work;
+    return work.replace(/[\\\/]+$/g, "") + "/" + press.replace(/^[\\\/]+/g, "");
+  }
+
+  function pressConnectionState(row, item) {
+    var workPath = trimPathValue(row && row.path);
+    var pressPath = trimPathValue(item && item.press_path);
+    if (workPath && pressPath) return "configured";
+    if (workPath || pressPath) return "partial";
+    return "empty";
+  }
+
+  function pressConnectionClass(row, item) {
+    return " press-link-" + pressConnectionState(row, item);
+  }
+
+  function pressConnectionTooltipText(row, item) {
+    var workPath = trimPathValue(row && row.path);
+    var pressPath = trimPathValue(item && item.press_path);
+    if (workPath && pressPath) {
+      return "连接：" + joinPressTargetForUi(workPath, pressPath);
+    }
+    if (workPath || pressPath) {
       return (
-        '<span class="press-link-edit-btn press-link-state' +
-        (path ? " is-linked" : " is-empty") +
-        '" title="' +
-        esc(title) +
-        '">' +
-        esc(label) +
-        "</span>"
+        "连接配置不完整：" +
+        (workPath ? "作品父路径已配置" : "作品父路径未配置") +
+        " / " +
+        (pressPath ? "压制路径已配置" : "压制路径未配置")
       );
     }
+    return "无连接";
+  }
+
+  function renderPressOpenFolderButton(row, item) {
+    var workPath = trimPathValue(row && row.path);
+    var pressPath = trimPathValue(item && item.press_path);
+    if (!workPath || !pressPath) return "";
+    var targetLabel = joinPressTargetForUi(workPath, pressPath);
     return (
-      '<button type="button" class="press-link-edit-btn press-link-state' +
-      (path ? " is-linked" : " is-empty") +
+      '<button type="button" class="press-open-folder-btn" data-action="open-press-folder" data-work-path="' +
+      esc(workPath) +
+      '" data-press-path="' +
+      esc(pressPath) +
       '" title="' +
-      esc(title + "。点击编辑") +
-      '" aria-label="编辑连接路径" data-action="edit-press-link" data-sheet-iif="' +
-      esc(String(Number(rowIndexNum))) +
-      '" data-yaml-rel="' +
-      yamlRelEsc +
-      '" data-source-ord="' +
-      esc(String(sourceOrd)) +
-      '">' +
-      esc(label) +
-      "</button>"
-    );
-  }
-
-  function pressPathTooltipText(pressPath) {
-    var path = pressPath == null ? "" : String(pressPath).trim();
-    return path ? "连接：" + path : "无连接";
-  }
-
-  function pressAggregateLinkEditAttrs(rowIndexNum, yamlRelEsc, sourceOrd) {
-    if (!sheetEditMode) return "";
-    return (
-      ' data-action="edit-press-link" data-sheet-iif="' +
-      esc(String(Number(rowIndexNum))) +
-      '" data-yaml-rel="' +
-      yamlRelEsc +
-      '" data-source-ord="' +
-      esc(String(sourceOrd)) +
-      '"'
+      esc("打开连接目录：" + targetLabel) +
+      '" aria-label="打开连接目录">打开</button>'
     );
   }
 
@@ -1456,31 +1915,6 @@
     return true;
   }
 
-  function editPayloadPressLink(yamlRel, indexInFile, sourceOrd) {
-    var hit = findPayloadRow(yamlRel, indexInFile);
-    if (!hit) return false;
-    var ord = Number(sourceOrd);
-    if (!Number.isFinite(ord) || ord < 0) return false;
-    var ordered;
-    try {
-      ordered = JSON.parse(JSON.stringify(getOrderedTags(hit.row)));
-    } catch (_unused) {
-      ordered = [];
-    }
-    if (!ordered[ord]) return false;
-    var curWorkPath = typeof hit.row.path === "string" ? hit.row.path : "";
-    var nextWorkPath = window.prompt("作品父路径（相对媒体根目录）", curWorkPath);
-    if (nextWorkPath === null) return true;
-    var curPressPath =
-      typeof ordered[ord].press_path === "string" ? ordered[ord].press_path : "";
-    var nextPressPath = window.prompt("压制路径（相对作品父路径）", curPressPath);
-    if (nextPressPath === null) return true;
-    hit.row.path = String(nextWorkPath || "").trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-    ordered[ord].press_path = String(nextPressPath || "").trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-    hit.row.collectioned_ordered = ordered;
-    return true;
-  }
-
   function updatePayloadScalarField(yamlRel, indexInFile, fieldKey, value) {
     var hit = findPayloadRow(yamlRel, indexInFile);
     if (!hit) return false;
@@ -1717,6 +2151,33 @@
     return out;
   }
 
+  async function openPressConfiguredFolder(btn) {
+    var workPath = trimPathValue(btn && btn.getAttribute("data-work-path"));
+    var pressPath = trimPathValue(btn && btn.getAttribute("data-press-path"));
+    if (!workPath || !pressPath) {
+      setStatus("连接配置不完整，无法打开目录。", true);
+      return;
+    }
+    setStatus("打开连接目录中…", false);
+    try {
+      var out = await fetchJson("/api/collection-detail/press/open", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: workPath, press_path: pressPath }),
+      });
+      if (out.res.status >= 400 || !out.data || out.data.ok === false) {
+        setStatus(
+          (out.data && out.data.error) || browseHttpFailHint(out.res.status, "打开连接目录"),
+          true,
+        );
+        return;
+      }
+      setStatus("已打开连接目录：" + (out.data.path || pressPath), false);
+    } catch (err) {
+      setStatus("打开连接目录失败：" + (err.message || String(err)), true);
+    }
+  }
+
   function bindSheetEditActionsOnce() {
     if (sheetEditActionsBound || !$view) return;
     sheetEditActionsBound = true;
@@ -1729,11 +2190,17 @@
       if (
         action !== "delete-row" &&
         action !== "delete-press-item" &&
-        action !== "edit-press-link" &&
         action !== "edit-press-item" &&
-        action !== "add-press-item"
+        action !== "add-press-item" &&
+        action !== "open-press-folder"
       )
         return;
+      if (action === "open-press-folder") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void openPressConfiguredFolder(btn);
+        return;
+      }
       if (!sheetEditMode) return;
       var yrel = btn.getAttribute("data-yaml-rel") || "";
       var iif = parseInt(btn.getAttribute("data-sheet-iif"), 10);
@@ -1751,16 +2218,6 @@
         return;
       }
       if (action === "edit-press-item") {
-        openPressItemEditor(
-          yrel,
-          iif,
-          ord,
-          btn.getAttribute("data-edit-mode") || "full",
-          btn.getAttribute("data-press-fmt") || "",
-        );
-        return;
-      }
-      if (action === "edit-press-link") {
         openPressItemEditor(
           yrel,
           iif,
@@ -2702,6 +3159,7 @@
       if (ok) vis++;
     }
     var hint = document.getElementById("sheet-filter-hint");
+    scheduleSheetColumnFit();
     if (!hint) return;
     if (!hasFilter || !total) {
       hint.textContent = "";
@@ -2847,7 +3305,7 @@
         if (itCell.continuation_title)
           partsCt.push(String(itCell.continuation_title));
         partsCt.push(String(want) + " / " + (gpTrim || "—"));
-        partsCt.push(pressPathTooltipText(itCell.press_path));
+        partsCt.push(pressConnectionTooltipText(row, itCell));
         tipStr = esc(partsCt.join(" · "));
         var biIx =
           typeof itCell.continuation_index === "number"
@@ -2865,13 +3323,14 @@
             " / " +
             (gpTrim || "—") +
             " · " +
-            pressPathTooltipText(itCell.press_path),
+            pressConnectionTooltipText(row, itCell),
         );
       }
 
       h +=
         '<span class="' +
         baseCls +
+        pressConnectionClass(row, itCell) +
         '" data-fmt-tint="' +
         esc(tint) +
         '" title="' +
@@ -2893,6 +3352,7 @@
           esc(gpPlainPadFm) +
           "</span>";
       }
+      h += renderPressOpenFolderButton(row, itCell);
       h += "</span>";
     }
 
@@ -2951,7 +3411,7 @@
         if (itCellAg.continuation_title)
           partsCtAg.push(String(itCellAg.continuation_title));
         partsCtAg.push(String(fmSlugP) + " / " + (gpTrimP || "—"));
-        partsCtAg.push(pressPathTooltipText(itCellAg.press_path));
+        partsCtAg.push(pressConnectionTooltipText(row, itCellAg));
         tipStrAg = esc(partsCtAg.join(" · "));
         var biIxAg =
           typeof itCellAg.continuation_index === "number"
@@ -2969,7 +3429,7 @@
             " / " +
             (gpTrimP || "—") +
             " · " +
-            pressPathTooltipText(itCellAg.press_path),
+            pressConnectionTooltipText(row, itCellAg),
         );
       }
 
@@ -2980,7 +3440,8 @@
       var baseClsAg =
         "pill pill-pair pill-press-agg fmt-agg-s" +
         slotAg +
-        aggKindCls;
+        aggKindCls +
+        pressConnectionClass(row, itCellAg);
 
       hInner +=
         '<span class="' +
@@ -2998,6 +3459,7 @@
         '<span class="pill-agg-fmt-gp pill-equal-pre">' +
         esc(plainLinePad) +
         "</span>";
+      hInner += renderPressOpenFolderButton(row, itCellAg);
       hInner += "</span>";
     }
 
@@ -3086,7 +3548,9 @@
     let h =
       '<div class="sheet-wrap"><table class="sheet' +
       (sheetEditMode ? " sheet-editing" : "") +
-      '" role="table"><thead><tr>' +
+      '" role="table">' +
+      renderSheetColGroup(fmColsVisible) +
+      "<thead><tr>" +
       sortThWithFilter(
         "domain",
         "domain",
@@ -3167,7 +3631,7 @@
         fbAttr +
         '">';
       h +=
-        '<td class="col-tax" title="' +
+        '<td class="col-tax" data-col-key="domain" title="' +
         esc(pack.profile_label) +
         '">' +
         renderEnumSelect(
@@ -3178,7 +3642,7 @@
         ) +
         "</td>";
       h +=
-        '<td class="col-tax">' +
+        '<td class="col-tax" data-col-key="release_type">' +
         renderEnumSelect(
           "release_type",
           r.release_type,
@@ -3188,14 +3652,14 @@
         "</td>";
       if (!sheetEditMode) {
         h +=
-          '<td class="col-date">' + esc(d.start || "") + "</td>" +
-          '<td class="col-date">' + esc(d.end || "") + "</td>";
+          '<td class="col-date" data-col-key="date_start">' + esc(d.start || "") + "</td>" +
+          '<td class="col-date" data-col-key="date_end">' + esc(d.end || "") + "</td>";
       } else {
         h +=
-          '<td class="col-date">' +
+          '<td class="col-date" data-col-key="date_start">' +
           renderSheetScalarField("date_start", d.start || "", r.index_in_file, yrAttr) +
           "</td>" +
-          '<td class="col-date">' +
+          '<td class="col-date" data-col-key="date_end">' +
           renderSheetScalarField("date_end", d.end || "", r.index_in_file, yrAttr) +
           "</td>";
       }
@@ -3209,24 +3673,26 @@
           '">删除</button>';
       }
       h +=
-        "<td>" +
+        '<td class="col-tax" data-col-key="country">' +
         renderEnumSelect(
           "country",
           r.country,
           "",
           enumRowAttr + ' data-field="country"',
         ) +
-        '</td><td class="col-name" title="' +
+        '</td><td class="col-name" data-col-key="name" title="' +
         esc(String(r.name || "")) +
         '">' +
         renderSheetScalarField("name", r.name || "", r.index_in_file, yrAttr) +
         rowDeleteInline +
         "</td>";
       h +=
-        '<td class="cell-tags">' +
+        '<td class="cell-tags" data-col-key="markers">' +
         renderMarkerSelects(r.markers || [], r.index_in_file, yrAttr) +
         "</td>" +
-        '<td class="cell-tags cell-tags-press cell-press-aggregate">' +
+        '<td class="cell-tags cell-tags-press cell-press-aggregate" data-col-key="' +
+        esc(SHEET_PRESS_AGG_SORT_KEY) +
+        '">' +
         renderPressAggregateColumnCell(
           r,
           fmCols,
@@ -3236,8 +3702,11 @@
         ) +
         "</td>";
       for (fchi = 0; fchi < fmColsVisible.length; fchi++) {
+        var fmCellKey = FMT_SORT_PREFIX + encodeURIComponent(String(fmColsVisible[fchi] == null ? "" : fmColsVisible[fchi]));
         h +=
-          '<td class="cell-tags cell-tags-press">' +
+          '<td class="cell-tags cell-tags-press" data-col-key="' +
+          esc(fmCellKey) +
+          '">' +
           renderFormatColumnCell(
             r,
             fmColsVisible[fchi],
@@ -3546,7 +4015,9 @@
     bindSheetEditActionsOnce();
     bindEnumEditorOnce();
     bindSheetFiltersOnce();
+    bindSheetColumnResizeOnce();
     applySheetFilters();
+    scheduleSheetColumnFit();
     syncSaveToolbar();
   }
 
@@ -3587,10 +4058,15 @@
     var reg = window.JpTvBrowseFeatureRegistry;
     var rawList = reg && Array.isArray(reg.features) ? reg.features : [];
     var list = [];
+    var seen = Object.create(null);
     var i;
     for (i = 0; i < rawList.length; i++) {
-      if (rawList[i] && rawList[i].id) list.push(mergeAppFeatureConfig(rawList[i]));
+      if (!rawList[i] || !rawList[i].id) continue;
+      seen[rawList[i].id] = mergeAppFeatureConfig(rawList[i]);
     }
+    Object.keys(seen).forEach(function (id) {
+      list.push(seen[id]);
+    });
     list.sort(function (a, b) {
       return (Number(a.order) || 0) - (Number(b.order) || 0);
     });
@@ -4131,12 +4607,19 @@
     document.getElementById("cfg-history-root").value =
       (c.paths && c.paths.history_root) || "";
     var linkCfg = c.link_index || {};
-    var linkMedia = document.getElementById("cfg-link-media-root");
     var linkShortcut = document.getElementById("cfg-link-shortcut-root");
     var linkLayout = document.getElementById("cfg-link-layout");
     var linkName = document.getElementById("cfg-link-name");
-    if (linkMedia) linkMedia.value = linkCfg.media_root || "";
-    if (linkShortcut) linkShortcut.value = linkCfg.shortcut_root || "";
+    if (linkShortcut) {
+      var linkRoots = Array.isArray(linkCfg.shortcut_roots)
+        ? linkCfg.shortcut_roots
+        : [linkCfg.shortcut_root];
+      linkShortcut.value = linkRoots
+        .map(function (root) { return String(root || "").trim(); })
+        .filter(Boolean)
+        .join(" / ");
+      linkShortcut.title = linkShortcut.value;
+    }
     if (linkLayout) {
       linkLayout.value = Array.isArray(linkCfg.layout_levels)
         ? linkCfg.layout_levels.join(" / ")

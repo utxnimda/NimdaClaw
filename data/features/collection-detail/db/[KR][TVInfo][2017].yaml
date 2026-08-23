@@ -1,0 +1,240 @@
+- attributes:
+  - type: date
+    data:
+      start: '20170510'
+      end: '20170713'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\奇怪的搭档
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 奇怪的搭档_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 奇怪的搭档
+- attributes:
+  - type: date
+    data:
+      start: '20170522'
+      end: '20170711'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\三流之路
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 三流之路_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 三流之路
+- attributes:
+  - type: date
+    data:
+      start: '20170602'
+      end: '20170722'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\最佳的一击
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 最佳的一击_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 最佳的一击
+- attributes:
+  - type: date
+    data:
+      start: '20170610'
+      end: '20170730'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\秘密森林
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 秘密森林_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 秘密森林
+- attributes:
+  - type: date
+    data:
+      start: '20170616'
+      end: '20170819'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\有品位的她
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 有品位的她_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 有品位的她_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 有品位的她
+- attributes:
+  - type: date
+    data:
+      start: '20170703'
+      end: '20170812'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\河伯的新娘2017
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 河伯的新娘2017_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 河伯的新娘2017
+- attributes:
+  - type: date
+    data:
+      start: '20170719'
+      end: '20170921'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\再次相遇的世界
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 再次相遇的世界_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 再次相遇的世界
+- attributes:
+  - type: date
+    data:
+      start: '20170902'
+      end: '20180311'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我黄金光辉的人生
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 我黄金光辉的人生_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我黄金光辉的人生
+- attributes:
+  - type: date
+    data:
+      start: '20170927'
+      end: '20171116'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\当你沉睡时
+      collectioned:
+      - press_format: 1072p
+        press_group: '----'
+        press_path: 当你沉睡时_1072p
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 当你沉睡时_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 当你沉睡时
+- attributes:
+  - type: date
+    data:
+      start: '20171009'
+      end: '20171128'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\今生是第一次
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 今生是第一次_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 今生是第一次_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 今生是第一次
+- attributes:
+  - type: date
+    data:
+      start: '20171122'
+      end: '20180118'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\机智的监狱生活
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 机智的监狱生活_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 机智的监狱生活
+- attributes:
+  - type: date
+    data:
+      start: '20171206'
+      end: '20180125'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\不是机器人
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 不是机器人_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 不是机器人_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 不是机器人

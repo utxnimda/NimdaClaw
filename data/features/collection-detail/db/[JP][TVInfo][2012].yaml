@@ -89,6 +89,7 @@
         press_path: Kill Me Baby_720p
       - press_format: BDRip
         press_group: CASO
+        press_path: Kill Me Baby_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Kill Me Baby_BDRip(VCB)
@@ -110,9 +111,12 @@
       collectioned:
       - press_format: 720p
         press_group: CK
+        press_path: アマガミSS+ Plus_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: アマガミSS+ Plus_BDRip
       markers: []
+      path: S:\アマガミSS
   - type: country
     data: japan
   - type: name
@@ -214,6 +218,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 輪廻のラグランジェ_BDRip
       - press_format: BDRip
         press_group: RF
         press_path: 輪廻のラグランジェ_BDRip(RF)
@@ -257,9 +262,12 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 男子高校生の日常_BDRip(Jsum)
       - press_format: BDRip
         press_group: VCB
+        press_path: 男子高校生の日常_BDRip(VCB)
       markers: []
+      path: U:\男子高校生の日常
   - type: country
     data: japan
   - type: name
@@ -282,6 +290,7 @@
         press_path: あの夏で待ってる_BDRip(AIR)
       - press_format: BDRip
         press_group: JSUM
+        press_path: あの夏で待ってる_BDRip
       markers: []
       path: V:\Japan\おねがい☆ティーチャー
   - type: country
@@ -303,8 +312,10 @@
         press_path: Another_720p
       - press_format: BDRip
         press_group: CK
+        press_path: Another_BDRip(CK)
       - press_format: BDRip
         press_group: JSUM
+        press_path: Another_BDRip
       markers: []
       path: Z:\Another
   - type: country
@@ -329,6 +340,7 @@
         press_path: パパのいうことを聞きなさい！_BDRip(CKCS)
       - press_format: BDRip
         press_group: JSUM
+        press_path: パパのいうことを聞きなさい！_BDRip
       markers: []
       path: Z:\パパのいうことを聞きなさい！
   - type: country
@@ -372,8 +384,10 @@
         press_path: Black★RockShooter_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: Black★RockShooter_BDRip(CK)
       - press_format: BDRip
         press_group: JSUM
+        press_path: Black★RockShooter_BDRip
       markers: []
       path: Z:\Black★RockShooter
   - type: country
@@ -496,6 +510,7 @@
         press_path: あっちこっち_BDRip(CASO)
       - press_format: BDRip
         press_group: JSUM
+        press_path: あっちこっち_BDRip
       markers: []
       path: Z:\あっちこっち
   - type: country
@@ -517,6 +532,7 @@
         press_path: さんかれあ_720p
       - press_format: BDRip
         press_group: CK
+        press_path: さんかれあ_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: さんかれあ_BDRip(VCB)
@@ -540,9 +556,8 @@
         press_group: CKCS
         press_path: 夏色キセキ_720p
       - press_format: BDRip
-        press_group: LYR
-      - press_format: BDRip
         press_group: JSUM
+        press_path: 夏色キセキ_BDRip
       markers: []
       path: Z:\夏色キセキ
   - type: country
@@ -583,6 +598,7 @@
         press_path: Accel World_720p
       - press_format: BDRip
         press_group: CK
+        press_path: Accel World_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Accel World_BDRip(VCB)
@@ -773,8 +789,10 @@
         press_path: 氷菓_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 氷菓_BDRip
       - press_format: BDRip
         press_group: VCBX
+        press_path: 氷菓_BDRip(VCB)
       markers: []
       path: Z:\氷菓
   - type: country
@@ -849,6 +867,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 輪廻のラグランジェ 2_BDRip
       - press_format: BDRip
         press_group: RF
         press_path: 輪廻のラグランジェ 2_BDRip(RF)
@@ -876,8 +895,10 @@
         press_path: Tari Tari_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: Tari Tari_BDRip
       - press_format: BDRip
         press_group: VCBL
+        press_path: Tari Tari_BDRip(VCB)
       markers: []
       path: Z:\Tari Tari
   - type: country
@@ -918,11 +939,15 @@
       collectioned:
       - press_format: 720p
         press_group: CASO
+        press_path: ゆるゆり♪♪_720p
       - press_format: BDRip
         press_group: CASO
+        press_path: ゆるゆり♪♪_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: ゆるゆり♪♪_BDRip(VCB)
       markers: []
+      path: S:\ゆるゆり
   - type: country
     data: japan
   - type: name
@@ -1172,6 +1197,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Sword Art Online_BDRip
       - press_format: BDRip
         press_group: CK
         press_path: Sword Art Online_BDRip(CK)
@@ -1202,8 +1228,10 @@
         press_path: 織田信奈の野望_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 織田信奈の野望_BDRip(CK)
       - press_format: BDRip
         press_group: PHI
+        press_path: 織田信奈の野望_BDRip
       markers: []
       path: T:\織田信奈の野望
   - type: country
@@ -1244,8 +1272,10 @@
         press_path: 新世界より_720p
       - press_format: BDRip
         press_group: ANK
+        press_path: 新世界より_BDRip
       - press_format: BDRip
         press_group: VCBV
+        press_path: 新世界より_BDRip(VCB)
       markers: []
       path: Z:\新世界より
   - type: country
@@ -1265,10 +1295,12 @@
       - press_format: 720p
         press_group: CSSG
         press_path: となりの怪物くん_720p
-      - press_format: BDRip
+      - press_format: 1080p
         press_group: KAMI
+        press_path: となりの怪物くん_1080p
       - press_format: BDRip
         press_group: MZ
+        press_path: となりの怪物くん_BDRip
       markers: []
       path: Z:\となりの怪物くん
   - type: country
@@ -1290,8 +1322,10 @@
         press_path: 中二病でも恋がしたい！_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 中二病でも恋がしたい！_BDRip
       - press_format: BDRip
         press_group: VCBT
+        press_path: 中二病でも恋がしたい！_BDRip(VCB)
       markers: []
       path: Z:\中二病でも恋がしたい！
   - type: country
@@ -1395,9 +1429,12 @@
       collectioned:
       - press_format: BDRip
         press_group: CASO
+        press_path: ひだまりスケッチ×ハニカム_BDRip(CASO)
       - press_format: BDRip
         press_group: '----'
+        press_path: ひだまりスケッチ×ハニカム_BDRip
       markers: []
+      path: S:\ひだまりスケッチ
   - type: country
     data: japan
   - type: name
@@ -1458,8 +1495,10 @@
         press_path: To Loveる-とらぶる- Darkness_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: To Loveる-とらぶる- Darkness_BDRip
       - press_format: BDRip
         press_group: VCBP
+        press_path: To Loveる-とらぶる- Darkness_BDRip(VCB)
       markers: []
       path: V:\Japan\To Love
   - type: country
@@ -1503,6 +1542,10 @@
         press_path: バクマン。3_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: バクマン。3_BDRip
+      - press_format: 720p
+        press_group: DMG
+        press_path: バクマン。3_720p
       markers: []
       path: Y:\バクマン。
   - type: country
@@ -1521,9 +1564,12 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Little Busters!_BDRip(Jsum)
       - press_format: BDRip
         press_group: MW
+        press_path: Little Busters!_BDRip(MW)
       markers: []
+      path: U:\Little Busters!
   - type: country
     data: japan
   - type: name
@@ -1584,6 +1630,7 @@
         press_path: さくら荘のペットな彼女_720p
       - press_format: BDRip
         press_group: CKSG
+        press_path: さくら荘のペットな彼女_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: さくら荘のペットな彼女_BDRip(VCB)

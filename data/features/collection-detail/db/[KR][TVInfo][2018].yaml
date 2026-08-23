@@ -1,0 +1,253 @@
+- attributes:
+  - type: date
+    data:
+      start: '20180205'
+      end: '20180417'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\加油吧威基基
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 加油吧威基基_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 加油吧威基基
+- attributes:
+  - type: date
+    data:
+      start: '20180310'
+      end: '20180506'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Live
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Live_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Live
+- attributes:
+  - type: date
+    data:
+      start: '20180317'
+      end: '20180909'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\一起生活吧
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 一起生活吧_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 一起生活吧
+- attributes:
+  - type: date
+    data:
+      start: '20180321'
+      end: '20180517'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我的大叔
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我的大叔_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的大叔
+- attributes:
+  - type: date
+    data:
+      start: '20180330'
+      end: '20180519'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\经常请吃饭的漂亮姐姐
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 经常请吃饭的漂亮姐姐_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 经常请吃饭的漂亮姐姐
+- attributes:
+  - type: date
+    data:
+      start: '20180512'
+      end: '20180701'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\武法律师
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 武法律师_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 武法律师
+- attributes:
+  - type: date
+    data:
+      start: '20180604'
+      end: '20180807'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\你也是人类吗
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 你也是人类吗_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 你也是人类吗
+- attributes:
+  - type: date
+    data:
+      start: '20180606'
+      end: '20180727'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\金秘书为何那样
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 金秘书为何那样_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 金秘书为何那样_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 金秘书为何那样
+- attributes:
+  - type: date
+    data:
+      start: '20180724'
+      end: '20180918'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\虽然30但仍17
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 虽然30但仍17_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 虽然30但仍17
+- attributes:
+  - type: date
+    data:
+      start: '20180727'
+      end: '20180915'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我的ID是江南美人
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 我的ID是江南美人_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的ID是江南美人
+- attributes:
+  - type: date
+    data:
+      start: '20180915'
+      end: '20190317'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我唯一的拥护者
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我唯一的拥护者_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我唯一的拥护者
+- attributes:
+  - type: date
+    data:
+      start: '20181001'
+      end: '20181120'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\内在美
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 内在美_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 内在美
+- attributes:
+  - type: date
+    data:
+      start: '20181201'
+      end: '20190120'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\阿尔罕布拉宫的回忆
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 阿尔罕布拉宫的回忆_1080p
+      - press_format: BDRip
+        press_group: '----'
+        press_path: 阿尔罕布拉宫的回忆_BDRip
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 阿尔罕布拉宫的回忆

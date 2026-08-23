@@ -1,0 +1,399 @@
+- attributes:
+  - type: date
+    data:
+      start: '20250123'
+      end: '20250220'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\学习小组
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 学习小组_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 学习小组
+- attributes:
+  - type: date
+    data:
+      start: '20250124'
+      end: '20250124'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\重症外伤中心
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 重症外伤中心_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 重症外伤中心
+- attributes:
+  - type: date
+    data:
+      start: '20250127'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\不能说的秘密
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 不能说的秘密_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 不能说的秘密
+- attributes:
+  - type: date
+    data:
+      start: '20250210'
+      end: '20250306'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\善意的竞争
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 善意的竞争_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 善意的竞争
+- attributes:
+  - type: date
+    data:
+      start: '20250215'
+      end: '20250316'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\魔女
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 魔女_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 魔女
+- attributes:
+  - type: date
+    data:
+      start: '20250307'
+      end: '20250328'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\苦尽柑来遇见你
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 苦尽柑来遇见你_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 苦尽柑来遇见你
+- attributes:
+  - type: date
+    data:
+      start: '20250308'
+      end: '20250413'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\协商的技术
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 协商的技术_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 协商的技术
+- attributes:
+  - type: date
+    data:
+      start: '20250319'
+      end: '20250409'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\狂医魔徒
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 狂医魔徒_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 狂医魔徒
+- attributes:
+  - type: date
+    data:
+      start: '20250403'
+      end: '20250418'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\我死的一周前
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 我死的一周前_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我死的一周前
+- attributes:
+  - type: date
+    data:
+      start: '20250412'
+      end: '20250518'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\机智住院医生生活
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 机智住院医生生活_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 机智住院医生生活
+- attributes:
+  - type: date
+    data:
+      start: '20250521'
+      end: '20250604'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\血谜拼图
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 血谜拼图_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 血谜拼图
+- attributes:
+  - type: date
+    data:
+      start: '20250524'
+      end: '20250629'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\未知的首尔
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 未知的首尔_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 未知的首尔
+- attributes:
+  - type: date
+    data:
+      start: '20250616'
+      end: '20250710'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\拿着手术刀的猎人
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 拿着手术刀的猎人_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 拿着手术刀的猎人
+- attributes:
+  - type: date
+    data:
+      start: '20250705'
+      end: '20250810'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\瑞草洞
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 瑞草洞_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 瑞草洞
+- attributes:
+  - type: date
+    data:
+      start: '20250929'
+      end: '20251104'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\善良的女人夫世美
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 善良的女人夫世美_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 善良的女人夫世美
+- attributes:
+  - type: date
+    data:
+      start: '20251010'
+      end: '20251115'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\宇宙Marry Me
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 宇宙 Marry Me_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 宇宙 Marry Me
+- attributes:
+  - type: date
+    data:
+      start: '20251106'
+      end: '20251204'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\亲爱的X
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 亲爱的X_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 亲爱的X
+- attributes:
+  - type: date
+    data:
+      start: '20251112'
+      end: '20251225'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\一吻爆炸
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 一吻爆炸_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 一吻爆炸
+- attributes:
+  - type: date
+    data:
+      start: '20251206'
+      end: '20260111'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\公益律师
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 公益律师_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 公益律师
+- attributes:
+  - type: date
+    data:
+      start: '20251206'
+      end: '20260111'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\等待京道
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 等待京道_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 等待京道
+- attributes:
+  - type: date
+    data:
+      start: '20251226'
+      end: '20261226'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\现金英雄
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 现金英雄_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 现金英雄

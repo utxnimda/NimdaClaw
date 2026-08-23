@@ -151,6 +151,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ひだまりスケッチ_BDRip
       - press_format: BDRip
         press_group: RF
         press_path: ひだまりスケッチ_BDRip(RF)
@@ -457,7 +458,9 @@
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: Over Drive_480p
       markers: []
+      path: S:\Over Drive
   - type: country
     data: japan
   - type: name
@@ -532,6 +535,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Sola_BDRip
       - press_format: BDRip
         press_group: FL
         press_path: Sola_BDRip(FL)
@@ -578,6 +582,7 @@
       collectioned:
       - press_format: DVDRip
         press_group: WLGO
+        press_path: ラブ★コン_BDRip
       - press_format: 720p
         press_group: TX
         press_path: ラブ★コン_720p
@@ -1144,8 +1149,10 @@
         press_path: Clannad_BDRip(PHI)
       - press_format: BDRip
         press_group: CK
+        press_path: Clannad_BDRip
       - press_format: BDRip
         press_group: MA
+        press_path: Clannad_BDRip(MA)
       - press_format: 720p
         press_group: CK
         press_path: Clannad_720p
@@ -1167,7 +1174,9 @@
       collectioned:
       - press_format: DVDRip
         press_group: DMZJ
+        press_path: 逮捕しちゃうぞ フルスロットル_DVDRip
       markers: []
+      path: Y:\逮捕しちゃうぞ
   - type: country
     data: japan
   - type: name
@@ -1244,6 +1253,7 @@
         press_path: みなみけ_BDRip(Jsum)
       - press_format: BDRip
         press_group: ANK
+        press_path: みなみけ_BDRip
       - press_format: DVDRip
         press_group: CASO
         press_path: みなみけ_DVDRip

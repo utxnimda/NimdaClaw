@@ -68,6 +68,7 @@
         press_path: みなみけ おかえり_BDRip(Jsum)
       - press_format: BDRip
         press_group: CASO
+        press_path: みなみけ おかえり_BDRip
       - press_format: DVDRip
         press_group: CASO
         press_path: みなみけ おかえり_DVDRip
@@ -92,6 +93,7 @@
         press_path: はじめの一歩 New Challenger_BDRip
       - press_format: 480p
         press_group: '----'
+        press_path: はじめの一歩 New Challenger_480p
       markers: []
       path: Y:\はじめの一歩
   - type: country
@@ -232,30 +234,13 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 涼宮ハルヒちゃんの憂鬱_BDRip
       markers: []
+      path: S:\涼宮ハルヒの憂鬱
   - type: country
     data: japan
   - type: name
     data: 涼宮ハルヒちゃんの憂鬱
-- attributes:
-  - type: date
-    data:
-      start: '20090327'
-      end: '20090327'
-  - type: collection-type
-    data:
-      domain: animation
-      release_type: tv
-      collectioned:
-      - press_format: BDRip
-        press_group: '----'
-      - press_format: BDRip
-        press_group: YS
-      markers: []
-  - type: country
-    data: japan
-  - type: name
-    data: ルパン三世VS名探偵コナン
 - attributes:
   - type: date
     data:
@@ -290,7 +275,9 @@
       collectioned:
       - press_format: BDRip
         press_group: '----'
+        press_path: Queen's Blade 流浪の戦士_BDRip
       markers: []
+      path: T:\Queen's Blade
   - type: country
     data: japan
   - type: name
@@ -371,9 +358,12 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 涼宮ハルヒの憂鬱 2009_BDRip(VCB)
       - press_format: BDRip
         press_group: CASO
+        press_path: 涼宮ハルヒの憂鬱 2009_BDRip
       markers: []
+      path: S:\涼宮ハルヒの憂鬱
   - type: country
     data: japan
   - type: name
@@ -393,8 +383,10 @@
         press_path: ハヤテのごとく!!_BDRip(KRS)
       - press_format: BDRip
         press_group: CASO
-      - press_format: 720p
+        press_path: ハヤテのごとく!!_BDRip
+      - press_format: 1080p
         press_group: CASO
+        press_path: ハヤテのごとく!!_1080p
       markers: []
       path: V:\Japan\ハヤテのごとく!
   - type: country
@@ -675,8 +667,10 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: うみねこのなく頃に_BDRip(ANK)
       - press_format: BDRip
         press_group: CK
+        press_path: うみねこのなく頃に_BDRip
       - press_format: 720p
         press_group: CSIA
         press_path: うみねこのなく頃に_720p
@@ -739,6 +733,7 @@
         press_path: 化物語_BDRip(VCB)
       - press_format: BDRip
         press_group: CASO
+        press_path: 化物語_BDRip
       - press_format: 720p
         press_group: CASO
         press_path: 化物語_720p
@@ -760,6 +755,7 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: Canaan_BDRip
       - press_format: BDRip
         press_group: CK
         press_path: Canaan_BDRip(CK)
@@ -784,7 +780,9 @@
       collectioned:
       - press_format: BDRip
         press_group: '----'
+        press_path: 懺·さよなら絶望先生_BDRip
       markers: []
+      path: S:\さよなら絶望先生
   - type: country
     data: japan
   - type: name
@@ -804,6 +802,7 @@
         press_path: Princess Lover_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: Princess Lover_BDRip
       - press_format: 720p
         press_group: CK
         press_path: Princess Lover_720p
@@ -891,11 +890,15 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 狼と香辛料II_BDRip(VCB)
       - press_format: BDRip
         press_group: CSIG
+        press_path: 狼と香辛料II_BDRip
       - press_format: 720p
         press_group: CSIG
+        press_path: 狼と香辛料II_720p
       markers: []
+      path: S:\狼と香辛料
   - type: country
     data: japan
   - type: name
@@ -934,7 +937,9 @@
       collectioned:
       - press_format: BDRip
         press_group: '----'
+        press_path: Queen's Blade 玉座を継ぐ者_BDRip
       markers: []
+      path: T:\Queen's Blade
   - type: country
     data: japan
   - type: name
@@ -1014,8 +1019,10 @@
       collectioned:
       - press_format: BDRip
         press_group: CSHK
+        press_path: 生徒会の一存_BDRip
       - press_format: BDRip
         press_group: RF
+        press_path: 生徒会の一存_BDRip(RF)
       - press_format: 720p
         press_group: CSHK
         press_path: 生徒会の一存_720p
@@ -1121,6 +1128,7 @@
         press_path: そらのおとしもの_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: そらのおとしもの_BDRip
       - press_format: DVDRip
         press_group: CK
         press_path: そらのおとしもの_DVDRip
@@ -1142,9 +1150,12 @@
       collectioned:
       - press_format: BDRip
         press_group: MZ
+        press_path: 真·恋姫†無双_BDRip
       - press_format: 720p
         press_group: CKCH
+        press_path: 真·恋姫†無双_720p
       markers: []
+      path: S:\恋姫†無双
   - type: country
     data: japan
   - type: name
@@ -1186,6 +1197,7 @@
         press_path: とある科学の超電磁砲_BDRip(VCB)
       - press_format: BDRip
         press_group: CK
+        press_path: とある科学の超電磁砲_BDRip
       - press_format: 720p
         press_group: CK
         press_path: とある科学の超電磁砲_720p
@@ -1210,6 +1222,7 @@
         press_path: 11eyes_BDRip(ANK)
       - press_format: BDRip
         press_group: CK
+        press_path: 11eyes_BDRip
       - press_format: 720p
         press_group: CK
         press_path: 11eyes_720p
@@ -1231,9 +1244,12 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: こばと。_BDRip
       - press_format: BDRip
         press_group: CKCS
+        press_path: こばと。_BDRip(CK)
       markers: []
+      path: S:\こばと。
   - type: country
     data: japan
   - type: name
@@ -1250,6 +1266,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ささめきこと_BDRip
       - press_format: BDRip
         press_group: ANK
         press_path: ささめきこと_BDRip(ANK)
@@ -1336,9 +1353,11 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: ひだまりスケッチ×365 特別編_BDRip(ANK)
       - press_format: BDRip
         press_group: RF
       markers: []
+      path: S:\ひだまりスケッチ
   - type: country
     data: japan
   - type: name
@@ -1355,11 +1374,15 @@
       collectioned:
       - press_format: BDRip
         press_group: FL
+        press_path: まほろまてぃっく特別編 ただいま◆おかえり_BDRip(FL)
       - press_format: BDRip
         press_group: MZ
+        press_path: まほろまてぃっく特別編 ただいま◆おかえり_BDRip(MZ)
       - press_format: BDRip
         press_group: CENT
+        press_path: まほろまてぃっく特別編 ただいま◆おかえり_BDRip
       markers: []
+      path: Y:\まほろまてぃっく
   - type: country
     data: japan
   - type: name

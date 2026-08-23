@@ -16,6 +16,7 @@
         press_path: Absolute Duo_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: Absolute Duo_BDRip
       markers: []
       path: Y:\Absolute Duo
   - type: country
@@ -94,11 +95,13 @@
         press_path: 艦隊これくしょん -艦これ-_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 艦隊これくしょん -艦これ-_BDRip(CK)
       - press_format: BDRip
         press_group: VCB
         press_path: 艦隊これくしょん -艦これ-_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: 艦隊これくしょん -艦これ-_BDRip
       markers: []
       path: Y:\艦隊これくしょん -艦これ-
   - type: country
@@ -479,6 +482,7 @@
         press_path: レーカン!_720p
       - press_format: BDRip
         press_group: SEFO
+        press_path: レーカン!_BDRip(SF)
       - press_format: BDRip
         press_group: '----'
         press_path: レーカン!_BDRip
@@ -544,7 +548,9 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 長門有希ちゃんの消失_BDRip
       markers: []
+      path: S:\涼宮ハルヒの憂鬱
   - type: country
     data: japan
   - type: name
@@ -561,6 +567,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 食戟のソーマ_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: 食戟のソーマ_BDRip(VCB)
@@ -624,9 +631,12 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBP
+        press_path: High School D×D Born_BDRip(VCB)
       - press_format: BDRip
         press_group: RF
+        press_path: High School D×D Born_BDRip
       markers: []
+      path: T:\High School D×D
   - type: country
     data: japan
   - type: name
@@ -764,9 +774,12 @@
       collectioned:
       - press_format: 720p
         press_group: CASO
+        press_path: Hello!! きんいろモザイク_720p
       - press_format: BDRip
         press_group: VCBT
+        press_path: Hello!! きんいろモザイク_BDRip
       markers: []
+      path: S:\きんいろモザイク
   - type: country
     data: japan
   - type: name
@@ -840,6 +853,7 @@
       collectioned:
       - press_format: 1080p
         press_group: HORR
+        press_path: ダイヤのA S2_1080p
       - press_format: BDRip
         press_group: MZ
         press_path: ダイヤのA S2_BDRip
@@ -864,6 +878,7 @@
         press_path: 響け! ユーフォニアム_1080p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 響け! ユーフォニアム_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: 響け! ユーフォニアム_BDRip(VCB)
@@ -1222,6 +1237,7 @@
         press_path: わかばガール_720p
       - press_format: BDRip
         press_group: CK
+        press_path: わかばガール_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: わかばガール_BDRip(VCB)
@@ -1542,8 +1558,10 @@
         press_path: To Loveる-とらぶる- Darkness 2nd_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: To Loveる-とらぶる- Darkness 2nd_BDRip
       - press_format: BDRip
         press_group: VCBP
+        press_path: To Loveる-とらぶる- Darkness 2nd_BDRip(VCB)
       markers: []
       path: V:\Japan\To Love
   - type: country
@@ -1581,8 +1599,10 @@
       collectioned:
       - press_format: BDRip
         press_group: VCBK
+        press_path: 緋弾のアリアAA_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: 緋弾のアリアAA_BDRip
       - press_format: 720p
         press_group: CKCS
         press_path: 緋弾のアリアAA_720p
@@ -1655,8 +1675,10 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 空戦魔導士候補生の教官_BDRip
       - press_format: BDRip
         press_group: ANK
+        press_path: 空戦魔導士候補生の教官_BDRip(ANK)
       - press_format: 720p
         press_group: DMG
         press_path: 空戦魔導士候補生の教官_720p
@@ -2068,11 +2090,14 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ゆるゆり さん☆ハイ!_BDRip
       - press_format: 720p
         press_group: DMG
+        press_path: ゆるゆり さん☆ハイ!_720p
       markers:
       - music
       - subs
+      path: S:\ゆるゆり
   - type: country
     data: japan
   - type: name
@@ -2267,11 +2292,14 @@
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ご注文はうさぎですか？？_BDRip
       - press_format: 720p
         press_group: CKCS
+        press_path: ご注文はうさぎですか？？_720p
       markers:
       - music
       - subs
+      path: S:\ご注文はうさぎですか？
   - type: country
     data: japan
   - type: name

@@ -2,8 +2,7 @@
 version: 1
 
 paths:
-  filesystem_root: "E:/Project/nimda/data/features/collection-detail/db"
-  media_root: "E:/LinkVideo/[ACG] Japan"
+  filesystem_root: "data/features/collection-detail/db"
   resource_roots:
   - Z:\
   - Y:\
@@ -11,6 +10,7 @@ paths:
   - U:\
   - T:\
   - S:\
+  - "G:/Video/电视剧/韩剧"
   resource_excludes:
     'Z:\':
     - $recycle
@@ -24,14 +24,21 @@ paths:
     - $recycle
     'S:\':
     - $recycle
+    "G:/Video/电视剧/韩剧":
+    - $recycle
   shortcut_root: "E:/LinkVideo/[ACG] Japan/Finish"
+  shortcut_roots:
+  - match:
+      domain: television
+      country: korea
+      release_type: tv
+    root: "E:/LinkVideo/[3D] Korea/Finish"
 
 link_index:
   layout_levels:
   - "{year_label}"
   - "{date_range_label} {name}"
   shortcut_name: "{press_format}{press_group_suffix}"
-  overwrite_shortcuts: true
   scan_max_depth: 4
   scan_max_dirs: 2000
 
@@ -41,6 +48,13 @@ enum:
   values:
   - 720p
   - 1080p
+  - 2160p
+  - 576p
+  - 480P
+  - 456p
+  - 432p
+  - 384p
+  - 360p
   - BDRip
 - name: press_group
   desc: 压制组
@@ -73,6 +87,8 @@ enum:
   values:
   - value: animation
     desc: 动画
+  - value: television
+    desc: 电视剧
   - value: game
     desc: 游戏
   - value: music

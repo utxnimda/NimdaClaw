@@ -1,0 +1,253 @@
+- attributes:
+  - type: date
+    data:
+      start: '20210329'
+      end: '20211001'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\即使被骗也要做梦
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 即使被骗也要做梦_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 即使被骗也要做梦
+- attributes:
+  - type: date
+    data:
+      start: '20210409'
+      end: '20210529'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\模范出租车
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 模范出租车_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 模范出租车
+- attributes:
+  - type: date
+    data:
+      start: '20210414'
+      end: '20210609'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Law School
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: Law School_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Law School
+- attributes:
+  - type: date
+    data:
+      start: '20210524'
+      end: '20210621'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\不疯不狂不爱你
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 不疯不狂不爱你_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 不疯不狂不爱你
+- attributes:
+  - type: date
+    data:
+      start: '20210526'
+      end: '20210715'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\心惊胆战的同居
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 心惊胆战的同居_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 心惊胆战的同居
+- attributes:
+  - type: date
+    data:
+      start: '20210617'
+      end: '20210923'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\机智的医生生活
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 机智的医生生活2_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 机智的医生生活2_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 机智的医生生活2
+- attributes:
+  - type: date
+    data:
+      start: '20210917'
+      end: '20211106'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\一个女人
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 一个女人_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 一个女人
+- attributes:
+  - type: date
+    data:
+      start: '20210917'
+      end: '20220722'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\柔美的细胞小将
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 柔美的细胞小将_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 柔美的细胞小将
+- attributes:
+  - type: date
+    data:
+      start: '20210922'
+      end: '20211111'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\达利和土豆汤
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 达利和土豆汤_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 达利和土豆汤
+- attributes:
+  - type: date
+    data:
+      start: '20211108'
+      end: '20211214'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\Idol：The Coup
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: Idol：The Coup_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Idol：The Coup
+- attributes:
+  - type: date
+    data:
+      start: '20211110'
+      end: '20211230'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\忧郁症
+      collectioned:
+      - press_format: 720p
+        press_group: '----'
+        press_path: 忧郁症_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 忧郁症
+- attributes:
+  - type: date
+    data:
+      start: '20211220'
+      end: '20220208'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\只一个人
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 只一个人_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 只一个人
+- attributes:
+  - type: date
+    data:
+      start: '20211226'
+      end: '20220125'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:\Video\电视剧\韩剧\那年，我们的夏天
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+        press_path: 那年，我们的夏天_1080p
+      - press_format: 720p
+        press_group: '----'
+        press_path: 那年，我们的夏天_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 那年，我们的夏天

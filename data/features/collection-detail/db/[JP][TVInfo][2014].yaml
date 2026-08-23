@@ -54,6 +54,7 @@
         press_path: 生徒会役員共＊_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: 生徒会役員共＊_BDRip
       - press_format: 720p
         press_group: CK
         press_path: 生徒会役員共＊_720p
@@ -119,11 +120,14 @@
       collectioned:
       - press_format: 720p
         press_group: CASO
+        press_path: 咲 -Saki- 全国編_720p
       - press_format: BDRip
         press_group: VCBD
       - press_format: BDRip
         press_group: ANKK
+        press_path: 咲 -Saki- 全国編_BDRip
       markers: []
+      path: S:\咲 -Saki-
   - type: country
     data: japan
   - type: name
@@ -225,11 +229,12 @@
       collectioned:
       - press_format: 720p
         press_group: CKCS
-      - press_format: BDRip
-        press_group: VCB
+        press_path: 中二病でも恋がしたい！戀_720p
       - press_format: BDRip
         press_group: VCBT
+        press_path: 中二病でも恋がしたい！戀_BDRip
       markers: []
+      path: Z:\中二病でも恋がしたい！
   - type: country
     data: japan
   - type: name
@@ -268,6 +273,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: お姉ちゃんが来た_BDRip
       - press_format: BDRip
         press_group: ANK
         press_path: お姉ちゃんが来た_BDRip(ANK)
@@ -311,11 +317,15 @@
       collectioned:
       - press_format: 720p
         press_group: CK
+        press_path: 銀の匙2_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 銀の匙2_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 銀の匙2_BDRip(VCB)
       markers: []
+      path: S:\銀の匙
   - type: country
     data: japan
   - type: name
@@ -357,8 +367,10 @@
         press_path: 桜Trick_720p
       - press_format: BDRip
         press_group: CASO
+        press_path: 桜Trick_BDRip
       - press_format: BDRip
-        press_group: VBD
+        press_group: VCB
+        press_path: 桜Trick_BDRip(VCB)
       markers: []
       path: Z:\桜Trick
   - type: country
@@ -487,6 +499,7 @@
         press_path: いなり、こんこん、恋いろは。_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: いなり、こんこん、恋いろは。_BDRip
       - press_format: BDRip
         press_group: U2
         press_path: いなり、こんこん、恋いろは。_BDRip(U2)
@@ -521,6 +534,28 @@
 - attributes:
   - type: date
     data:
+      start: '20140129'
+      end: '20140730'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: ova
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Little Busters! EX_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Little Busters! EX_BDRip(VCBM)
+      markers: []
+      path: U:\Little Busters!
+  - type: country
+    data: japan
+  - type: name
+    data: Little Busters! EX
+- attributes:
+  - type: date
+    data:
       start: '20140403'
       end: '20140619'
   - type: collection-type
@@ -549,6 +584,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Selector Infected Wixoss_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Selector Infected Wixoss_BDRip(VCB)
@@ -733,8 +769,10 @@
         press_path: 魔法科高校の劣等生_720p
       - press_format: BDRip
         press_group: DMG
+        press_path: 魔法科高校の劣等生_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 魔法科高校の劣等生_BDRip(VCB)
       markers: []
       path: S:\魔法科高校の劣等生
   - type: country
@@ -839,6 +877,7 @@
         press_path: Love Live! 2_BDRip(VCB)
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! 2_BDRip
       markers: []
       path: U:\Love Live!
   - type: country
@@ -964,9 +1003,12 @@
       collectioned:
       - press_format: 720p
         press_group: DYMY
+        press_path: Soul Eater Not！_720p
       - press_format: BDRip
         press_group: '----'
+        press_path: Soul Eater Not！_BDRip
       markers: []
+      path: S:\Soul Eater
   - type: country
     data: japan
   - type: name
@@ -983,6 +1025,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: No Game No Life_BDRip
       - press_format: BDRip
         press_group: CK
         press_path: No Game No Life_BDRip(CK)
@@ -1136,8 +1179,10 @@
         press_path: Date A Live II_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: Date A Live II_BDRip
       - press_format: BDRip
         press_group: VCBC
+        press_path: Date A Live II_BDRip(VCB)
       markers: []
       path: V:\Japan\Date A Live
   - type: country
@@ -1345,6 +1390,7 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Sword Art Online II_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: Sword Art Online II_BDRip(VCB)
@@ -1983,6 +2029,7 @@
         press_path: 天体のメソッド_720p
       - press_format: BDRip
         press_group: CKFL
+        press_path: 天体のメソッド_BDRip
       - press_format: BDRip
         press_group: VCB
         press_path: 天体のメソッド_BDRip(VCB)
@@ -2026,9 +2073,12 @@
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: World Trigger_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: World Trigger_BDRip(VCB)
       markers: []
+      path: Y:\World Trigger
   - type: country
     data: japan
   - type: name
@@ -2237,9 +2287,12 @@
       collectioned:
       - press_format: 720p
         press_group: KAMI
+        press_path: Psycho-Pass2_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: Psycho-Pass2_BDRip
       markers: []
+      path: S:\Psycho-Pass
   - type: country
     data: japan
   - type: name
@@ -2259,8 +2312,10 @@
         press_path: 四月は君の嘘_720p
       - press_format: BDRip
         press_group: CK
+        press_path: 四月は君の嘘_BDRip
       - press_format: BDRip
         press_group: VCBO
+        press_path: 四月は君の嘘_BDRip(VCB)
       markers: []
       path: Z:\四月は君の嘘
   - type: country
