@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Dream High
+      path: G:/Video/电视剧/韩剧/Dream High
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\我的公主
+      path: G:/Video/电视剧/韩剧/我的公主
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\你为我着迷
+      path: G:/Video/电视剧/韩剧/你为我着迷
       collectioned:
       - press_format: 480p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\High Kick！短腿的反击
+      path: G:/Video/电视剧/韩剧/High Kick！短腿的反击
       collectioned:
       - press_format: 720p
         press_group: '----'

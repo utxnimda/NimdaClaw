@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\摘星星给我
+      path: G:/Video/电视剧/韩剧/摘星星给我
       collectioned:
       - press_format: 360p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\个人取向
+      path: G:/Video/电视剧/韩剧/个人取向
       collectioned:
       - press_format: 576p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\秘密花园
+      path: G:/Video/电视剧/韩剧/秘密花园
       collectioned:
       - press_format: 432p
         press_group: '----'

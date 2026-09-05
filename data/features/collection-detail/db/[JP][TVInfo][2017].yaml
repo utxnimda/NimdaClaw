@@ -1,8 +1,834 @@
 - attributes:
   - type: date
     data:
-      start: '2017-07-01'
-      end: '2017-12-30'
+      start: '20170104'
+      end: '20170329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: FZ
+      - press_format: BDRip
+        press_group: UHAW
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Akiba's Trip -The Animation-
+- attributes:
+  - type: date
+    data:
+      start: '20170105'
+      end: '20170323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: LOLI
+      - press_format: BDRip
+        press_group: SEFO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: うらら迷路帖
+- attributes:
+  - type: date
+    data:
+      start: '20170105'
+      end: '20170323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: KAMI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: セイレン
+- attributes:
+  - type: date
+    data:
+      start: '20170105'
+      end: '20170323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DMG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 政宗くんのリベンジ
+- attributes:
+  - type: date
+    data:
+      start: '20170106'
+      end: '20170324'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CC
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 南鎌倉高校女子自転車部
+- attributes:
+  - type: date
+    data:
+      start: '20170106'
+      end: '20170324'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: FL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 昭和元禄落語心中 -助六再び篇-
+- attributes:
+  - type: date
+    data:
+      start: '20170106'
+      end: '20170324'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: BNLL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 青の祓魔師 京都不浄王編
+- attributes:
+  - type: date
+    data:
+      start: '20170106'
+      end: '20170324'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: YG
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 風夏
+- attributes:
+  - type: date
+    data:
+      start: '20170106'
+      end: '20170331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CCKI
+      - press_format: BDRip
+        press_group: RF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 幼女戦記
+- attributes:
+  - type: date
+    data:
+      start: '20170107'
+      end: '20170325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 亜人ちゃんは語りたい
+- attributes:
+  - type: date
+    data:
+      start: '20170108'
+      end: '20170326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: UHAA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: にゃんこデイズ
+- attributes:
+  - type: date
+    data:
+      start: '20170108'
+      end: '20170429'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Tales Of Zestiria The X 13-25
+- attributes:
+  - type: date
+    data:
+      start: '20170109'
+      end: '20170327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DHR
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Gabriel DropOut
+- attributes:
+  - type: date
+    data:
+      start: '20170109'
+      end: '20170625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Little Witch Academia
+- attributes:
+  - type: date
+    data:
+      start: '20170109'
+      end: '20170626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 弱虫ペダル New Generation
+- attributes:
+  - type: date
+    data:
+      start: '20170110'
+      end: '20170328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DHR
+      - press_format: BDRip
+        press_group: SEFO
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ACCA13区監察課
+- attributes:
+  - type: date
+    data:
+      start: '20170110'
+      end: '20170328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DHR
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Hand Shakers
+- attributes:
+  - type: date
+    data:
+      start: '20170110'
+      end: '20170328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DHR
+      - press_format: BDRip
+        press_group: DHRA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: けものフレンズ
+- attributes:
+  - type: date
+    data:
+      start: '20170111'
+      end: '20170315'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: KFLL
+      - press_format: BDRip
+        press_group: KFX
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: この素晴らしい世界に祝福を! 2
+- attributes:
+  - type: date
+    data:
+      start: '20170111'
+      end: '20170329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CKCS
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Chaos;Child
+- attributes:
+  - type: date
+    data:
+      start: '20170111'
+      end: '20170329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: KAMI
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: One Room
+- attributes:
+  - type: date
+    data:
+      start: '20170111'
+      end: '20170405'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKCS
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 小林さんちのメイドラゴン
+- attributes:
+  - type: date
+    data:
+      start: '20170112'
+      end: '20170330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: AJZF
+      - press_format: BDRip
+        press_group: ANK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: クズの本懐
+- attributes:
+  - type: date
+    data:
+      start: '20170114'
+      end: '20170325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKFL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Rewrite 14-24
+- attributes:
+  - type: date
+    data:
+      start: '20170401'
+      end: '20170624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CKFL
+      - press_format: BDRip
+        press_group: CKFL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Granblue Fantasy
+- attributes:
+  - type: date
+    data:
+      start: '20170402'
+      end: '20170618'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: AT
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: つぐもも
+- attributes:
+  - type: date
+    data:
+      start: '20170402'
+      end: '20170625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DMLL
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: アリスと蔵六
+- attributes:
+  - type: date
+    data:
+      start: '20170404'
+      end: '20170620'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKFL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ロクでなし魔術講師と禁忌教典
+- attributes:
+  - type: date
+    data:
+      start: '20170405'
+      end: '20170621'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 武装少女マキャヴェリズム
+- attributes:
+  - type: date
+    data:
+      start: '20170405'
+      end: '20170913'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: ATLL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: サクラダリセット
+- attributes:
+  - type: date
+    data:
+      start: '20170405'
+      end: '20170920'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sakura Quest
+- attributes:
+  - type: date
+    data:
+      start: '20170406'
+      end: '20170622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Clockwork Planet
+- attributes:
+  - type: date
+    data:
+      start: '20170406'
+      end: '20170629'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DHRM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 月がきれい
+- attributes:
+  - type: date
+    data:
+      start: '20170407'
+      end: '20170623'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひなこのーと
+- attributes:
+  - type: date
+    data:
+      start: '20170407'
+      end: '20170623'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 正解するカド
+- attributes:
+  - type: date
+    data:
+      start: '20170407'
+      end: '20170929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 神撃のバハムート Virgin Soul
+- attributes:
+  - type: date
+    data:
+      start: '20170408'
+      end: '20170916'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: BFL
+      - press_format: BDRip
+        press_group: SNOW
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Re：Creators
+- attributes:
+  - type: date
+    data:
+      start: '20170408'
+      end: '20170923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 境界のRinne 3
+- attributes:
+  - type: date
+    data:
+      start: '20170409'
+      end: '20170624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CK
+      - press_format: BDRip
+        press_group: VCBH
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: エロマンガ先生
+- attributes:
+  - type: date
+    data:
+      start: '20170409'
+      end: '20170625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: DMGM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 有頂天家族 2
+- attributes:
+  - type: date
+    data:
+      start: '20170410'
+      end: '20170626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: LOLI
+      - press_format: BDRip
+        press_group: RF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ゼロから始める魔法の書
+- attributes:
+  - type: date
+    data:
+      start: '20170411'
+      end: '20170627'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: XXXX
+      - press_format: BDRip
+        press_group: MAFV
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 终末なにしてますか？忙しいですか？救ってもらっていいですか？
+- attributes:
+  - type: date
+    data:
+      start: '20170413'
+      end: '20170622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CK
+      - press_format: BDRip
+        press_group: VKM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 冴えない彼女の育てかた♭
+- attributes:
+  - type: date
+    data:
+      start: '20170414'
+      end: '20170630'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: SKLL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sword Oratria
+- attributes:
+  - type: date
+    data:
+      start: '20170414'
+      end: '20170729'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: HY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sin 七つの大罪
+- attributes:
+  - type: date
+    data:
+      start: '20170701'
+      end: '20170923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: UHAW
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 賭ケグルイ
+- attributes:
+  - type: date
+    data:
+      start: '20170701'
+      end: '20171230'
   - type: collection-type
     data:
       domain: animation
@@ -17,3 +843,738 @@
     data: japan
   - type: name
     data: Fate／Apocrypha
+- attributes:
+  - type: date
+    data:
+      start: '20170702'
+      end: '20170917'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CCKI
+      - press_format: BDRip
+        press_group: VCBM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Battle Girl High School
+- attributes:
+  - type: date
+    data:
+      start: '20170702'
+      end: '20170917'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: HY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: スカートの中はケダモノでした。
+- attributes:
+  - type: date
+    data:
+      start: '20170702'
+      end: '20170917'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKWL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 潔癖男子!青山くん
+- attributes:
+  - type: date
+    data:
+      start: '20170702'
+      end: '20170924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: KISS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Knight's & Magic
+- attributes:
+  - type: date
+    data:
+      start: '20170703'
+      end: '20170918'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CCKI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 恋と嘘
+- attributes:
+  - type: date
+    data:
+      start: '20170703'
+      end: '20170918'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: UHAW
+      - press_format: BDRip
+        press_group: UHAW
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 異世界食堂
+- attributes:
+  - type: date
+    data:
+      start: '20170704'
+      end: '20170919'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKFL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: アホガール
+- attributes:
+  - type: date
+    data:
+      start: '20170704'
+      end: '20170919'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: KAMI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 徒然チルドレン
+- attributes:
+  - type: date
+    data:
+      start: '20170705'
+      end: '20170920'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: HYNH
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 捏造トラップ - NTR -
+- attributes:
+  - type: date
+    data:
+      start: '20170705'
+      end: '20170920'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 最遊記 Reload Blast
+- attributes:
+  - type: date
+    data:
+      start: '20170707'
+      end: '20170929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 18if
+- attributes:
+  - type: date
+    data:
+      start: '20170707'
+      end: '20170929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: NK
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Made In Abyss
+- attributes:
+  - type: date
+    data:
+      start: '20170709'
+      end: '20170924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: MFL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Princess Principal
+- attributes:
+  - type: date
+    data:
+      start: '20170710'
+      end: '20170925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CKCS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 天使の3P!
+- attributes:
+  - type: date
+    data:
+      start: '20170711'
+      end: '20170926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: New Game!!
+- attributes:
+  - type: date
+    data:
+      start: '20170711'
+      end: '20170926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 異世界はスマートフォンとともに。
+- attributes:
+  - type: date
+    data:
+      start: '20170712'
+      end: '20170913'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: はじめてのギャル
+- attributes:
+  - type: date
+    data:
+      start: '20170712'
+      end: '20170927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: てーきゅう 9期
+- attributes:
+  - type: date
+    data:
+      start: '20170712'
+      end: '20170927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: HY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ようこそ実力至上主義の教室へ
+- attributes:
+  - type: date
+    data:
+      start: '20170713'
+      end: '20170928'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Gamers
+- attributes:
+  - type: date
+    data:
+      start: '20170714'
+      end: '20170929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: HY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 地獄少女 宵伽
+- attributes:
+  - type: date
+    data:
+      start: '20170812'
+      end: '20170813'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCBM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 終物語(下)
+- attributes:
+  - type: date
+    data:
+      start: '2017-08-26'
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Fate／Kaleid Liner プリズマ☆イリヤ
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Fate／Kaleid Liner プリズマ☆イリヤ 雪下の誓い_BDRip
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Fate／Kaleid Liner プリズマ☆イリヤ 雪下の誓い_BDRip(VCB)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Fate／Kaleid Liner プリズマ☆イリヤ 雪下の誓い
+- attributes:
+  - type: date
+    data:
+      start: '20171002'
+      end: '20171218'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ATLF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Uq Holder！～魔法先生ネギま！2～
+- attributes:
+  - type: date
+    data:
+      start: '20171003'
+      end: '20171219'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: 720p
+        press_group: CKCS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 食戟のソーマ 餐ノ皿
+- attributes:
+  - type: date
+    data:
+      start: '20171003'
+      end: XXXXXXXX
+    description: 旧库日期 20171003–XXXXXXXX 原样保留，待确认（源文件第 323 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Black Clover
+- attributes:
+  - type: date
+    data:
+      start: '20171004'
+      end: '20171220'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: このはな綺譚
+- attributes:
+  - type: date
+    data:
+      start: '20171005'
+      end: '20171228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DMG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Just Because!
+- attributes:
+  - type: date
+    data:
+      start: '20171006'
+      end: '20171222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: KAMI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: キノの旅 -The Beautiful World- The Animated Series
+- attributes:
+  - type: date
+    data:
+      start: '20171006'
+      end: '20171222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKCS
+      - press_format: 1080p
+        press_group: KAMI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 少女終末旅行
+- attributes:
+  - type: date
+    data:
+      start: '20171006'
+      end: '20180105'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DMAL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 結城友奈は勇者である 2
+- attributes:
+  - type: date
+    data:
+      start: '20171006'
+      end: '20180330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 牙狼 -Vanishing Line-
+- attributes:
+  - type: date
+    data:
+      start: '20171007'
+      end: '20171223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Blend S
+- attributes:
+  - type: date
+    data:
+      start: '20171007'
+      end: '20171223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: つうかあ
+- attributes:
+  - type: date
+    data:
+      start: '20171007'
+      end: '20171223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/血界戦線
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: 血界戦線 & Beyond_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCBM
+        press_path: 血界戦線 & Beyond_BDRip(VCBM)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 血界戦線 & Beyond
+- attributes:
+  - type: date
+    data:
+      start: '20171007'
+      end: '20171230'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live!Sunshine!! 2
+- attributes:
+  - type: date
+    data:
+      start: '20171007'
+      end: '20180324'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: TD
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 魔法使いの嫁
+- attributes:
+  - type: date
+    data:
+      start: '20171008'
+      end: '20171224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DMG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: アニメガタリズ
+- attributes:
+  - type: date
+    data:
+      start: '20171008'
+      end: '20171224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CC
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 妹さえいればいい。
+- attributes:
+  - type: date
+    data:
+      start: '20171008'
+      end: '20171224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: SK
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 干物妹! うまるちゃんR
+- attributes:
+  - type: date
+    data:
+      start: '20171011'
+      end: '20171213'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DMG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 僕の彼女がマジメ過ぎるしょびっちな件
+- attributes:
+  - type: date
+    data:
+      start: '20171014'
+      end: '20180331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 3月のライオン 2

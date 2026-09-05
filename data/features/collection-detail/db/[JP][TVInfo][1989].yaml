@@ -1,0 +1,52 @@
+- attributes:
+  - type: date
+    data:
+      start: '19890401'
+      end: '19890401'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 バイバイ・リバティー・危機一発!
+- attributes:
+  - type: date
+    data:
+      start: '19890415'
+      end: '19890916'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DBRip
+        press_group: JSUM
+      markers: []
+    description: 旧库格式值 DBRip 原样保留，待确认（源文件第 17 行）。
+  - type: country
+    data: japan
+  - type: name
+    data: らんま½
+- attributes:
+  - type: date
+    data:
+      start: '19891020'
+      end: '19920925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: らんま½ 熱闘編

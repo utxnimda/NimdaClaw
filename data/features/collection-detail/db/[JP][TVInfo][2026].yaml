@@ -1,0 +1,30 @@
+- attributes:
+  - type: date
+    data:
+      start: ''
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ''
+- attributes:
+  - type: date
+    data:
+      start: ''
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ''

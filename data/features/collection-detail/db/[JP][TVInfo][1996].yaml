@@ -1,0 +1,121 @@
+- attributes:
+  - type: date
+    data:
+      start: '19960110'
+      end: '19980908'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: るろうに剣心 -明治剣客浪漫譚-
+- attributes:
+  - type: date
+    data:
+      start: '19960402'
+      end: '19960924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 天空のエスカフローネ
+- attributes:
+  - type: date
+    data:
+      start: '19960404'
+      end: '19970627'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 水色時代
+- attributes:
+  - type: date
+    data:
+      start: '19960413'
+      end: '19970621'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: DVDRip
+        press_group: ZAZA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 地獄先生ぬ〜べ〜
+- attributes:
+  - type: date
+    data:
+      start: '19960802'
+      end: '19960802'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 トワイライト☆ジェミニの秘密
+- attributes:
+  - type: date
+    data:
+      start: '19961002'
+      end: '19970326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 336p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ハーメルンのバイオリン弾き
+- attributes:
+  - type: date
+    data:
+      start: '19961005'
+      end: '19970927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 逮捕しちゃうぞ

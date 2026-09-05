@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\花样男子
+      path: G:/Video/电视剧/韩剧/花样男子
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -35,7 +35,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\偶然結婚
+      path: G:/Video/电视剧/韩剧/偶然結婚
       collectioned:
       - press_format: 360p
         press_group: '----'
@@ -54,7 +54,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\穿透屋顶的High Kick！
+      path: G:/Video/电视剧/韩剧/穿透屋顶的High Kick！
       collectioned:
       - press_format: 480p
         press_group: '----'

@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Big
+      path: G:/Video/电视剧/韩剧/Big
       collectioned:
       - press_format: 360p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\请回答1997
+      path: G:/Video/电视剧/韩剧/请回答1997
       collectioned:
       - press_format: 1080p
         press_group: '----'

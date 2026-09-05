@@ -1,0 +1,68 @@
+- attributes:
+  - type: date
+    data:
+      start: '19970401'
+      end: '19970923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 新・天地無用!
+- attributes:
+  - type: date
+    data:
+      start: '19970407'
+      end: '20000911'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 金田一少年の事件簿
+- attributes:
+  - type: date
+    data:
+      start: '19970801'
+      end: '19970801'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 ワルサーP38
+- attributes:
+  - type: date
+    data:
+      start: '19971002'
+      end: '19980924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 超魔神英雄伝ワタル

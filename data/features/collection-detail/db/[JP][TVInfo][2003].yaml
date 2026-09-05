@@ -1,0 +1,331 @@
+- attributes:
+  - type: date
+    data:
+      start: '20030202'
+      end: '20040125'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 明日のナージャ
+- attributes:
+  - type: date
+    data:
+      start: '20030400'
+      end: '20030700'
+    description: 旧库日期 20030400–20030700 原样保留，待确认（源文件第 104 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: キノの旅 -The Beautiful World-
+- attributes:
+  - type: date
+    data:
+      start: '20030403'
+      end: '20030925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: D・N・ANGEL
+- attributes:
+  - type: date
+    data:
+      start: '20030405'
+      end: '20030621'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 成恵の世界
+- attributes:
+  - type: date
+    data:
+      start: '20030408'
+      end: '20031007'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 廃棄王女
+- attributes:
+  - type: date
+    data:
+      start: '20030416'
+      end: '20030924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Texhnolyze
+- attributes:
+  - type: date
+    data:
+      start: '20030701'
+      end: '20030900'
+    description: 旧库日期 20030701–20030900 原样保留，待确认（源文件第 109 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Happy★Lesson Advance
+- attributes:
+  - type: date
+    data:
+      start: '20030705'
+      end: '20031227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: D.C
+- attributes:
+  - type: date
+    data:
+      start: '20030715'
+      end: '20031014'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: おねがい☆ツインズ
+- attributes:
+  - type: date
+    data:
+      start: '20030730'
+      end: '20031022'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ALK
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 一騎当千
+- attributes:
+  - type: date
+    data:
+      start: '20030801'
+      end: '20030801'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 お宝返却大作戦!!
+- attributes:
+  - type: date
+    data:
+      start: '20030814'
+      end: '20030814'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: まほろまてぃっく夏のTVスペシャル
+- attributes:
+  - type: date
+    data:
+      start: '20030826'
+      end: '20031118'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Full Metal Panic？ふもっふ
+- attributes:
+  - type: date
+    data:
+      start: '20031003'
+      end: '20040104'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 君が望む永遠
+- attributes:
+  - type: date
+    data:
+      start: '20031004'
+      end: '20031227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 540p
+        press_group: ''
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ヤミと帽子と本の旅人
+- attributes:
+  - type: date
+    data:
+      start: '20031004'
+      end: '20040406'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: まぶらほ
+- attributes:
+  - type: date
+    data:
+      start: '20031004'
+      end: '20041002'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: PHI
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 鋼の錬金術師
+- attributes:
+  - type: date
+    data:
+      start: '20031009'
+      end: '20031229'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      - press_format: DVDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 真月譚 月姫
+- attributes:
+  - type: date
+    data:
+      start: '20031011'
+      end: '20031227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 藍より青し~縁~

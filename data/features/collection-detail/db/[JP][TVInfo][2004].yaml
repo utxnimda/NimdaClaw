@@ -1,0 +1,363 @@
+- attributes:
+  - type: date
+    data:
+      start: '20040101'
+      end: '20050108'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCBP
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 攻殻機動隊 S.A.C. 2nd GIG
+- attributes:
+  - type: date
+    data:
+      start: '20040112'
+      end: '20040301'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 超変身コス∞プレイヤー
+- attributes:
+  - type: date
+    data:
+      start: '20040202'
+      end: '20040517'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 妄想代理人
+- attributes:
+  - type: date
+    data:
+      start: '20040401'
+      end: '20040617'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: この醜くも美しい世界
+- attributes:
+  - type: date
+    data:
+      start: '20040401'
+      end: '20040923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 最遊記 Reload Gunlock
+- attributes:
+  - type: date
+    data:
+      start: '20040417'
+      end: '20060218'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANKA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 頭文字D Fourth Stage
+- attributes:
+  - type: date
+    data:
+      start: '20040520'
+      end: '20050319'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Samurai Champloo
+- attributes:
+  - type: date
+    data:
+      start: '20040706'
+      end: '20040907'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Girls ブラボー
+- attributes:
+  - type: date
+    data:
+      start: '20040730'
+      end: '20040730'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 盗まれたルパン 〜コピーキャットは真夏の蝶〜
+- attributes:
+  - type: date
+    data:
+      start: '20040911'
+      end: '20050226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 風人物語
+- attributes:
+  - type: date
+    data:
+      start: '20040930'
+      end: '20040929'
+    description: 旧库日期 20040930–20040929 原样保留，待确认（源文件第 134 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 524p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 陰陽大戦記
+- attributes:
+  - type: date
+    data:
+      start: '20040930'
+      end: '20050331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 舞-Hime
+- attributes:
+  - type: date
+    data:
+      start: '20041001'
+      end: '20041224'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 魔法少女リリカルなのは
+- attributes:
+  - type: date
+    data:
+      start: '20041002'
+      end: '20041225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: To Heart ~Remember My Memories~
+- attributes:
+  - type: date
+    data:
+      start: '20041004'
+      end: '20040328'
+    description: 旧库日期 20041004–20040328 原样保留，待确认（源文件第 138 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Fanastic Children
+- attributes:
+  - type: date
+    data:
+      start: '20041005'
+      end: '20050329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 720p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: School Rumble
+- attributes:
+  - type: date
+    data:
+      start: '20041005'
+      end: '20120327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Bleach
+- attributes:
+  - type: date
+    data:
+      start: '20041007'
+      end: '20041223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Rozen Maiden
+- attributes:
+  - type: date
+    data:
+      start: '20041007'
+      end: '20050106'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: W〜ウィッシュ〜
+- attributes:
+  - type: date
+    data:
+      start: '20041009'
+      end: '20051001'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 機動戦士ガンダムSeed Destiny
+- attributes:
+  - type: date
+    data:
+      start: '20041010'
+      end: '20041226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: げんしけん

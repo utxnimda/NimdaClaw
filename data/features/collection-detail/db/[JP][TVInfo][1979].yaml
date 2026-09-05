@@ -1,0 +1,34 @@
+- attributes:
+  - type: date
+    data:
+      start: '19790115'
+      end: '19800325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 宇宙戦艦ヤマト2
+- attributes:
+  - type: date
+    data:
+      start: '19790407'
+      end: '19800126'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 機動戦士ガンダム

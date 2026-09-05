@@ -1,0 +1,51 @@
+- attributes:
+  - type: date
+    data:
+      start: '19950105'
+      end: '19951217'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ロミオの青い空
+- attributes:
+  - type: date
+    data:
+      start: '19950402'
+      end: '19950924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 天地無用!
+- attributes:
+  - type: date
+    data:
+      start: '19950804'
+      end: '19950804'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 ハリマオの財宝を追え!!

@@ -1,0 +1,251 @@
+- attributes:
+  - type: date
+    data:
+      start: '20210109'
+      end: '20210403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: World Trigger 2
+- attributes:
+  - type: date
+    data:
+      start: '20210406'
+      end: '20210629'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Odd Taxi
+- attributes:
+  - type: date
+    data:
+      start: '2021-04-08'
+      end: '2021-06-24'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Zombie Land Saga
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Zombie Land Saga Revenge_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Zombie Land Saga Revenge_BDRip(VCB)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Zombie Land Saga Revenge
+- attributes:
+  - type: date
+    data:
+      start: '20210701'
+      end: '20210930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひぐらしのなく頃に卒
+- attributes:
+  - type: date
+    data:
+      start: '20210703'
+      end: '20210918'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: カノジョも彼女
+- attributes:
+  - type: date
+    data:
+      start: '20210707'
+      end: '20210922'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 月が導く異世界道中
+- attributes:
+  - type: date
+    data:
+      start: '20210711'
+      end: '20211017'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live! Super Star!!
+- attributes:
+  - type: date
+    data:
+      start: '20210801'
+      end: '20210926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: マギアレコード 魔法少女まどか☆マギカ外伝 2nd
+- attributes:
+  - type: date
+    data:
+      start: '20210801'
+      end: '20211219'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ジャヒー様はくじけない!
+- attributes:
+  - type: date
+    data:
+      start: '2021-08-27'
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Fate／Kaleid Liner プリズマ☆イリヤ
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Fate／Kaleid Liner プリズマ☆イリヤ Licht 名前の無い少女_BDRip(VCB)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Fate／Kaleid Liner プリズマ☆イリヤ Licht 名前の無い少女
+- attributes:
+  - type: date
+    data:
+      start: '20211004'
+      end: '20211220'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 吸血鬼すぐ死ぬ
+- attributes:
+  - type: date
+    data:
+      start: '20211009'
+      end: '20220122'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: World Trigger 3
+- attributes:
+  - type: date
+    data:
+      start: '20211011'
+      end: '20211227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 逆転世界ノ電池少女
+- attributes:
+  - type: date
+    data:
+      start: '20211015'
+      end: '20220325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 王様ランキング

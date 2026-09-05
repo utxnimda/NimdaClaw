@@ -1,0 +1,71 @@
+- attributes:
+  - type: date
+    data:
+      start: '19930411'
+      end: '19940306'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 528p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: GS美神
+- attributes:
+  - type: date
+    data:
+      start: '19930723'
+      end: '19930723'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 ルパン暗殺指令
+- attributes:
+  - type: date
+    data:
+      start: '19931016'
+      end: '19960323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: 0720p
+        press_group: KAMI
+      markers: []
+    description: 旧库格式值 0720p 原样保留，待确认（源文件第 29 行）。
+  - type: country
+    data: japan
+  - type: name
+    data: Slam Dunk
+- attributes:
+  - type: date
+    data:
+      start: '19931107'
+      end: '19941225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: R2Jraw
+        press_group: DMHY
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 蒼き伝説シュート!

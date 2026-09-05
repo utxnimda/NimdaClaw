@@ -1,0 +1,17 @@
+- attributes:
+  - type: date
+    data:
+      start: '19821003'
+      end: '19830626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 超時空要塞 Macross

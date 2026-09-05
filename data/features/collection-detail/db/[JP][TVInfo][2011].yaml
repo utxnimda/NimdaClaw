@@ -7,6 +7,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Infinite Stratos
       collectioned:
       - press_format: BDRip
         press_group: PHI
@@ -15,7 +16,6 @@
         press_group: KAMI
         press_path: Infinite Stratos_1080p
       markers: []
-      path: Z:\Infinite Stratos
   - type: country
     data: japan
   - type: name
@@ -29,6 +29,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/夢喰いメリー
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -37,7 +38,6 @@
         press_group: CASO
         press_path: 夢喰いメリー_720p
       markers: []
-      path: Z:\夢喰いメリー
   - type: country
     data: japan
   - type: name
@@ -51,6 +51,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/魔法少女まどか☆マギカ
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -62,7 +63,6 @@
         press_group: CKCS
         press_path: 魔法少女まどか☆マギカ_720p
       markers: []
-      path: Y:\魔法少女まどか☆マギカ
   - type: country
     data: japan
   - type: name
@@ -76,6 +76,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Gosick
       collectioned:
       - press_format: BDRip
         press_group: PHI
@@ -87,7 +88,6 @@
         press_group: CK
         press_path: Gosick_720p
       markers: []
-      path: Z:\Gosick
   - type: country
     data: japan
   - type: name
@@ -101,6 +101,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/みつどもえ
       collectioned:
       - press_format: BDRip
         press_group: SLED
@@ -109,7 +110,6 @@
         press_group: EMD
         press_path: みつどもえ 増量中!_720p
       markers: []
-      path: Z:\みつどもえ
   - type: country
     data: japan
   - type: name
@@ -123,12 +123,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/お兄ちゃんのことなんかぜんぜん好きじゃないんだからねっ!!
       collectioned:
       - press_format: BDRip
         press_group: TXXA
         press_path: お兄ちゃんのことなんかぜんぜん好きじゃないんだからねっ!!_BDRip
       markers: []
-      path: T:\お兄ちゃんのことなんかぜんぜん好きじゃないんだからねっ!!
   - type: country
     data: japan
   - type: name
@@ -142,6 +142,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Freezing
       collectioned:
       - press_format: BDRip
         press_group: VCBE
@@ -150,7 +151,6 @@
         press_group: CASO
         press_path: Freezing_BDRip
       markers: []
-      path: T:\Freezing
   - type: country
     data: japan
   - type: name
@@ -179,6 +179,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Dragon Crisis!
       collectioned:
       - press_format: BDRip
         press_group: ANK
@@ -187,7 +188,6 @@
         press_group: CK
         press_path: Dragon Crisis!_720p
       markers: []
-      path: Z:\Dragon Crisis!
   - type: country
     data: japan
   - type: name
@@ -201,6 +201,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/これはゾンビですか？
       collectioned:
       - press_format: 720p
         press_group: AT
@@ -209,7 +210,6 @@
         press_group: VCB
         press_path: これはゾンビですか？_BDRip
       markers: []
-      path: S:\これはゾンビですか？
   - type: country
     data: japan
   - type: name
@@ -223,12 +223,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Level E
       collectioned:
       - press_format: BDRip
         press_group: '----'
         press_path: Level E_BDRip
       markers: []
-      path: T:\Level E
   - type: country
     data: japan
   - type: name
@@ -242,6 +242,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Fractale
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -253,7 +254,6 @@
         press_group: EMD
         press_path: Fractale_720p
       markers: []
-      path: T:\Fractale
   - type: country
     data: japan
   - type: name
@@ -267,6 +267,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/放浪息子
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -278,7 +279,6 @@
         press_group: CKCS
         press_path: 放浪息子_720p
       markers: []
-      path: Z:\放浪息子
   - type: country
     data: japan
   - type: name
@@ -292,6 +292,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Dog Days
       collectioned:
       - press_format: BDRip
         press_group: FL
@@ -303,7 +304,6 @@
         press_group: CASO
         press_path: Dog Days_720p
       markers: []
-      path: Z:\Dog Days
   - type: country
     data: japan
   - type: name
@@ -317,6 +317,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/日常
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -328,7 +329,6 @@
         press_group: CASO
         press_path: 日常_720p
       markers: []
-      path: Y:\日常
   - type: country
     data: japan
   - type: name
@@ -342,6 +342,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/俺たちに翼はない
       collectioned:
       - press_format: BDRip
         press_group: CK
@@ -350,7 +351,6 @@
         press_group: CK
         press_path: 俺たちに翼はない_720p
       markers: []
-      path: Z:\俺たちに翼はない
   - type: country
     data: japan
   - type: name
@@ -364,6 +364,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/花咲くいろは
       collectioned:
       - press_format: BDRip
         press_group: VCBL
@@ -375,7 +376,6 @@
         press_group: CKCS
         press_path: 花咲くいろは_720p
       markers: []
-      path: Z:\花咲くいろは
   - type: country
     data: japan
   - type: name
@@ -389,12 +389,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/戦国乙女
       collectioned:
       - press_format: BDRip
         press_group: ANK
         press_path: 戦国乙女～桃色パラドックス～_BDRip
       markers: []
-      path: T:\戦国乙女
   - type: country
     data: japan
   - type: name
@@ -408,6 +408,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Steins;Gate
       collectioned:
       - press_format: BDRip
         press_group: CKCS
@@ -416,7 +417,6 @@
         press_group: CKCS
         press_path: Steins;Gate_720p
       markers: []
-      path: S:\Steins;Gate
   - type: country
     data: japan
   - type: name
@@ -430,12 +430,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/30歳の保健体育
       collectioned:
       - press_format: BDRip
         press_group: '----'
         press_path: 30歳の保健体育_BDRip
       markers: []
-      path: T:\30歳の保健体育
   - type: country
     data: japan
   - type: name
@@ -449,12 +449,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/けんぷファー
       collectioned:
       - press_format: BDRip
         press_group: XRIP
         press_path: けんぷファー Für Die Liebe_BDRip
       markers: []
-      path: Z:\けんぷファー
   - type: country
     data: japan
   - type: name
@@ -468,6 +468,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/A Channel
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -476,7 +477,6 @@
         press_group: CASO
         press_path: A Channel_720p
       markers: []
-      path: T:\A Channel
   - type: country
     data: japan
   - type: name
@@ -490,12 +490,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/そふてにっ
       collectioned:
       - press_format: BDRip
         press_group: '----'
         press_path: そふてにっ_BDRip
       markers: []
-      path: T:\そふてにっ
   - type: country
     data: japan
   - type: name
@@ -509,6 +509,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/変ゼミ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -517,7 +518,6 @@
         press_group: CASO
         press_path: 変ゼミ_BDRip
       markers: []
-      path: Z:\変ゼミ
   - type: country
     data: japan
   - type: name
@@ -531,6 +531,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/アスタロッテのおもちゃ！
       collectioned:
       - press_format: BDRip
         press_group: CKCS
@@ -539,7 +540,6 @@
         press_group: CKCS
         press_path: アスタロッテのおもちゃ！_720p
       markers: []
-      path: Z:\アスタロッテのおもちゃ！
   - type: country
     data: japan
   - type: name
@@ -553,6 +553,7 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/神のみぞ知るセカイ
       collectioned:
       - press_format: BDRip
         press_group: CK
@@ -561,7 +562,6 @@
         press_group: CK
         press_path: 神のみぞ知るセカイII_720p
       markers: []
-      path: V:\Japan\神のみぞ知るセカイ
   - type: country
     data: japan
   - type: name
@@ -575,12 +575,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/聖痕のクェイサー
       collectioned:
       - press_format: BDRip
         press_group: VCB
         press_path: 聖痕のクェイサーII_BDRip
       markers: []
-      path: T:\聖痕のクェイサー
   - type: country
     data: japan
   - type: name
@@ -594,6 +594,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/星空へ架かる橋
       collectioned:
       - press_format: BDRip
         press_group: CK
@@ -602,7 +603,6 @@
         press_group: CK
         press_path: 星空へ架かる橋_720p
       markers: []
-      path: Z:\星空へ架かる橋
   - type: country
     data: japan
   - type: name
@@ -616,6 +616,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/あの日見た花の名前を僕達はまだ知らない
       collectioned:
       - press_format: BDRip
         press_group: FL
@@ -624,7 +625,6 @@
         press_group: CKCS
         press_path: あの日見た花の名前を僕達はまだ知らない_720p
       markers: []
-      path: Z:\あの日見た花の名前を僕達はまだ知らない
   - type: country
     data: japan
   - type: name
@@ -638,12 +638,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/C
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: C_BDRip
       markers: []
-      path: T:\C
   - type: country
     data: japan
   - type: name
@@ -657,6 +657,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/電波女と青春男
       collectioned:
       - press_format: BDRip
         press_group: AT
@@ -665,7 +666,6 @@
         press_group: SCOL
         press_path: 電波女と青春男_720p
       markers: []
-      path: Z:\電波女と青春男
   - type: country
     data: japan
   - type: name
@@ -679,6 +679,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/緋弾のアリア
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -690,7 +691,6 @@
         press_group: CKCS
         press_path: 緋弾のアリア_720p
       markers: []
-      path: Y:\緋弾のアリア
   - type: country
     data: japan
   - type: name
@@ -704,6 +704,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/まりあ†ほりっく
       collectioned:
       - press_format: BDRip
         press_group: FN
@@ -712,7 +713,6 @@
         press_group: CKCS
         press_path: まりあ†ほりっく あらいぶ_720p
       markers: []
-      path: T:\まりあ†ほりっく
   - type: country
     data: japan
   - type: name
@@ -726,12 +726,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Deadman Wonderland
       collectioned:
       - press_format: BDRip
         press_group: SGS
         press_path: Deadman Wonderland_BDRip
       markers: []
-      path: T:\Deadman Wonderland
   - type: country
     data: japan
   - type: name
@@ -745,6 +745,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/青の祓魔師
       collectioned:
       - press_format: BDRip
         press_group: FL
@@ -753,7 +754,6 @@
         press_group: FL
         press_path: 青の祓魔師_720p
       markers: []
-      path: Z:\青の祓魔師
   - type: country
     data: japan
   - type: name
@@ -767,12 +767,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/もしドラ
       collectioned:
       - press_format: BDRip
         press_group: YS
         press_path: もしドラ_BDRip
       markers: []
-      path: T:\もしドラ
   - type: country
     data: japan
   - type: name
@@ -786,6 +786,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ロウきゅーぶ！
       collectioned:
       - press_format: BDRip
         press_group: CK
@@ -794,7 +795,6 @@
         press_group: CK
         press_path: ロウきゅーぶ！_720p
       markers: []
-      path: Z:\ロウきゅーぶ！
   - type: country
     data: japan
   - type: name
@@ -808,6 +808,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/神様のメモ帳
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -819,7 +820,6 @@
         press_group: CKCS
         press_path: 神様のメモ帳_720p
       markers: []
-      path: Z:\神様のメモ帳
   - type: country
     data: japan
   - type: name
@@ -833,6 +833,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/異国迷路のクロワーゼ
       collectioned:
       - press_format: BDRip
         press_group: ANK
@@ -844,7 +845,6 @@
         press_group: CK
         press_path: 異国迷路のクロワーゼ_720p
       markers: []
-      path: Z:\異国迷路のクロワーゼ
   - type: country
     data: japan
   - type: name
@@ -858,6 +858,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ゆるゆり
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -869,7 +870,6 @@
         press_group: CASO
         press_path: ゆるゆり_720p
       markers: []
-      path: S:\ゆるゆり
   - type: country
     data: japan
   - type: name
@@ -900,6 +900,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/神様Dolls
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -911,7 +912,6 @@
         press_group: DHRT
         press_path: 神様Dolls_720p
       markers: []
-      path: Z:\神様Dolls
   - type: country
     data: japan
   - type: name
@@ -925,6 +925,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/うさぎドロップ
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -933,7 +934,6 @@
         press_group: CASO
         press_path: うさぎドロップ_720p
       markers: []
-      path: Z:\うさぎドロップ
   - type: country
     data: japan
   - type: name
@@ -947,12 +947,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/森田さんは無口
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
         press_path: 森田さんは無口_DVDRip
       markers: []
-      path: T:\森田さんは無口
   - type: country
     data: japan
   - type: name
@@ -966,6 +966,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/バカとテストと召喚獣
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -977,7 +978,6 @@
         press_group: DMG
         press_path: バカとテストと召喚獣にっ！_720p
       markers: []
-      path: S:\バカとテストと召喚獣
   - type: country
     data: japan
   - type: name
@@ -991,6 +991,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Blood-C
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -999,7 +1000,6 @@
         press_group: XRIP
         press_path: Blood-C_BDRip(XRIP)
       markers: []
-      path: T:\Blood-C
   - type: country
     data: japan
   - type: name
@@ -1013,6 +1013,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/まよチキ!
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -1024,7 +1025,6 @@
         press_group: CK
         press_path: まよチキ!_720P
       markers: []
-      path: Z:\まよチキ!
   - type: country
     data: japan
   - type: name
@@ -1038,6 +1038,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/The Idolm@ster
       collectioned:
       - press_format: BDRip
         press_group: CK
@@ -1046,7 +1047,6 @@
         press_group: CK
         press_path: The Idolm@ster_720p
       markers: []
-      path: S:\The Idolm@ster
   - type: country
     data: japan
   - type: name
@@ -1060,6 +1060,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/輪るピングドラム
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1068,7 +1069,6 @@
         press_group: VCB
         press_path: 輪るピングドラム_BDRip(VCB)
       markers: []
-      path: Y:\輪るピングドラム
   - type: country
     data: japan
   - type: name
@@ -1082,6 +1082,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/R-15
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1090,7 +1091,6 @@
         press_group: ANK
         press_path: R-15_BDRip(ANK)
       markers: []
-      path: T:\R-15
   - type: country
     data: japan
   - type: name
@@ -1104,12 +1104,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/猫神やおよろず
       collectioned:
       - press_format: BDRip
         press_group: '----'
         press_path: 猫神やおよろず_BDRip
       markers: []
-      path: T:\猫神やおよろず
   - type: country
     data: japan
   - type: name
@@ -1123,12 +1123,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/魔乳秘剣帖
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: 魔乳秘剣帖_BDRip
       markers: []
-      path: T:\魔乳秘剣帖
   - type: country
     data: japan
   - type: name
@@ -1142,12 +1142,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ダンタリアンの書架
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: ダンタリアンの書架_BDRip
       markers: []
-      path: T:\ダンタリアンの書架
   - type: country
     data: japan
   - type: name
@@ -1161,12 +1161,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/武装神姫
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: 武装神姫 Moon Angel_BDRip(MZ)
       markers: []
-      path: T:\武装神姫
   - type: country
     data: japan
   - type: name
@@ -1180,6 +1180,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/侵略！イカ娘
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1191,7 +1192,6 @@
         press_group: FL
         press_path: 侵略！？イカ娘_720p
       markers: []
-      path: S:\侵略！イカ娘
   - type: country
     data: japan
   - type: name
@@ -1205,6 +1205,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/C3 -シーキューブ-
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1216,7 +1217,6 @@
         press_group: CK
         press_path: C3 -シーキューブ-_720p
       markers: []
-      path: Z:\C3 -シーキューブ-
   - type: country
     data: japan
   - type: name
@@ -1230,12 +1230,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/境界線上のホライゾン
       collectioned:
       - press_format: BDRip
         press_group: VCB
         press_path: 境界線上のホライゾン_BDRip
       markers: []
-      path: T:\境界線上のホライゾン
   - type: country
     data: japan
   - type: name
@@ -1249,13 +1249,17 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Fate／Zero
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Fate／Zero_BDRip(Jsum)
       - press_format: BDRip
         press_group: CKCA
+        press_path: Fate／Zero_BDRip(CKCA)
       - press_format: BDRip
         press_group: VCB
+        press_path: Fate／Zero_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -1270,12 +1274,12 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Working!!
       collectioned:
       - press_format: BDRip
         press_group: VCB
         press_path: Working'!!_BDRip
       markers: []
-      path: U:\Working!!
   - type: country
     data: japan
   - type: name
@@ -1289,6 +1293,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/バクマン。
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -1300,7 +1305,6 @@
         press_group: DMG
         press_path: バクマン。2_720p
       markers: []
-      path: Y:\バクマン。
   - type: country
     data: japan
   - type: name
@@ -1314,6 +1318,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Hunter X Hunter
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1322,7 +1327,6 @@
         press_group: KAMI
         press_path: Hunter X Hunter_720p
       markers: []
-      path: T:\Hunter X Hunter
   - type: country
     data: japan
   - type: name
@@ -1336,6 +1340,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/真剣で私に恋しなさい！！
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1347,7 +1352,6 @@
         press_group: CK
         press_path: 真剣で私に恋しなさい！！_720p
       markers: []
-      path: Z:\真剣で私に恋しなさい！！
   - type: country
     data: japan
   - type: name
@@ -1361,6 +1365,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/たまゆら
       collectioned:
       - press_format: 720p
         press_group: CASO
@@ -1371,7 +1376,6 @@
       - press_format: BDRip
         press_group: VCB
       markers: []
-      path: S:\たまゆら
   - type: country
     data: japan
   - type: name
@@ -1385,12 +1389,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/マケン姫っ！
       collectioned:
       - press_format: BDRip
         press_group: PHI
         press_path: マケン姫っ！_BDRip
       markers: []
-      path: T:\マケン姫っ！
   - type: country
     data: japan
   - type: name
@@ -1404,6 +1408,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ましろ色シンフォニー
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1415,7 +1420,6 @@
         press_group: CK
         press_path: ましろ色シンフォニー_720p
       markers: []
-      path: Z:\ましろ色シンフォニー
   - type: country
     data: japan
   - type: name
@@ -1429,12 +1433,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/森田さんは無口
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
         press_path: 森田さんは無口。2_DVDRip
       markers: []
-      path: T:\森田さんは無口
   - type: country
     data: japan
   - type: name
@@ -1448,6 +1452,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/僕は友達が少ない
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1459,7 +1464,6 @@
         press_group: CKCS
         press_path: 僕は友達が少ない_720p
       markers: []
-      path: S:\僕は友達が少ない
   - type: country
     data: japan
   - type: name
@@ -1473,6 +1477,7 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/灼眼のシャナ
       collectioned:
       - press_format: BDRip
         press_group: PHI
@@ -1484,7 +1489,6 @@
         press_group: CKJY
         press_path: 灼眼のシャナIII -Final-_720p
       markers: []
-      path: V:\Japan\灼眼のシャナ
   - type: country
     data: japan
   - type: name
@@ -1498,12 +1502,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Last Exile
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: Last Exile -銀翼のファム-_BDRip
       markers: []
-      path: T:\Last Exile
   - type: country
     data: japan
   - type: name
@@ -1517,12 +1521,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ベン·トー
       collectioned:
       - press_format: BDRip
         press_group: VCB
         press_path: ベン·トー _BDRip
       markers: []
-      path: T:\ベン·トー
   - type: country
     data: japan
   - type: name
@@ -1536,6 +1540,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/未来日記
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1544,7 +1549,6 @@
         press_group: SCSG
         press_path: 未来日記_720p
       markers: []
-      path: Z:\未来日記
   - type: country
     data: japan
   - type: name
@@ -1558,12 +1562,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/機動戦士ガンダム
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: 機動戦士ガンダムAge_BDRip
       markers: []
-      path: T:\機動戦士ガンダム
   - type: country
     data: japan
   - type: name
@@ -1577,6 +1581,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Un-Go
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1588,7 +1593,6 @@
         press_group: YYDM
         press_path: Un-Go_720p
       markers: []
-      path: Z:\Un-Go
   - type: country
     data: japan
   - type: name
@@ -1602,6 +1606,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Guilty Crown
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -1610,7 +1615,6 @@
         press_group: CSSG
         press_path: Guilty Crown_720p
       markers: []
-      path: Z:\Guilty Crown
   - type: country
     data: japan
   - type: name
@@ -1624,6 +1628,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ひだまりスケッチ
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -1632,7 +1637,6 @@
         press_group: RF
         press_path: ひだまりスケッチ×SP_BDRip(RF)
       markers: []
-      path: S:\ひだまりスケッチ
   - type: country
     data: japan
   - type: name
@@ -1646,12 +1650,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/High Score
       collectioned:
       - press_format: 720p
         press_group: '----'
         press_path: High Score_720p
       markers: []
-      path: T:\High Score
   - type: country
     data: japan
   - type: name
@@ -1665,12 +1669,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: ルパン三世 血の刻印 〜永遠のMermaid〜_BDRip
       markers: []
-      path: T:\ルパン三世
   - type: country
     data: japan
   - type: name

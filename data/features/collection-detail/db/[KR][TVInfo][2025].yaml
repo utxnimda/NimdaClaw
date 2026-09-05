@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\学习小组
+      path: G:/Video/电视剧/韩剧/学习小组
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\重症外伤中心
+      path: G:/Video/电视剧/韩剧/重症外伤中心
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\不能说的秘密
+      path: G:/Video/电视剧/韩剧/不能说的秘密
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\善意的竞争
+      path: G:/Video/电视剧/韩剧/善意的竞争
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -83,7 +83,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\魔女
+      path: G:/Video/电视剧/韩剧/魔女
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -102,7 +102,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\苦尽柑来遇见你
+      path: G:/Video/电视剧/韩剧/苦尽柑来遇见你
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -121,7 +121,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\协商的技术
+      path: G:/Video/电视剧/韩剧/协商的技术
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -140,7 +140,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\狂医魔徒
+      path: G:/Video/电视剧/韩剧/狂医魔徒
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -159,7 +159,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\我死的一周前
+      path: G:/Video/电视剧/韩剧/我死的一周前
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -178,7 +178,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\机智住院医生生活
+      path: G:/Video/电视剧/韩剧/机智住院医生生活
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -197,7 +197,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\血谜拼图
+      path: G:/Video/电视剧/韩剧/血谜拼图
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -216,7 +216,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\未知的首尔
+      path: G:/Video/电视剧/韩剧/未知的首尔
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -235,7 +235,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\拿着手术刀的猎人
+      path: G:/Video/电视剧/韩剧/拿着手术刀的猎人
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -254,7 +254,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\瑞草洞
+      path: G:/Video/电视剧/韩剧/瑞草洞
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -273,7 +273,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\善良的女人夫世美
+      path: G:/Video/电视剧/韩剧/善良的女人夫世美
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -292,7 +292,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\宇宙Marry Me
+      path: G:/Video/电视剧/韩剧/宇宙Marry Me
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -311,7 +311,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\亲爱的X
+      path: G:/Video/电视剧/韩剧/亲爱的X
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -330,7 +330,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\一吻爆炸
+      path: G:/Video/电视剧/韩剧/一吻爆炸
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -349,7 +349,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\公益律师
+      path: G:/Video/电视剧/韩剧/公益律师
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -368,7 +368,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\等待京道
+      path: G:/Video/电视剧/韩剧/等待京道
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -387,7 +387,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\现金英雄
+      path: G:/Video/电视剧/韩剧/现金英雄
       collectioned:
       - press_format: 1080p
         press_group: '----'

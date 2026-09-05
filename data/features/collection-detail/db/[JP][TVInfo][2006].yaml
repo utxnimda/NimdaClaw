@@ -7,12 +7,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/鍵姫物語 永久アリス輪舞曲
       collectioned:
       - press_format: R2Jraw
         press_group: '----'
         press_path: 鍵姫物語 永久アリス輪舞曲_DVDRip
       markers: []
-      path: Y:\鍵姫物語 永久アリス輪舞曲
   - type: country
     data: japan
   - type: name
@@ -26,12 +26,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/あまえないでよっ!! 喝!!
       collectioned:
       - press_format: DVDRip
         press_group: HKGX
         press_path: あまえないでよっ!! 喝!!_DVDRip
       markers: []
-      path: Y:\あまえないでよっ!! 喝!!
   - type: country
     data: japan
   - type: name
@@ -45,12 +45,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/落語天女おゆい
       collectioned:
       - press_format: R2Jraw
         press_group: '----'
         press_path: 落語天女おゆい_DVDRip
       markers: []
-      path: Y:\落語天女おゆい
   - type: country
     data: japan
   - type: name
@@ -64,6 +64,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Fate／Stay Night
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -72,7 +73,6 @@
         press_group: CK
         press_path: Fate／Stay Night_DVDRip
       markers: []
-      path: Y:\Fate／Stay Night
   - type: country
     data: japan
   - type: name
@@ -86,12 +86,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/よみがえる空 -Rescue Wings-
       collectioned:
       - press_format: DVDRip
         press_group: MM
         press_path: よみがえる空 -Rescue Wings-_DVDRip
       markers: []
-      path: Y:\よみがえる空 -Rescue Wings-
   - type: country
     data: japan
   - type: name
@@ -105,6 +105,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/かしまし 〜ガール・ミーツ・ガール〜
       collectioned:
       - press_format: DVDRip
         press_group: HKGX
@@ -113,7 +114,6 @@
         press_group: HKGX
         press_path: かしまし 〜ガール・ミーツ・ガール〜_540p
       markers: []
-      path: Y:\かしまし 〜ガール・ミーツ・ガール〜
   - type: country
     data: japan
   - type: name
@@ -127,12 +127,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/怪 〜ayakashi〜
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: 怪 〜ayakashi〜_DVDRip
       markers: []
-      path: Y:\怪 〜ayakashi〜
   - type: country
     data: japan
   - type: name
@@ -146,12 +146,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/半分の月がのぼる空
       collectioned:
       - press_format: DVDRip
         press_group: VCB
         press_path: 半分の月がのぼる空_DVDRip
       markers: []
-      path: S:\半分の月がのぼる空
   - type: country
     data: japan
   - type: name
@@ -165,12 +165,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/びんちょうタン
       collectioned:
       - press_format: DVDRip
         press_group: CASO
         press_path: びんちょうタン_DVDRip
       markers: []
-      path: Y:\びんちょうタン
   - type: country
     data: japan
   - type: name
@@ -184,12 +184,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Rec
       collectioned:
       - press_format: DVDRip
         press_group: CASO
         press_path: Rec_DVDRip
       markers: []
-      path: Y:\Rec
   - type: country
     data: japan
   - type: name
@@ -203,12 +203,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Ergo Proxy
       collectioned:
       - press_format: BDRip
         press_group: MZ
         press_path: Ergo Proxy_BDRip
       markers: []
-      path: S:\Ergo Proxy
   - type: country
     data: japan
   - type: name
@@ -222,12 +222,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/しにがみのバラッド。
       collectioned:
       - press_format: DVDRip
         press_group: HKGX
         press_path: しにがみのバラッド。_DVDRip
       markers: []
-      path: Y:\しにがみのバラッド。
   - type: country
     data: japan
   - type: name
@@ -241,12 +241,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Soul Link
       collectioned:
       - press_format: DVDRip
         press_group: CK
         press_path: Soul Link_DVDRip
       markers: []
-      path: Z:\Soul Link
   - type: country
     data: japan
   - type: name
@@ -260,6 +260,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/涼宮ハルヒの憂鬱
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -268,7 +269,6 @@
         press_group: CASO
         press_path: 涼宮ハルヒの憂鬱_DVDRip
       markers: []
-      path: S:\涼宮ハルヒの憂鬱
   - type: country
     data: japan
   - type: name
@@ -282,6 +282,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Aria
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -290,7 +291,6 @@
         press_group: MZ
         press_path: Aria The Natural_BDRip(MZ)
       markers: []
-      path: T:\Aria
   - type: country
     data: japan
   - type: name
@@ -304,6 +304,7 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/School Rumble
       collectioned:
       - press_format: BDRip
         press_group: VCB
@@ -315,7 +316,6 @@
         press_group: '----'
         press_path: School Rumble 二学期_720p
       markers: []
-      path: T:\School Rumble
   - type: country
     data: japan
   - type: name
@@ -329,12 +329,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Girl's High
       collectioned:
       - press_format: DVDRip
         press_group: WLGO
         press_path: Girl's High_DVDRip
       markers: []
-      path: Y:\Girl's High
   - type: country
     data: japan
   - type: name
@@ -348,6 +348,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/うたわれるもの
       collectioned:
       - press_format: BDRip
         press_group: ANK
@@ -355,7 +356,6 @@
         press_group: CK
         press_path: うたわれるもの_DVDRip
       markers: []
-      path: S:\うたわれるもの
   - type: country
     data: japan
   - type: name
@@ -369,12 +369,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Simoun
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: Simoun_DVDRip
       markers: []
-      path: Y:\Simoun
   - type: country
     data: japan
   - type: name
@@ -388,12 +388,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Strawberry Panic
       collectioned:
       - press_format: DVDRip
         press_group: U2
         press_path: Strawberry Panic_DVDRip
       markers: []
-      path: Y:\Strawberry Panic
   - type: country
     data: japan
   - type: name
@@ -407,12 +407,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/妖逆門
       collectioned:
       - press_format: DVDRip
         press_group: AI
         press_path: 妖逆門_DVDRip
       markers: []
-      path: Y:\妖逆門
   - type: country
     data: japan
   - type: name
@@ -426,12 +426,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/錬金3級まじかる？ぽか～ん
       collectioned:
       - press_format: DVDRip
         press_group: YS
         press_path: 錬金3級まじかる？ぽか～ん_DVDRip
       markers: []
-      path: Y:\錬金3級まじかる？ぽか～ん
   - type: country
     data: japan
   - type: name
@@ -445,12 +445,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ガラスの艦隊
       collectioned:
       - press_format: DVDRip
         press_group: FSKY
         press_path: ガラスの艦隊_DVDRip
       markers: []
-      path: Y:\ガラスの艦隊
   - type: country
     data: japan
   - type: name
@@ -464,12 +464,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Air Gear
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: Air Gear_DVDRip
       markers: []
-      path: Y:\Air Gear
   - type: country
     data: japan
   - type: name
@@ -483,12 +483,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ひぐらしのなく頃に
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: ひぐらしのなく頃に_BDRip
       markers: []
-      path: S:\ひぐらしのなく頃に
   - type: country
     data: japan
   - type: name
@@ -502,12 +502,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/銀魂
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: 銀魂_BDRip
       markers: []
-      path: Y:\銀魂
   - type: country
     data: japan
   - type: name
@@ -521,6 +521,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Witch Blade
       collectioned:
       - press_format: BDRip
         press_group: '----'
@@ -529,7 +530,6 @@
         press_group: LV1
         press_path: Witch Blade_DVDRip
       markers: []
-      path: Y:\Witch Blade
   - type: country
     data: japan
   - type: name
@@ -543,6 +543,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/いぬかみっ!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -551,7 +552,6 @@
         press_group: HKG
         press_path: いぬかみっ!_DVDRip
       markers: []
-      path: Y:\いぬかみっ!
   - type: country
     data: japan
   - type: name
@@ -565,12 +565,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ああっ女神さまっ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: ああっ女神さまっ それぞれの翼_BDRip
       markers: []
-      path: Y:\ああっ女神さまっ
   - type: country
     data: japan
   - type: name
@@ -584,12 +584,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Zegapain
       collectioned:
       - press_format: BDRip
         press_group: '----'
         press_path: Zegapain_BDRip
       markers: []
-      path: Y:\Zegapain
   - type: country
     data: japan
   - type: name
@@ -603,6 +603,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/xxxHolic
       collectioned:
       - press_format: DVDRip
         press_group: AI
@@ -614,7 +615,6 @@
         press_group: CASO
         press_path: xxxHolic_480p
       markers: []
-      path: S:\xxxHolic
   - type: country
     data: japan
   - type: name
@@ -628,12 +628,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/西の善き魔女 Astraea Testament
       collectioned:
       - press_format: DVDRip
         press_group: TX
         press_path: 西の善き魔女 Astraea Testament_DVDRip
       markers: []
-      path: Y:\西の善き魔女 Astraea Testament
   - type: country
     data: japan
   - type: name
@@ -647,12 +647,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/夢使い
       collectioned:
       - press_format: DVDRip
         press_group: HKGX
         press_path: 夢使い_DVDRip
       markers: []
-      path: Y:\夢使い
   - type: country
     data: japan
   - type: name
@@ -666,12 +666,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Black Lagoon
       collectioned:
       - press_format: BDRip
         press_group: ANK
         press_path: Black Lagoon_BDRip
       markers: []
-      path: Y:\Black Lagoon
   - type: country
     data: japan
   - type: name
@@ -685,12 +685,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ひまわりっ!
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: ひまわりっ!_DVDRip
       markers: []
-      path: Y:\ひまわりっ!
   - type: country
     data: japan
   - type: name
@@ -704,12 +704,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Black Jack 21
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: Black Jack 21_DVDRip
       markers: []
-      path: Y:\Black Jack 21
   - type: country
     data: japan
   - type: name
@@ -723,12 +723,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/姫様ご用心
       collectioned:
       - press_format: R2Jraw
         press_group: '----'
         press_path: 姫様ご用心_R2Jraw
       markers: []
-      path: Y:\姫様ご用心
   - type: country
     data: japan
   - type: name
@@ -742,12 +742,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/獣王星
       collectioned:
       - press_format: 720p
         press_group: DMHY
         press_path: 獣王星_720p
       markers: []
-      path: Y:\獣王星
   - type: country
     data: japan
   - type: name
@@ -761,6 +761,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/天地無用!
       collectioned:
       - press_format: DVDRip
         press_group: '----'
@@ -769,7 +770,6 @@
         press_group: '----'
         press_path: 砂沙美☆魔法少女クラブ 1_360p
       markers: []
-      path: Y:\天地無用!
   - type: country
     data: japan
   - type: name
@@ -783,12 +783,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/The Third 〜蒼い瞳の少女〜
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: The Third 〜蒼い瞳の少女〜_DVDRip
       markers: []
-      path: Y:\The Third 〜蒼い瞳の少女〜
   - type: country
     data: japan
   - type: name
@@ -802,12 +802,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/翼
       collectioned:
       - press_format: BDRip
         press_group: CASO
         press_path: 翼・Chronicle 2_BDRip
       markers: []
-      path: S:\翼
   - type: country
     data: japan
   - type: name
@@ -821,6 +821,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/蟲師
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -829,7 +830,6 @@
         press_group: CASO
         press_path: 蟲師_400p
       markers: []
-      path: Y:\蟲師
   - type: country
     data: japan
   - type: name
@@ -843,12 +843,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/神様家族
       collectioned:
       - press_format: DVDRip
         press_group: CASO
         press_path: 神様家族_DVDRip
       markers: []
-      path: Y:\神様家族
   - type: country
     data: japan
   - type: name
@@ -862,12 +862,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/機神咆吼デモンベイン
       collectioned:
       - press_format: DVDRip
         press_group: AI
         press_path: 機神咆吼デモンベイン_DVDRip
       markers: []
-      path: Y:\機神咆吼デモンベイン
   - type: country
     data: japan
   - type: name
@@ -881,6 +881,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Honey And Clove
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -889,7 +890,6 @@
         press_group: MZ
         press_path: Honey And Clove 2_BDRip
       markers: []
-      path: S:\Honey And Clove
   - type: country
     data: japan
   - type: name
@@ -903,12 +903,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/貧乏姉妹物語
       collectioned:
       - press_format: DVDRip
         press_group: HQR
         press_path: 貧乏姉妹物語_DVDRip
       markers: []
-      path: Y:\貧乏姉妹物語
   - type: country
     data: japan
   - type: name
@@ -922,12 +922,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/つよきす Cool×Sweet
       collectioned:
       - press_format: DVDRip
         press_group: HKG
         press_path: つよきす Cool×Sweet_DVDRip
       markers: []
-      path: Y:\つよきす Cool×Sweet
   - type: country
     data: japan
   - type: name
@@ -941,12 +941,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ゼロの使い魔
       collectioned:
       - press_format: BDRip
         press_group: VCB
         press_path: ゼロの使い魔_BDRip
       markers: []
-      path: Y:\ゼロの使い魔
   - type: country
     data: japan
   - type: name
@@ -960,6 +960,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/となグラ!
       collectioned:
       - press_format: DVDRip
         press_group: VCB
@@ -968,7 +969,6 @@
         press_group: HKG
         press_path: となグラ!_DVDRip(HKG)
       markers: []
-      path: Y:\となグラ!
   - type: country
     data: japan
   - type: name
@@ -982,6 +982,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/NHKにようこそ！
       collectioned:
       - press_format: DVDRip
         press_group: '----'
@@ -990,7 +991,6 @@
         press_group: '----'
         press_path: NHKにようこそ！_720p
       markers: []
-      path: S:\NHKにようこそ！
   - type: country
     data: japan
   - type: name
@@ -1004,12 +1004,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ギャグマンガ日和
       collectioned:
       - press_format: DVDRip
         press_group: JSUM
         press_path: ギャグマンガ日和2_DVDRip
       markers: []
-      path: S:\ギャグマンガ日和
   - type: country
     data: japan
   - type: name
@@ -1023,12 +1023,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
         press_path: ルパン三世 Seven Days Rhapsody_BDRip
       markers: []
-      path: T:\ルパン三世
   - type: country
     data: japan
   - type: name
@@ -1042,12 +1042,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ときめきメモリアル Only Love
       collectioned:
       - press_format: DVDRip
         press_group: CK
         press_path: ときめきメモリアル Only Love_DVDRip
       markers: []
-      path: S:\ときめきメモリアル Only Love
   - type: country
     data: japan
   - type: name
@@ -1061,12 +1061,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Black Lagoon
       collectioned:
       - press_format: BDRip
         press_group: ANK
         press_path: Black Lagoon The Second Barrage_BDRip
       markers: []
-      path: Y:\Black Lagoon
   - type: country
     data: japan
   - type: name
@@ -1080,12 +1080,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/らぶドル ~Lovely Idol~
       collectioned:
       - press_format: 480p
         press_group: AME
         press_path: らぶドル ~Lovely Idol~_480p
       markers: []
-      path: Y:\らぶドル ~Lovely Idol~
   - type: country
     data: japan
   - type: name
@@ -1099,12 +1099,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Ghost Hunt
       collectioned:
       - press_format: DVDRip
         press_group: DMZJ
         press_path: Ghost Hunt_DVDRip
       markers: []
-      path: Y:\Ghost Hunt
   - type: country
     data: japan
   - type: name
@@ -1118,6 +1118,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/天地無用!
       collectioned:
       - press_format: DVDRip
         press_group: '----'
@@ -1126,7 +1127,6 @@
         press_group: WOLF
         press_path: 砂沙美☆魔法少女クラブ 2_400p
       markers: []
-      path: Y:\天地無用!
   - type: country
     data: japan
   - type: name
@@ -1140,6 +1140,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Death Note
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1148,7 +1149,6 @@
         press_group: '----'
         press_path: Death Note_BDRip
       markers: []
-      path: S:\Death Note
   - type: country
     data: japan
   - type: name
@@ -1179,12 +1179,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Red Garden
       collectioned:
       - press_format: DVDRip
         press_group: DMZJ
         press_path: Red Garden_DVDRip
       markers: []
-      path: Y:\Red Garden
   - type: country
     data: japan
   - type: name
@@ -1198,6 +1198,7 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/魔法先生ネギま！
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1206,7 +1207,6 @@
         press_group: CASO
         press_path: ネギま！？_DVDRip
       markers: []
-      path: V:\Japan\魔法先生ネギま！
   - type: country
     data: japan
   - type: name
@@ -1220,12 +1220,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/武装錬金
       collectioned:
       - press_format: DVDRip
         press_group: HQR
         press_path: 武装錬金_DVDRip
       markers: []
-      path: Y:\武装錬金
   - type: country
     data: japan
   - type: name
@@ -1239,12 +1239,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/夜明け前より瑠璃色な
       collectioned:
       - press_format: DVDRip
         press_group: KH
         press_path: 夜明け前より瑠璃色な_DVDRip
       markers: []
-      path: Y:\夜明け前より瑠璃色な
   - type: country
     data: japan
   - type: name
@@ -1258,12 +1258,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/あさっての方向。
       collectioned:
       - press_format: DVDRip
         press_group: CASO
         press_path: あさっての方向。_DVDRip
       markers: []
-      path: Z:\あさっての方向。
   - type: country
     data: japan
   - type: name
@@ -1277,12 +1277,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Gift
       collectioned:
       - press_format: DVDRip
         press_group: CK
         press_path: Gift ~Eternal Rainbow~_DVDRip
       markers: []
-      path: Y:\Gift
   - type: country
     data: japan
   - type: name
@@ -1296,6 +1296,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Kanon
       collectioned:
       - press_format: BDRip
         press_group: MW
@@ -1310,7 +1311,6 @@
         press_group: CK
         press_path: Kanon_DVDRip
       markers: []
-      path: Y:\Kanon
   - type: country
     data: japan
   - type: name
@@ -1324,12 +1324,12 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Code Geass 反逆のルルーシュ
       collectioned:
       - press_format: BDRip
         press_group: YS
         press_path: Code Geass 反逆のルルーシュ_BDRip
       markers: []
-      path: S:\Code Geass 反逆のルルーシュ
   - type: country
     data: japan
   - type: name
@@ -1343,12 +1343,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/すもももももも ～地上最強のヨメ～
       collectioned:
       - press_format: DVDRip
         press_group: HKG
         press_path: すもももももも ～地上最強のヨメ～_DVDRip
       markers: []
-      path: Y:\すもももももも ～地上最強のヨメ～
   - type: country
     data: japan
   - type: name
@@ -1362,12 +1362,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Happiness
       collectioned:
       - press_format: DVDRip
         press_group: CK
         press_path: Happiness!_DVDRip
       markers: []
-      path: Y:\Happiness
   - type: country
     data: japan
   - type: name
@@ -1381,12 +1381,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/護くんに女神の祝福を!
       collectioned:
       - press_format: DVDRip
         press_group: HKG
         press_path: 護くんに女神の祝福を!_DVDRip
       markers: []
-      path: Y:\護くんに女神の祝福を!
   - type: country
     data: japan
   - type: name
@@ -1400,12 +1400,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/くじびき♥Unbalance
       collectioned:
       - press_format: DVDRip
         press_group: HKGX
         press_path: くじびき♥Unbalance_DVDRip
       markers: []
-      path: Y:\くじびき♥Unbalance
   - type: country
     data: japan
   - type: name
@@ -1419,12 +1419,12 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/乙女はお姉さまに恋してる
       collectioned:
       - press_format: DVDRip
         press_group: CK
         press_path: 乙女はお姉さまに恋してる_DVDRip
       markers: []
-      path: Y:\乙女はお姉さまに恋してる
   - type: country
     data: japan
   - type: name
@@ -1438,6 +1438,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/家庭教師 Hitman Reborn!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
@@ -1446,7 +1447,6 @@
         press_group: '----'
         press_path: 家庭教師 Hitman Reborn!_DVDRip
       markers: []
-      path: Y:\家庭教師 Hitman Reborn!
   - type: country
     data: japan
   - type: name
@@ -1460,6 +1460,7 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/地獄少女
       collectioned:
       - press_format: DVDRip
         press_group: AI
@@ -1471,7 +1472,6 @@
         press_group: '----'
         press_path: 地獄少女 二籠_720p
       markers: []
-      path: S:\地獄少女
   - type: country
     data: japan
   - type: name
@@ -1485,12 +1485,12 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/史上最強の弟子ケンイチ
       collectioned:
       - press_format: DVDRip
         press_group: '----'
         press_path: 史上最強の弟子ケンイチ_DVDRip
       markers: []
-      path: T:\史上最強の弟子ケンイチ
   - type: country
     data: japan
   - type: name
@@ -1504,6 +1504,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Bartender
       collectioned:
       - press_format: BDRip
         press_group: KWK
@@ -1512,7 +1513,6 @@
         press_group: '----'
         press_path: Bartender_DVDRip
       markers: []
-      path: Y:\Bartender
   - type: country
     data: japan
   - type: name
@@ -1526,6 +1526,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/結界師
       collectioned:
       - press_format: DVDRip
         press_group: DMZJ
@@ -1533,7 +1534,6 @@
       - press_format: 576p
         press_group: SKT
       markers: []
-      path: Y:\結界師
   - type: country
     data: japan
   - type: name
@@ -1547,6 +1547,7 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Rozen Maiden
       collectioned:
       - press_format: BDRip
         press_group: CASO
@@ -1555,7 +1556,6 @@
         press_group: CASO
         press_path: Rozen Maiden Ouverture_DVDRip
       markers: []
-      path: Y:\Rozen Maiden
   - type: country
     data: japan
   - type: name

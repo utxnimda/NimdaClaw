@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\奇怪的搭档
+      path: G:/Video/电视剧/韩剧/奇怪的搭档
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\三流之路
+      path: G:/Video/电视剧/韩剧/三流之路
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\最佳的一击
+      path: G:/Video/电视剧/韩剧/最佳的一击
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\秘密森林
+      path: G:/Video/电视剧/韩剧/秘密森林
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -83,7 +83,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\有品位的她
+      path: G:/Video/电视剧/韩剧/有品位的她
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -105,7 +105,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\河伯的新娘2017
+      path: G:/Video/电视剧/韩剧/河伯的新娘2017
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -124,7 +124,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\再次相遇的世界
+      path: G:/Video/电视剧/韩剧/再次相遇的世界
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -143,7 +143,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\我黄金光辉的人生
+      path: G:/Video/电视剧/韩剧/我黄金光辉的人生
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -162,7 +162,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\当你沉睡时
+      path: G:/Video/电视剧/韩剧/当你沉睡时
       collectioned:
       - press_format: 1072p
         press_group: '----'
@@ -184,7 +184,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\今生是第一次
+      path: G:/Video/电视剧/韩剧/今生是第一次
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -206,7 +206,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\机智的监狱生活
+      path: G:/Video/电视剧/韩剧/机智的监狱生活
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -225,7 +225,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\不是机器人
+      path: G:/Video/电视剧/韩剧/不是机器人
       collectioned:
       - press_format: 1080p
         press_group: '----'

@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\耀眼
+      path: G:/Video/电视剧/韩剧/耀眼
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\自白
+      path: G:/Video/电视剧/韩剧/自白
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\囚犯医生
+      path: G:/Video/电视剧/韩剧/囚犯医生
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Kill It
+      path: G:/Video/电视剧/韩剧/Kill It
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -83,7 +83,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\他的私生活
+      path: G:/Video/电视剧/韩剧/他的私生活
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -102,7 +102,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\辅佐官
+      path: G:/Video/电视剧/韩剧/辅佐官
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -121,7 +121,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\德鲁纳酒店
+      path: G:/Video/电视剧/韩剧/德鲁纳酒店
       collectioned:
       - press_format: 2160p
         press_group: '----'
@@ -146,7 +146,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\浪漫的体质
+      path: G:/Video/电视剧/韩剧/浪漫的体质
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -168,7 +168,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\山茶花开时
+      path: G:/Video/电视剧/韩剧/山茶花开时
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -187,7 +187,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\抓住幽灵
+      path: G:/Video/电视剧/韩剧/抓住幽灵
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -206,7 +206,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\辅佐官
+      path: G:/Video/电视剧/韩剧/辅佐官
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -225,7 +225,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\精神变态日记
+      path: G:/Video/电视剧/韩剧/精神变态日记
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -244,7 +244,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\有瑕疵的人们
+      path: G:/Video/电视剧/韩剧/有瑕疵的人们
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -263,7 +263,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\巧克力
+      path: G:/Video/电视剧/韩剧/巧克力
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -282,7 +282,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Stove League
+      path: G:/Video/电视剧/韩剧/Stove League
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -304,7 +304,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\爱的迫降
+      path: G:/Video/电视剧/韩剧/爱的迫降
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -323,7 +323,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\检察官内传
+      path: G:/Video/电视剧/韩剧/检察官内传
       collectioned:
       - press_format: 720p
         press_group: '----'

@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\新娘18岁
+      path: G:/Video/电视剧/韩剧/新娘18岁
       collectioned:
       - press_format: 384p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\嫂嫂19岁
+      path: G:/Video/电视剧/韩剧/嫂嫂19岁
       collectioned:
       - press_format: 480p
         press_group: '----'

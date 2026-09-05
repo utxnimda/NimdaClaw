@@ -1,0 +1,66 @@
+- attributes:
+  - type: date
+    data:
+      start: '19920110'
+      end: '19921225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ママは小学4年生
+- attributes:
+  - type: date
+    data:
+      start: '19920724'
+      end: '19920724'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 ロシアより愛をこめて
+- attributes:
+  - type: date
+    data:
+      start: '19921002'
+      end: '19931203'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 姫ちゃんのリボン
+- attributes:
+  - type: date
+    data:
+      start: '19921010'
+      end: '19950107'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 幽☆遊☆白書

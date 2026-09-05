@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Kill Me Heal Me
+      path: G:/Video/电视剧/韩剧/Kill Me Heal Me
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Who Are You－学校2015
+      path: G:/Video/电视剧/韩剧/Who Are You－学校2015
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\制作人
+      path: G:/Video/电视剧/韩剧/制作人
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\龙八夷
+      path: G:/Video/电视剧/韩剧/龙八夷
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -83,7 +83,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\请回答1988
+      path: G:/Video/电视剧/韩剧/请回答1988
       collectioned:
       - press_format: 1080p
         press_group: '----'

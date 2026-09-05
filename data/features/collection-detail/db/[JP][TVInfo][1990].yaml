@@ -1,0 +1,17 @@
+- attributes:
+  - type: date
+    data:
+      start: '19900720'
+      end: '19900720'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 ヘミングウェイ・ペーパーの謎

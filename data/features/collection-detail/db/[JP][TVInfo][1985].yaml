@@ -1,0 +1,17 @@
+- attributes:
+  - type: date
+    data:
+      start: '19850324'
+      end: '19870322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: U2Rip
+        press_group: U2
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Touch

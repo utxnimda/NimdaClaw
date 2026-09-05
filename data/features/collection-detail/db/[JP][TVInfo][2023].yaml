@@ -1,0 +1,89 @@
+- attributes:
+  - type: date
+    data:
+      start: '20230104'
+      end: '20230322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 氷属性男子とクールな同僚女子
+- attributes:
+  - type: date
+    data:
+      start: '20230108'
+      end: '20230326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 神達に拾われた男 2
+- attributes:
+  - type: date
+    data:
+      start: '20230706'
+      end: '20231228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 呪術廻戦 2
+- attributes:
+  - type: date
+    data:
+      start: '20230707'
+      end: '20231215'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: るろうに剣心 -明治剣客浪漫譚- 2023
+- attributes:
+  - type: date
+    data:
+      start: '20231021'
+      end: '20240323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: LOLI
+      - press_format: BDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 薬屋のひとりごと

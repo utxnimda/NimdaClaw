@@ -1,0 +1,19 @@
+- attributes:
+  - type: date
+    data:
+      start: '19811014'
+      end: '19860319'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: BDRip
+        press_group: DBDR
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: うる星やつら

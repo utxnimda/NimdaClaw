@@ -1,0 +1,138 @@
+- attributes:
+  - type: date
+    data:
+      start: '20240106'
+      end: '20240330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 俺だけレベルアップな件
+- attributes:
+  - type: date
+    data:
+      start: '20240108'
+      end: '20240325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 望まぬ不死の冒険者
+- attributes:
+  - type: date
+    data:
+      start: '20240409'
+      end: '20240625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Unnamed Memory
+- attributes:
+  - type: date
+    data:
+      start: '20241003'
+      end: '20250322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: るろうに剣心 -明治剣客浪漫譚- 2023 京都動乱
+- attributes:
+  - type: date
+    data:
+      start: '20241003'
+      end: '20250327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: アオのハコ
+- attributes:
+  - type: date
+    data:
+      start: '20241005'
+      end: '20250315'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: チ。 ―地球の運動について―
+- attributes:
+  - type: date
+    data:
+      start: '20241006'
+      end: '20241222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live! Super Star!! 3
+- attributes:
+  - type: date
+    data:
+      start: '2024-09-20'
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: movie
+      path: S:/Overlord
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Overlord 聖王国編_BDRip
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Overlord 聖王国編

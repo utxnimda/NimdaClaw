@@ -1,0 +1,379 @@
+- attributes:
+  - type: date
+    data:
+      start: '20180105'
+      end: '20180622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: グランクレスト戦記
+- attributes:
+  - type: date
+    data:
+      start: '20180108'
+      end: '20180625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 弱虫ペダル Glory Line
+- attributes:
+  - type: date
+    data:
+      start: '20180109'
+      end: '20180403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: S:/Overlord
+      collectioned:
+      - press_format: 1080p
+        press_group: DMG
+        press_path: Overlord II_1080p
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Overlord II_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Overlord II_BDRip(VCB)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Overlord II
+- attributes:
+  - type: date
+    data:
+      start: '20180113'
+      end: '20180630'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: BNLL
+      - press_format: BDRip
+        press_group: RF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 七つの大罪 戒めの復活
+- attributes:
+  - type: date
+    data:
+      start: '20180403'
+      end: '20180619'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 東京喰種：Re 01-12
+- attributes:
+  - type: date
+    data:
+      start: '20180406'
+      end: '20180622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Lostorage Conflated Wixoss
+- attributes:
+  - type: date
+    data:
+      start: '20180408'
+      end: '20180624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: 720p
+        press_group: CKCS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 食戟のソーマ 餐ノ皿 遠月列車篇
+- attributes:
+  - type: date
+    data:
+      start: '20180408'
+      end: '20180701'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sword Art Alternative Gun Gale Online
+- attributes:
+  - type: date
+    data:
+      start: '20180410'
+      end: '20180703'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: RF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: High School D×D Hero
+- attributes:
+  - type: date
+    data:
+      start: '20180413'
+      end: '20180718'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: 1080p
+        press_group: FL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Full Metal Panic! Invisible Victory
+- attributes:
+  - type: date
+    data:
+      start: '20180702'
+      end: '20180924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ヤマノススメ3
+- attributes:
+  - type: date
+    data:
+      start: '20180706'
+      end: '20180921'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 音楽少女
+- attributes:
+  - type: date
+    data:
+      start: '20180710'
+      end: '20181002'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: S:/Overlord
+      collectioned:
+      - press_format: 1080p
+        press_group: LOLI
+        press_path: Overlord III_1080p
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Overlord III_BDRip(VCB)
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Overlord III_BDRip(Jsum)
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Overlord III
+- attributes:
+  - type: date
+    data:
+      start: '20180713'
+      end: '20180929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CC
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: High Score Girl
+- attributes:
+  - type: date
+    data:
+      start: '20180722'
+      end: '20181014'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 進撃の巨人 Season 3 01-12(#38-#49)
+- attributes:
+  - type: date
+    data:
+      start: '20181003'
+      end: '20181219'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ソラとウミのアイダ
+- attributes:
+  - type: date
+    data:
+      start: '2018-10-04'
+      end: '2018-12-20'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Zombie Land Saga
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Zombie Land Saga_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCBM
+        press_path: Zombie Land Saga_BDRip(VCBM)
+      - press_format: 1080p
+        press_group: MM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Zombie Land Saga
+- attributes:
+  - type: date
+    data:
+      start: '20181005'
+      end: '20190405'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: CKDG
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: とある魔術の禁書目録 III
+- attributes:
+  - type: date
+    data:
+      start: '20181006'
+      end: '20190330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCUR
+      - press_format: 720p
+        press_group: CKCF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sword Art Online Alicization
+- attributes:
+  - type: date
+    data:
+      start: '20181009'
+      end: '20181225'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 東京喰種：Re 13-24

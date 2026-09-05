@@ -1,0 +1,119 @@
+- attributes:
+  - type: date
+    data:
+      start: '19980403'
+      end: '19980626'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: カウボーイビバップ
+- attributes:
+  - type: date
+    data:
+      start: '19980407'
+      end: '19981222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: カードキャプターさくら
+- attributes:
+  - type: date
+    data:
+      start: '19980419'
+      end: '19981206'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANKA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 頭文字D
+- attributes:
+  - type: date
+    data:
+      start: '19980706'
+      end: '19980926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Serial Experiments Lain
+- attributes:
+  - type: date
+    data:
+      start: '19980724'
+      end: '19980724'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: パン三世 炎の記憶〜Tokyo Crisis〜
+- attributes:
+  - type: date
+    data:
+      start: '19981002'
+      end: '19990326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 彼氏彼女の事情
+- attributes:
+  - type: date
+    data:
+      start: '19981017'
+      end: '19990403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 守護月天!

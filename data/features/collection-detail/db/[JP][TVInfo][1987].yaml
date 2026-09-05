@@ -1,0 +1,21 @@
+- attributes:
+  - type: date
+    data:
+      start: '19870406'
+      end: '19880307'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: MZ
+      - press_format: 720p
+        press_group: CFS
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: きまぐれオレンジ☆ロード

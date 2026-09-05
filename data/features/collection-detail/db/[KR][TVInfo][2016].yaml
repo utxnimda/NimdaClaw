@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\奶酪陷阱
+      path: G:/Video/电视剧/韩剧/奶酪陷阱
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -26,7 +26,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\对，就是那样
+      path: G:/Video/电视剧/韩剧/对，就是那样
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -45,7 +45,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\回来吧!大叔
+      path: G:/Video/电视剧/韩剧/回来吧!大叔
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -64,7 +64,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\玉氏南正基
+      path: G:/Video/电视剧/韩剧/玉氏南正基
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -83,7 +83,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\记忆
+      path: G:/Video/电视剧/韩剧/记忆
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -102,7 +102,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\又是吴海英
+      path: G:/Video/电视剧/韩剧/又是吴海英
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -121,7 +121,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\美丽心灵
+      path: G:/Video/电视剧/韩剧/美丽心灵
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -140,7 +140,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\Doctors
+      path: G:/Video/电视剧/韩剧/Doctors
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -159,7 +159,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\W-两个世界
+      path: G:/Video/电视剧/韩剧/W-两个世界
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -178,7 +178,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\嫉妒的化身
+      path: G:/Video/电视剧/韩剧/嫉妒的化身
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -197,7 +197,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\The K2
+      path: G:/Video/电视剧/韩剧/The K2
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -216,7 +216,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\1%的可能性
+      path: G:/Video/电视剧/韩剧/1%的可能性
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -235,7 +235,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\浪漫医生金师傅
+      path: G:/Video/电视剧/韩剧/浪漫医生金师傅
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -254,7 +254,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\举重妖精金福珠
+      path: G:/Video/电视剧/韩剧/举重妖精金福珠
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -273,7 +273,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\蓝色大海的传说
+      path: G:/Video/电视剧/韩剧/蓝色大海的传说
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -292,7 +292,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\闪耀的恩秀
+      path: G:/Video/电视剧/韩剧/闪耀的恩秀
       collectioned:
       - press_format: 720p
         press_group: '----'
@@ -311,7 +311,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\孤单又灿烂的神-鬼怪
+      path: G:/Video/电视剧/韩剧/孤单又灿烂的神-鬼怪
       collectioned:
       - press_format: 1080p
         press_group: '----'
@@ -333,7 +333,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\心里的声音
+      path: G:/Video/电视剧/韩剧/心里的声音
       collectioned:
       - press_format: 720p
         press_group: '----'

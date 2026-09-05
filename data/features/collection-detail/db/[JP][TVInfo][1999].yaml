@@ -1,0 +1,172 @@
+- attributes:
+  - type: date
+    data:
+      start: '19990202'
+      end: '19990226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: イケてる2人
+- attributes:
+  - type: date
+    data:
+      start: '19990213'
+      end: '20000119'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 576p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 神風怪盗ジャンヌ
+- attributes:
+  - type: date
+    data:
+      start: '19990329'
+      end: '19990429'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 逮捕しちゃうぞ Special
+- attributes:
+  - type: date
+    data:
+      start: '19990401'
+      end: '19990624'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: To Heart
+- attributes:
+  - type: date
+    data:
+      start: '19990406'
+      end: '19990622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: カードキャプターさくら 2
+- attributes:
+  - type: date
+    data:
+      start: '19990630'
+      end: '20000924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      - press_format: 480p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: GTO
+- attributes:
+  - type: date
+    data:
+      start: '19990730'
+      end: '19990730'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 愛のダ・カーポ〜Fujiko's Unlucky Days〜
+- attributes:
+  - type: date
+    data:
+      start: '19990907'
+      end: '20000321'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: カードキャプターさくら 3
+- attributes:
+  - type: date
+    data:
+      start: '19991014'
+      end: '20010331'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Hunter X Hunter
+- attributes:
+  - type: date
+    data:
+      start: '19991015'
+      end: '20000121'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ANKA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 頭文字D Second Stage

@@ -1,0 +1,331 @@
+- attributes:
+  - type: date
+    data:
+      start: '20200105'
+      end: '20200329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: マギアレコード 魔法少女まどか☆マギカ外伝
+- attributes:
+  - type: date
+    data:
+      start: '20200111'
+      end: '20200328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 22／7
+- attributes:
+  - type: date
+    data:
+      start: '20200112'
+      end: '20200329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ドロヘドロ
+- attributes:
+  - type: date
+    data:
+      start: '20200402'
+      end: '20200618'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 八男って、それはないでしょう！
+- attributes:
+  - type: date
+    data:
+      start: '20200403'
+      end: '20200619'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 波よ聞いてくれ
+- attributes:
+  - type: date
+    data:
+      start: '20200405'
+      end: '20200621'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 継つぐもも
+- attributes:
+  - type: date
+    data:
+      start: '20200406'
+      end: '20200629'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Princess Connect! Re：Dive
+- attributes:
+  - type: date
+    data:
+      start: '20200407'
+      end: '20200922'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 放課後ていぼう日誌
+- attributes:
+  - type: date
+    data:
+      start: '20200410'
+      end: '20200925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 食戟のソーマ 豪ノ皿
+- attributes:
+  - type: date
+    data:
+      start: '20200708'
+      end: '20200923'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Deca-Dence
+- attributes:
+  - type: date
+    data:
+      start: '20200709'
+      end: '20200924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: やはり俺の青春ラブコメはまちがっている。完
+- attributes:
+  - type: date
+    data:
+      start: '20200711'
+      end: '20200919'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sword Art Online Alicization War Of Underworld 13-23
+- attributes:
+  - type: date
+    data:
+      start: '20201001'
+      end: '20210318'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ひぐらしのなく頃に業
+- attributes:
+  - type: date
+    data:
+      start: '20201002'
+      end: '20201218'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ダンジョンに出会いを求めるのは間違っているだろうかIII
+- attributes:
+  - type: date
+    data:
+      start: '20201002'
+      end: '20210326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 呪術廻戦
+- attributes:
+  - type: date
+    data:
+      start: '20201003'
+      end: '20201226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live! 虹ヶ咲学園 School Idol 同好会
+- attributes:
+  - type: date
+    data:
+      start: '20201012'
+      end: '20201228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: おちこぼれフルーツタルト
+- attributes:
+  - type: date
+    data:
+      start: '20201028'
+      end: '20201125'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 超次元ゲイム ネプテューヌ Hi☆Light
+- attributes:
+  - type: date
+    data:
+      start: '20201206'
+      end: '20210328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: 1080p
+        press_group: STA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 進撃の巨人 The Final Season 01-16(#60-#75)

@@ -1,0 +1,307 @@
+- attributes:
+  - type: date
+    data:
+      start: '20020110'
+      end: '20020328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: おねがい☆ティーチャー
+- attributes:
+  - type: date
+    data:
+      start: '20020115'
+      end: '20020625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Full Metal Panic!
+- attributes:
+  - type: date
+    data:
+      start: '20020130'
+      end: '20020327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Kanon 2002
+- attributes:
+  - type: date
+    data:
+      start: '20020401'
+      end: '20020600'
+    description: 旧库日期 20020401–20020600 原样保留，待确认（源文件第 86 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Happy★Lesson
+- attributes:
+  - type: date
+    data:
+      start: '20020402'
+      end: '20020924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Chobits
+- attributes:
+  - type: date
+    data:
+      start: '20020402'
+      end: '20020924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 天地無用! GXP
+- attributes:
+  - type: date
+    data:
+      start: '20020404'
+      end: '20020627'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: アベノ橋魔法☆商店街
+- attributes:
+  - type: date
+    data:
+      start: '20020408'
+      end: '20020930'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: あずまんが大王
+- attributes:
+  - type: date
+    data:
+      start: '20020410'
+      end: '20020925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 藍より青し
+- attributes:
+  - type: date
+    data:
+      start: '20020700'
+      end: '20020900'
+    description: 旧库日期 20020700–20020900 原样保留，待确认（源文件第 92 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 朝霧の巫女
+- attributes:
+  - type: date
+    data:
+      start: '20020726'
+      end: '20020726'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルルパン三世 Episode 0 First Contact
+- attributes:
+  - type: date
+    data:
+      start: '20020816'
+      end: '20030523'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: プリンセスチュチュ
+- attributes:
+  - type: date
+    data:
+      start: '20020926'
+      end: '20030116'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: まほろまてぃっく〜もっと美しいもの〜
+- attributes:
+  - type: date
+    data:
+      start: '20021001'
+      end: '20020325'
+    description: 旧库日期 20021001–20020325 原样保留，待确认（源文件第 96 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: スパイラル 〜推理の絆〜
+- attributes:
+  - type: date
+    data:
+      start: '20021001'
+      end: '20031130'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: VCBP
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 攻殻機動隊 Stand Alone Complex
+- attributes:
+  - type: date
+    data:
+      start: '20021003'
+      end: '20021226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sister Princess RePure
+- attributes:
+  - type: date
+    data:
+      start: '20021005'
+      end: '20030927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 機動戦士ガンダムSeed
+- attributes:
+  - type: date
+    data:
+      start: '20021111'
+      end: '20030113'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Piano

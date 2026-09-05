@@ -1,0 +1,52 @@
+- attributes:
+  - type: date
+    data:
+      start: '19940729'
+      end: '19940724'
+    description: 旧库日期 19940729–19940724 原样保留，待确认（源文件第 31 行）。
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 燃えよ斬鉄剣
+- attributes:
+  - type: date
+    data:
+      start: '19941005'
+      end: '19950329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Blue Seed
+- attributes:
+  - type: date
+    data:
+      start: '19941016'
+      end: '19950924'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Macross 7

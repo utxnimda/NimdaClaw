@@ -1,0 +1,170 @@
+- attributes:
+  - type: date
+    data:
+      start: '20250102'
+      end: '20250328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: もめんたりー・リリィ
+- attributes:
+  - type: date
+    data:
+      start: '20250104'
+      end: '20250322'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 沖縄で好きになった子が方言すぎてツラすぎる
+- attributes:
+  - type: date
+    data:
+      start: '20250104'
+      end: '20250329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 2160p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 俺だけレベルアップな件 2
+- attributes:
+  - type: date
+    data:
+      start: '20250107'
+      end: '20250325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Unnamed Memory 2
+- attributes:
+  - type: date
+    data:
+      start: '20250109'
+      end: '20250327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 悪役令嬢転生おじさん
+- attributes:
+  - type: date
+    data:
+      start: '20250110'
+      end: '20250328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 日本へようこそエルフさん。
+- attributes:
+  - type: date
+    data:
+      start: '20250403'
+      end: '20250625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ロックは淑女の嗜みでして
+- attributes:
+  - type: date
+    data:
+      start: '20250406'
+      end: '20250622'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 前橋ウィッチーズ
+- attributes:
+  - type: date
+    data:
+      start: '20250702'
+      end: '20250917'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: クレバテス-魔獣の王と赤子と屍の勇者-
+- attributes:
+  - type: date
+    data:
+      start: '20250707'
+      end: '20250811'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: フードコートで、また明日。

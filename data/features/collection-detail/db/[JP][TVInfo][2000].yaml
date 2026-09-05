@@ -1,0 +1,70 @@
+- attributes:
+  - type: date
+    data:
+      start: '20000404'
+      end: '20010327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 幻想魔伝 最遊記
+- attributes:
+  - type: date
+    data:
+      start: '20000419'
+      end: '20000927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ラブひな
+- attributes:
+  - type: date
+    data:
+      start: '20000728'
+      end: '20000728'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 1$ Money Wars
+- attributes:
+  - type: date
+    data:
+      start: '20001003'
+      end: '20020326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 576p
+        press_group: '----'
+      - press_format: 480p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: はじめの一歩

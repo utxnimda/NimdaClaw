@@ -1,0 +1,138 @@
+- attributes:
+  - type: date
+    data:
+      start: '20010401'
+      end: '20010926'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sister Princess
+- attributes:
+  - type: date
+    data:
+      start: '20010405'
+      end: '20010927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Noir
+- attributes:
+  - type: date
+    data:
+      start: '20010407'
+      end: '20010929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 480p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 逮捕しちゃうぞ Second Season
+- attributes:
+  - type: date
+    data:
+      start: '20010704'
+      end: '20020925'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: シャーマンキング
+- attributes:
+  - type: date
+    data:
+      start: '20010803'
+      end: '20010803'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ルパン三世 Alcatraz Connection
+- attributes:
+  - type: date
+    data:
+      start: '20011005'
+      end: '20011228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: まほろまてぃっく
+- attributes:
+  - type: date
+    data:
+      start: '20011010'
+      end: '20030326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: DVDRip
+        press_group: DMHY
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ヒカルの碁
+- attributes:
+  - type: date
+    data:
+      start: '20011010'
+      end: '20050330'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: '----'
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: テニスの王子様

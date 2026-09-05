@@ -7,7 +7,7 @@
     data:
       domain: television
       release_type: tv
-      path: G:\Video\电视剧\韩剧\你是谁
+      path: G:/Video/电视剧/韩剧/你是谁
       collectioned:
       - press_format: 480p
         press_group: '----'

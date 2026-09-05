@@ -1,0 +1,150 @@
+- attributes:
+  - type: date
+    data:
+      start: '20220108'
+      end: '20220326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: からかい上手の高木さん③
+- attributes:
+  - type: date
+    data:
+      start: '20220109'
+      end: '20220403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: 1080p
+        press_group: STA
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 進撃の巨人 The Final Season 17-28(#76-#87)
+- attributes:
+  - type: date
+    data:
+      start: '20220402'
+      end: '20220625'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live! 虹ヶ咲学園 School Idol 同好会 2
+- attributes:
+  - type: date
+    data:
+      start: '20220403'
+      end: '20220403'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: マギアレコード 魔法少女まどか☆マギカ外伝 Final
+- attributes:
+  - type: date
+    data:
+      start: '20220705'
+      end: '20220927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: S:/Overlord
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Overlord IV_BDRip(Jsum)
+      - press_format: BDRip
+        press_group: VCB
+        press_path: Overlord IV_BDRip(VCB)
+      - press_format: 1080p
+        press_group: ST
+        press_path: Overlord IV_1080p
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Overlord IV
+- attributes:
+  - type: date
+    data:
+      start: '20220707'
+      end: '20220929'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 新テニスの王子様 U-17 World Cup
+- attributes:
+  - type: date
+    data:
+      start: '20220717'
+      end: '20221009'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Love Live! Super Star!! 2
+- attributes:
+  - type: date
+    data:
+      start: '20221013'
+      end: '20230323'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: DBD
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: うる星やつら

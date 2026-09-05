@@ -1,0 +1,49 @@
+- attributes:
+  - type: date
+    data:
+      start: '19830205'
+      end: '19840121'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 聖戦士ダンバイン
+- attributes:
+  - type: date
+    data:
+      start: '19830331'
+      end: '19831222'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 240p
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: みゆき
+- attributes:
+  - type: date
+    data:
+      start: '19830711'
+      end: '19840326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: ''
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Cat's Eye

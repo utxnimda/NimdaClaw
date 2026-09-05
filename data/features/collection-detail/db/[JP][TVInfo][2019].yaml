@@ -1,0 +1,269 @@
+- attributes:
+  - type: date
+    data:
+      start: '20190109'
+      end: '20190327'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: バーチャルさんはみている
+- attributes:
+  - type: date
+    data:
+      start: '20190111'
+      end: '20190329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: CKCS
+      - press_format: BDRip
+        press_group: VCBT
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Date A Live III
+- attributes:
+  - type: date
+    data:
+      start: '20190111'
+      end: '20190329'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ドメスティックな彼女
+- attributes:
+  - type: date
+    data:
+      start: '20190120'
+      end: '20190325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: NKLL
+      - press_format: BDRip
+        press_group: MZ
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Manaria Friends
+- attributes:
+  - type: date
+    data:
+      start: '20190407'
+      end: '20190623'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 720p
+        press_group: JY
+      - press_format: BDRip
+        press_group: VCB
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: なんでここに先生が!？
+- attributes:
+  - type: date
+    data:
+      start: '20190428'
+      end: '20190630'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 進撃の巨人 Season 3 13-22(#50-#59)
+- attributes:
+  - type: date
+    data:
+      start: '20190703'
+      end: '20190918'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 彼方のアストラ
+- attributes:
+  - type: date
+    data:
+      start: '20190707'
+      end: '20190922'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: からかい上手の高木さん②
+- attributes:
+  - type: date
+    data:
+      start: '20190712'
+      end: '20190927'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: DML
+      - press_format: BDRip
+        press_group: VCDM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ダンジョンに出会いを求めるのは間違っているだろうかII
+- attributes:
+  - type: date
+    data:
+      start: '20191007'
+      end: '20191223'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 私、能力は平均値でって言ったよね！
+- attributes:
+  - type: date
+    data:
+      start: '20191009'
+      end: '20200325'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: 1080p
+        press_group: BNLL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 七つの大罪 神々の逆鱗
+- attributes:
+  - type: date
+    data:
+      start: '20191010'
+      end: '20200326'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: 1080p
+        press_group: FL
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 無限の住人 -Immortal-
+- attributes:
+  - type: date
+    data:
+      start: '20191011'
+      end: '20191227'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      - press_format: BDRip
+        press_group: VCB
+      - press_format: 720p
+        press_group: CKCF
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: 食戟のソーマ 神ノ皿
+- attributes:
+  - type: date
+    data:
+      start: '20191012'
+      end: '20191228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Sword Art Online Alicization War Of Underworld 01-12
+- attributes:
+  - type: date
+    data:
+      start: '20191013'
+      end: '20200118'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Rifle Is Beautiful

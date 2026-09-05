@@ -1,0 +1,17 @@
+- attributes:
+  - type: date
+    data:
+      start: '19780101'
+      end: '19781231'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ペリーヌ物語
