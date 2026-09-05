@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import socket
 import sys
 import tempfile
+import threading
 import unittest
 import urllib.request
 from pathlib import Path
@@ -13,6 +15,7 @@ from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 
+from work_catalog_yaml.api_runtime import api_lifespan, install_api_queues, query_endpoint
 from work_catalog_yaml.desktop import (
     DesktopServer,
     configure_desktop_workspace,
@@ -36,6 +39,11 @@ def _test_app() -> Starlette:
 
 
 class DesktopAppTest(unittest.TestCase):
+    def test_invalid_explicit_application_root_does_not_silently_fall_back(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaisesRegex(FileNotFoundError, "apps"):
+                resolve_desktop_workspace(td)
+
     def test_workspace_environment_override_is_used_by_desktop_and_layout(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -154,6 +162,122 @@ class DesktopAppTest(unittest.TestCase):
 
         self.assertNotEqual(server.port, occupied_port)
         self.assertEqual(occupied.getsockname()[1], occupied_port)
+
+    def test_shutdown_waits_for_started_api_work_before_releasing_server(self) -> None:
+        started, release, completed = threading.Event(), threading.Event(), threading.Event()
+        stop_finished = threading.Event()
+        responses = []
+        failures = []
+        stop_results = []
+
+        @query_endpoint
+        def slow_write(_query):
+            started.set()
+            if not release.wait(5):
+                raise TimeoutError("test worker was not released")
+            completed.set()
+            return PlainTextResponse("saved")
+
+        app = Starlette(routes=[Route("/", slow_write)], lifespan=api_lifespan)
+        install_api_queues(app)
+        server = DesktopServer(app, preferred_port=0, startup_timeout=5, shutdown_timeout=0.01)
+        url = server.start()
+
+        def client():
+            try:
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    responses.append(response.read())
+            except Exception as exc:
+                failures.append(exc)
+
+        def close():
+            try:
+                stop_results.append(server.stop())
+            finally:
+                stop_finished.set()
+
+        client_thread = threading.Thread(target=client)
+        close_thread = threading.Thread(target=close)
+        try:
+            client_thread.start()
+            self.assertTrue(started.wait(2))
+            close_thread.start()
+            self.assertFalse(stop_finished.wait(0.1))
+            self.assertFalse(completed.is_set())
+            self.assertTrue(app.state.api_disk_queue.snapshot()["closing"])
+        finally:
+            release.set()
+            client_thread.join(6)
+            if close_thread.ident is not None:
+                close_thread.join(6)
+            server.stop()
+
+        self.assertFalse(client_thread.is_alive())
+        self.assertFalse(close_thread.is_alive())
+        self.assertEqual(failures, [])
+        self.assertEqual(responses, [b"saved"])
+        self.assertEqual(stop_results, [True])
+        self.assertTrue(completed.is_set())
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(0.5)
+            self.assertNotEqual(probe.connect_ex((server.host, server.port)), 0)
+
+    def test_server_setup_failure_releases_listener_without_caller_cleanup(self) -> None:
+        server = DesktopServer(_test_app(), preferred_port=0)
+        with patch("uvicorn.Config", side_effect=ValueError("invalid server configuration")):
+            with self.assertRaisesRegex(ValueError, "invalid server configuration"):
+                server.start()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.settimeout(0.5)
+            self.assertNotEqual(probe.connect_ex((server.host, server.port)), 0)
+        self.assertTrue(server.stop())
+
+    def test_shutdown_waits_for_worker_even_after_server_thread_has_exited(self) -> None:
+        started, release, completed = threading.Event(), threading.Event(), threading.Event()
+        stop_finished = threading.Event()
+        results = []
+        app = _test_app()
+        install_api_queues(app)
+        server = DesktopServer(app)
+        server._thread = threading.Thread(target=lambda: None)
+        server._thread.start()
+        server._thread.join()
+
+        def write():
+            started.set()
+            if not release.wait(5):
+                raise TimeoutError("test worker was not released")
+            completed.set()
+
+        async def disconnected_request():
+            task = asyncio.create_task(app.state.api_disk_queue.run(write))
+            self.assertTrue(await asyncio.to_thread(started.wait, 2))
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+
+        def close():
+            try:
+                results.append(server.stop())
+            finally:
+                stop_finished.set()
+
+        close_thread = threading.Thread(target=close)
+        try:
+            # The request and its loop go away, but the worker still owns its write.
+            asyncio.run(disconnected_request())
+            close_thread.start()
+            self.assertFalse(stop_finished.wait(0.1))
+            self.assertFalse(completed.is_set())
+        finally:
+            release.set()
+            if close_thread.ident is not None:
+                close_thread.join(6)
+            server.stop()
+
+        self.assertTrue(stop_finished.is_set())
+        self.assertTrue(completed.is_set())
+        self.assertEqual(results, [True])
 
 
 if __name__ == "__main__":

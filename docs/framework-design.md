@@ -30,6 +30,10 @@ nimda/
         backend/               收集情况 API/service code
         frontend/              收集情况 tab registration and UI behavior
         tests/
+      media-directory-organizer/
+        backend/               Read-only planning, classifiers and confirmed execution
+        frontend/              Directory preview and work landing UI
+        tests/
   config/
     framework/
       app.yaml                 Global app config: tab labels, feature order
@@ -38,6 +42,8 @@ nimda/
         config.yaml            作品数据 DB path and enum config
       collection-info/
         config.yaml            收集情况 finish-dir and DB/history paths
+      media-directory-organizer/
+        config.yaml            Organizer inference and classification settings
   data/
     source/                    Original hand-maintained source material
     framework/
@@ -68,6 +74,7 @@ Feature tabs are served from:
 
 - `/features/collection-detail/`
 - `/features/collection-info/`
+- `/features/media-directory-organizer/`
 
 Each feature frontend registers itself through `window.JpTvBrowseFeatureRegistry`. The shell reads registered features, merges labels/order from `/api/config`, and switches tabs by each feature's `tabId` and `viewId`.
 
@@ -103,6 +110,26 @@ Examples:
 
 The backend app is built by `work_catalog_yaml.jp_tv.browse_app`.
 
+HTTP composition and scheduling are separated from feature behavior:
+
+- `jp_tv.browse_app`: routes, static mounts, local-origin security and lifespan.
+- `jp_tv.browse_api`: response builders and existing HTTP error contracts.
+- `api_runtime`: request parsing, upload resource cleanup and owned worker queues.
+
+Disk-backed API operations use one worker per app, preserving their ordering
+without blocking the ASGI event loop. Read-only provider suggestions have a
+separate two-worker queue. `/api/health` bypasses both queues and reports
+`ready`, `busy` or `stopping`, with running and queued counts. Database reads
+still wait behind active disk work; the queues are not a general background-job
+API and do not return durable job IDs.
+
+Cancelling a pending request cancels its queued work. An operation that has
+started is allowed to finish. Shutdown rejects new work with HTTP 503, cancels
+pending jobs, and waits for started jobs before desktop ownership is released,
+including when the ASGI thread has already exited. These queues are in-process;
+they neither coordinate multiple application processes nor recover after a
+forced process kill or power loss.
+
 The framework backend owns:
 
 - Starlette app creation;
@@ -115,8 +142,63 @@ Feature backend code lives under `apps/features/<feature-id>/backend`:
 
 - `collection_detail`: browse payloads, YAML save, enum edits.
 - `collection_info`: collection completion records and finish-dir year scanning.
+- `media_directory_organizer`: source inference, release-group classifiers,
+  preview/apply, and coordination of database records, media and shortcuts.
+
+Organizer internals have narrower responsibilities:
+
+- `service`: read-only planning and source-to-target classification.
+- `execution`: confirmation, execution-time validation, moves, rollback and
+  empty-source cleanup. `service.apply_plan` remains an import-compatible alias.
+- `plan_identity`: deterministic plan IDs used by planning and execution.
+- `landing_drafts`: registration/repair inputs and source-title suggestions.
+- `landing_catalog`: catalog references, press identities and matching candidates.
+- `landing`: database/media/shortcut transaction coordination and retry receipts.
+
+`landing_catalog.CatalogReadSession` shares parsed entries and lazily built press
+records within one read-only preview/normalization phase. A record's content hash
+is computed from the same bytes that produced its entries; each incoming catalog
+reference still checks its own work name and expected hash, even on a cache hit.
+Sessions never cross a database write or preview-to-apply boundary. Execution
+continues to revalidate current state and compare expected pre-write hashes.
+
+Within `collection_detail`, `resource_tree` holds pure tree summaries and search
+projections. `resource_cache` writes each scan into a new generation and publishes
+its manifest only after all nodes are ready. Readers and writers share a process
+lock; successful publication cleans only the replaced generation. Scan failures
+retain the previous snapshot. Root order, exclusions and scan settings are part
+of cache identity; old-format or mismatched caches require a rescan, not silent
+reuse with different `root:N` mappings. Media files are never deleted by cache
+generation cleanup.
+
+Shared backend building blocks are kept independent of the web routes:
+
+- `work_catalog_yaml.layout`: workspace/config path resolution and backend discovery.
+- `work_catalog_yaml.paths`: validated export paths shared by both materialization commands.
+- `work_catalog_yaml.persistence`: staged writes and rollback shared by collection features.
+- `work_catalog_yaml.yaml_cache`: bounded content-keyed YAML parse reuse, consumed
+  by `yaml_io`. File reads remain fresh and every consumer gets an isolated copy;
+  failed parses are not cached. Its byte limit estimates retained objects rather
+  than bounding total process memory.
+
+`apps/framework/tests` covers these shared contracts and runs through the same
+`scripts/test.ps1` entry as feature tests. Feature modules may depend on these
+helpers; generic persistence and path handling must not depend on feature modules.
 
 `work_catalog_yaml.layout.ensure_feature_backend_paths()` currently exposes feature backend packages to the framework app. This is a compatibility bridge; the long-term direction is to make feature backend modules regular package dependencies or load them through an explicit feature registry.
+
+The desktop launcher and packaging spec share `backend_roots()` discovery.
+Packaged feature code and static resources are collected from the feature
+directories; adding a feature still requires explicit API and UI registration.
+
+PowerShell source entrypoints share `scripts/lib/workspace.ps1` for backend
+discovery, explicit source roots, bytecode suppression and scoped environment
+setup. It restores environment variables (including absent values) and the
+working directory in `finally`; the native process exit status remains intact.
+Regression tests compare its discovery order with Python's `backend_roots()`
+and cover both Windows PowerShell and PowerShell 7 when available. The shared
+benchmark entrypoint uses the same setup, including when launched outside the
+repository directory.
 
 ## Config
 
@@ -143,6 +225,8 @@ Rules:
 - Feature config controls only that feature's behavior.
 - Feature-specific enum values belong to the feature config unless they are truly global.
 - Paths should point into `data/features/<feature-id>/...` by default.
+- Relative paths in workspace feature configuration resolve against the shared
+  workspace, not the shell's current directory. Absolute paths remain supported.
 
 ## Data
 

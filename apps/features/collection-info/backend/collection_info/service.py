@@ -3,13 +3,12 @@ from __future__ import annotations
 
 import os
 import re
-import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
-from work_catalog_yaml.layout import feature_config_path, feature_data_root
+from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
+from work_catalog_yaml.persistence import FileWrite, commit_file_writes, directory_write_transaction, history_snapshot_name
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml
 
 _FINISH_DIR_ENV = "JP_TV_COLLECTION_FINISH_DIR"
@@ -46,13 +45,12 @@ def _use_workspace_collection_info_config(settings: JpTvBrowseSettings) -> bool:
 
 
 def collection_finish_dir() -> Path:
+    override = os.environ.get(_FINISH_DIR_ENV, "").strip()
+    if override:
+        return Path(override).expanduser()
     cfg_paths = _feature_config_paths()
-    raw = (
-        os.environ.get(_FINISH_DIR_ENV, "").strip()
-        or _str_or_blank(cfg_paths.get("finish_dir"))
-        or _DEFAULT_FINISH_DIR
-    )
-    return Path(raw).expanduser()
+    raw = _str_or_blank(cfg_paths.get("finish_dir")) or _DEFAULT_FINISH_DIR
+    return resolve_workspace_path(raw)
 
 
 def collection_records_path(settings: JpTvBrowseSettings) -> Path:
@@ -63,7 +61,7 @@ def collection_records_path(settings: JpTvBrowseSettings) -> Path:
         cfg_paths = _feature_config_paths()
         cfg_db = _str_or_blank(cfg_paths.get("database_path"))
         if cfg_db:
-            return Path(cfg_db).expanduser().resolve()
+            return resolve_workspace_path(cfg_db)
         modern = feature_data_root("collection-info") / "db" / "collection-info.yaml"
     else:
         modern = settings.filesystem_root.resolve().parent / "CollectionInfo" / "collection-info.yaml"
@@ -82,16 +80,11 @@ def collection_records_history_root(settings: JpTvBrowseSettings) -> Path:
         cfg_paths = _feature_config_paths()
         cfg_history = _str_or_blank(cfg_paths.get("history_root"))
         if cfg_history:
-            return Path(cfg_history).expanduser().resolve()
+            return resolve_workspace_path(cfg_history)
         return (feature_data_root("collection-info") / "history").resolve()
     if settings.filesystem_root is None:
         raise ValueError("missing paths.filesystem_root")
     return (settings.filesystem_root.resolve().parent / "History" / "CollectionInfo").resolve()
-
-
-def _snapshot_name(path: Path, *, now: datetime | None = None) -> str:
-    dt = now or datetime.now()
-    return f"{path.stem}__saved-{dt:%Y%m%d-%H%M%S}{path.suffix}"
 
 
 def collection_year_key_from_dirname(name: str) -> str | None:
@@ -247,18 +240,16 @@ def save_collection_records_from_ui_body(
     records = _records_from_body(body, allowed_years=allowed_years)
     target = collection_records_path(settings)
     target.parent.mkdir(parents=True, exist_ok=True)
-    history_file = ""
-    if target.is_file():
-        hist_root = collection_records_history_root(settings)
-        hist_root.mkdir(parents=True, exist_ok=True)
-        history_file = _snapshot_name(target)
-        shutil.copy2(target, hist_root / history_file)
     payload = {
         "version": 1,
         "finish_dir": str(finish_dir),
         "records": records,
     }
-    target.write_text(dump_yaml_string(payload), encoding="utf-8")
+    with directory_write_transaction(target.parent, lock_filename=".nimda-collection-info.lock"):
+        previous = target.read_bytes() if target.is_file() else None
+        history_file = history_snapshot_name(target) if previous is not None else ""
+        history_path = collection_records_history_root(settings) / history_file if history_file else None
+        commit_file_writes([FileWrite(target, dump_yaml_string(payload).encode("utf-8"), previous, history_path)])
     return {
         "path": str(target),
         "history_file": history_file,

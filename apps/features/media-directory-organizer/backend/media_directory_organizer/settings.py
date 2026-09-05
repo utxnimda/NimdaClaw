@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from work_catalog_yaml.layout import feature_config_path, feature_data_root, workspace_root
+from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.yaml_io import load_yaml
 
 
@@ -73,9 +73,7 @@ def load_organizer_settings(config_path: str | Path | None = None) -> OrganizerS
     paths = raw.get("paths") if isinstance(raw.get("paths"), dict) else {}
     catalog_raw = _string(paths.get("catalog_root"))
     catalog_root = (
-        (workspace_root() / catalog_raw).resolve()
-        if catalog_raw and not Path(catalog_raw).is_absolute()
-        else Path(catalog_raw).expanduser().resolve()
+        resolve_workspace_path(catalog_raw)
         if catalog_raw
         else (feature_data_root("collection-detail") / "db").resolve()
     )
@@ -87,19 +85,14 @@ def load_organizer_settings(config_path: str | Path | None = None) -> OrganizerS
         detail_paths = detail_raw.get("paths") if isinstance(detail_raw, dict) else {}
         allowed_raw = detail_paths.get("resource_roots") if isinstance(detail_paths, dict) else []
     allowed = tuple(
-        Path(str(item)).expanduser().resolve()
-        for item in (allowed_raw or [])
-        if str(item).strip()
+        resolve_workspace_path(item.strip())
+        for item in (allowed_raw if isinstance(allowed_raw, list) else [])
+        if isinstance(item, str) and item.strip()
     )
     default_root_raw = _string(paths.get("default_work_root"))
-    default_root_path = Path(default_root_raw).expanduser() if default_root_raw else None
     default_work_root = (
-        (
-            default_root_path.resolve()
-            if default_root_path.is_absolute()
-            else (workspace_root() / default_root_path).resolve()
-        )
-        if default_root_path is not None
+        resolve_workspace_path(default_root_raw)
+        if default_root_raw
         else None
     )
 

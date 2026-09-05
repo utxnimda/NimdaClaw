@@ -36,10 +36,10 @@ export default {
   methods: {
     async mountLegacyShell() {
       try {
-        await import("/features/collection-detail/index.js?v=126");
-        await import("/features/collection-info/index.js?v=126");
-        await import("/features/media-directory-organizer/index.js?v=126");
-        await import("./legacy/shell.js?v=126");
+        await import("/features/collection-detail/index.js?v=127");
+        await import("/features/collection-info/index.js?v=127");
+        await import("/features/media-directory-organizer/index.js?v=127");
+        await import("./legacy/shell.js?v=127");
       } catch (error) {
         this.legacyError = error && error.message ? error.message : String(error);
       }

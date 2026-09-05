@@ -112,6 +112,33 @@ class SourcePressInferenceTest(unittest.TestCase):
 
         self.assertNotIn("AI", [row["value"] for row in result["group_candidates"]])
 
+    def test_catalog_only_code_inside_work_title_is_not_inferred_as_group(self) -> None:
+        registry = _registry()
+        registry["catalog_only_groups"] = [
+            {"code": "ZERO", "kind": "catalog-only", "names": [], "aliases": []}
+        ]
+
+        jsum_layout = infer_source_press(
+            "[2011-12][Fate Zero][BDRIP][1080P][1-25Fin+SP]",
+            settings=_settings(),
+            group_registry=registry,
+        )
+        vcb_release = infer_source_press(
+            "[VCB-Studio] Fate Zero [Ma10p_1080p]",
+            settings=_settings(),
+            group_registry=registry,
+        )
+
+        self.assertNotIn(
+            "ZERO", [row["value"] for row in jsum_layout["group_candidates"]]
+        )
+        self.assertEqual(jsum_layout["suggested_press_group"], "JSUM")
+        self.assertEqual(jsum_layout["group_confidence"], "medium")
+        self.assertEqual(vcb_release["suggested_press_group"], "VCB")
+        self.assertNotIn(
+            "ZERO", [row["value"] for row in vcb_release["group_candidates"]]
+        )
+
 
 class PressPathSuggestionTest(unittest.TestCase):
     def test_windows_component_uses_readable_fullwidth_replacements(self) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import tempfile
 import unittest
 from contextlib import ExitStack, contextmanager
@@ -15,6 +16,7 @@ from media_directory_organizer.landing import (
     preview_work_landing_shortcut_retry,
 )
 from media_directory_organizer.settings import OrganizerSettings
+from media_directory_organizer.service import MediaRollbackError
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
 from work_catalog_yaml.jp_tv.validate import (
@@ -197,6 +199,64 @@ def _shortcut_sandbox(
 
 
 class MediaWorkLandingSafetyTest(unittest.TestCase):
+    def test_partial_media_rollback_preserves_catalog_and_exposes_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            fixture = _LandingFixture(Path(temp))
+            catalog_file = fixture.catalog_root / "[JP][TVInfo][2097].yaml"
+            catalog_file.write_text("[]\n", encoding="utf-8")
+            original_move = shutil.move
+            move_calls = 0
+
+            def fail_second_move_and_rollback(source, target):
+                nonlocal move_calls
+                move_calls += 1
+                if move_calls > 1:
+                    raise OSError("simulated move/rollback failure")
+                return original_move(source, target)
+
+            with _shortcut_sandbox(fixture) as created:
+                preview = preview_work_landing(
+                    fixture.body,
+                    organizer_settings=fixture.organizer_settings,
+                    browse_settings=fixture.browse_settings,
+                )
+                self.assertTrue(preview["ready"], preview)
+                with patch(
+                    "media_directory_organizer.execution.shutil.move",
+                    side_effect=fail_second_move_and_rollback,
+                ):
+                    with self.assertRaises(MediaRollbackError) as raised:
+                        apply_work_landing(
+                            {
+                                **fixture.body,
+                                "landing_plan_id": preview["landing_plan_id"],
+                                "confirmation": preview["landing_plan_id"],
+                                "acknowledge_catalog_write": True,
+                                "acknowledge_move": True,
+                                "acknowledge_shortcuts": True,
+                            },
+                            organizer_settings=fixture.organizer_settings,
+                            browse_settings=fixture.browse_settings,
+                        )
+
+            payload = raised.exception.to_payload()
+            self.assertEqual(payload["state"], "partial")
+            self.assertEqual(payload["landing_plan_id"], preview["landing_plan_id"])
+            self.assertFalse(payload["media"]["rollback_complete"])
+            self.assertEqual(payload["media"]["moved_file_count"], 1)
+            self.assertEqual(payload["media"]["rolled_back_file_count"], 0)
+            recovery = payload["media"]["recovery_moves"][0]
+            self.assertEqual(recovery["source"], preview["organizer_plan"]["moves"][0]["source"])
+            self.assertTrue(Path(recovery["target"]).is_file())
+            self.assertFalse(Path(recovery["source"]).exists())
+            self.assertEqual(payload["catalog"]["state"], "preserved")
+            self.assertFalse(payload["catalog"]["rolled_back"])
+            recovery_file = payload["catalog"]["recovery_files"][0]
+            self.assertEqual(Path(recovery_file["target"]), catalog_file)
+            self.assertEqual(Path(recovery_file["history_path"]).read_text(encoding="utf-8"), "[]\n")
+            self.assertEqual(len(load_jp_tv_yaml_file(catalog_file)), 1)
+            self.assertEqual(created, [])
+
     def test_catalog_preview_routes_japan_and_korea_by_country_and_start_year(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)

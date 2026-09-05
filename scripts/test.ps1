@@ -7,25 +7,17 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
-$backendRoot = Join-Path $repoRoot "apps\framework\backend"
-$featureBackendRoots = @(
-    Get-ChildItem -LiteralPath (Join-Path $repoRoot "apps\features") -Directory |
-        ForEach-Object { Join-Path $_.FullName "backend" } |
-        Where-Object { Test-Path -LiteralPath $_ -PathType Container }
-)
+. (Join-Path $scriptRoot "lib\workspace.ps1")
 
-$env:PYTHONDONTWRITEBYTECODE = "1"
-$env:PYTHONPATH = [string]::Join(
-    [IO.Path]::PathSeparator,
-    @($backendRoot) + $featureBackendRoots
-)
+$testRoots = @(
+    (Join-Path $repoRoot "apps\framework\tests"),
+    (Join-Path $repoRoot "apps\features")
+) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+$testFiles = @($testRoots | ForEach-Object {
+    Get-ChildItem -LiteralPath $_ -Recurse -File -Filter "test_*.py"
+}) | Sort-Object FullName
 
-$testFiles = Get-ChildItem -LiteralPath (Join-Path $repoRoot "apps\features") `
-    -Recurse -File -Filter "test_*.py" |
-    Sort-Object FullName
-
-Push-Location $repoRoot
-try {
+Invoke-NimdaWorkspace -RepositoryRoot $repoRoot -Action {
     foreach ($testFile in $testFiles) {
         & $Python $testFile.FullName -v
         if ($LASTEXITCODE -ne 0) {
@@ -48,8 +40,17 @@ try {
                 }
             }
             Write-Host "JavaScript syntax checks passed: $($javascriptFiles.Count) files"
+
+            $javascriptTestFiles = Get-ChildItem -LiteralPath (Join-Path $repoRoot "apps") `
+                -Recurse -File -Filter "test_*.js" |
+                Sort-Object FullName
+            foreach ($javascriptTestFile in $javascriptTestFiles) {
+                & $nodeCommand.Source --test $javascriptTestFile.FullName
+                if ($LASTEXITCODE -ne 0) {
+                    throw "JavaScript tests failed: $($javascriptTestFile.FullName)"
+                }
+            }
+            Write-Host "JavaScript test files passed: $($javascriptTestFiles.Count) files"
         }
     }
-} finally {
-    Pop-Location
 }

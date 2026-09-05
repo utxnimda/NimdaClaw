@@ -39,6 +39,19 @@ classification:
     Little Busters! EX:
     - Little Busters! EX
     - リトルバスターズ！EX
+    血界戦線:
+    - Kekkai Sensen
+    - Blood Blockade Battlefront
+    血界戦線 & Beyond:
+    - 血界戦線 & BEYOND
+    - Kekkai Sensen & Beyond
+    - Blood Blockade Battlefront & Beyond
+    グリザイアの果実:
+    - Grisaia no Kajitsu
+    グリザイアの迷宮:
+    - Grisaia no Meikyuu
+    グリザイアの楽園:
+    - Grisaia no Rakuen
 
 naming:
   # press_path 缺失且同一作品/格式存在多个压制组时，所有候选目录都加组后缀。

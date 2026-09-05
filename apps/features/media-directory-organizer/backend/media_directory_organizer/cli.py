@@ -106,7 +106,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
 def _build(args: argparse.Namespace) -> dict[str, Any]:
     settings = load_organizer_settings(args.config)
     catalog_root = args.catalog_root.expanduser().resolve() if args.catalog_root else settings.catalog_root
-    catalog = MediaCatalog.load(catalog_root)
+    catalog = MediaCatalog.load(catalog_root, domain="", country="")
     return build_plan(
         args.root,
         catalog=catalog,
@@ -118,7 +118,7 @@ def _build(args: argparse.Namespace) -> dict[str, Any]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="media-directory-organizer",
-        description="按作品数据库预览并调整 ACG 日本作品的压制子目录；文件名永不改变。",
+        description="按作品数据库预览并调整各分类作品的压制子目录；文件名永不改变。",
     )
     sub = parser.add_subparsers(dest="command", required=True)
     preview = sub.add_parser("preview", help="只分析并输出源目录到目标目录计划，不移动文件")

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from work_catalog_yaml.catalog import (
     catalog_to_html,
@@ -23,22 +23,21 @@ from work_catalog_yaml.jp_tv.parse import (
 from work_catalog_yaml.jp_tv.render import render_jp_tv_text
 from work_catalog_yaml.jp_tv.validate import jp_tv_works_to_plain_list
 from work_catalog_yaml.layout import workspace_parsed_yaml_dir
+from work_catalog_yaml.paths import resolve_output_path
 from work_catalog_yaml.scan import scan_data_to_yaml
 from work_catalog_yaml.yaml_io import dump_yaml_string
 
 
 USAGE_EPILOG = """
 jp-tv parse : 单个 txt → YAML（与当前 ``validate`` / ``parse`` 定义的 schema 一致；须保留原始 txt 以便重生成）。
-jp-tv parse-batch : data/source 内 [JP][TVInfo]* → data/features/collection-detail/db/<同名>.yaml（根级作品数组；形见 samples/tv-jp.yaml）；加 ``--force`` 覆盖已有 yaml。
+jp-tv parse-batch : data/source 内 [JP][TVInfo]* → data/features/collection-detail/db/<同名>.yaml（根级作品数组）；加 ``--force`` 覆盖已有 yaml。
 
 jp-tv to-txt : 按 ``collection-type.data.domain``（大类码）+ ``release_type`` 与 country slug + 文件名写出 Data/Animation/Japan/TV/…
 
 解析 txt 会生成 date、collection-type（含 collectioned / markers / continuations）、country、name。
 
-平面目录参见 samples/example-tvinfo.yaml ；结构化条目参见 samples/tv-jp.yaml
-
 jp-tv browse : 需 ``pip install 'work-catalog-yaml[web]'``。配置仅需 ``paths.filesystem_root``（数据 DB）；
-``paths.filesystem_root`` 指向数据 DB；服务端加载该目录下全部 ``*.yaml``。保存前备份写入 ``<DB 的上一级>/History/``。
+``paths.filesystem_root`` 指向数据 DB；服务端加载该目录下全部 ``*.yaml``。工作区保存前备份写入 ``data/features/collection-detail/history/``。
 配置文件查找见包内说明 / ``--config`` / ``JP_TV_BROWSE_CONFIG_PATH``。"""
 
 
@@ -131,14 +130,10 @@ def _cmd_jp_tv_materialize(args: argparse.Namespace) -> None:
     base = Path(args.output) if args.output else Path.cwd()
     yaml_p = Path(args.input).resolve()
     if args.relative_path:
-        rel_txt = args.relative_path.replace("\\", "/").lstrip("/")
+        rel_txt = args.relative_path
     else:
         rel_txt = infer_txt_relpath_for_materialize(entries, yaml_p)
-    dest_parts = (*PurePosixPath(args.data_root.strip("/")).parts, *PurePosixPath(rel_txt.strip("/")).parts)
-    dest = Path(base).resolve()
-    for part in dest_parts:
-        if part and part != ".":
-            dest = dest / part
+    dest = resolve_output_path(base, args.data_root or ".", rel_txt)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(render_jp_tv_text(entries), encoding="utf-8")
     print(f"已写入 {dest.resolve()}")
@@ -164,10 +159,6 @@ def _cmd_jp_tv_browse(args: argparse.Namespace) -> None:
         os.environ["JP_TV_BROWSE_CONFIG_PATH"] = str(Path(args.config).resolve())
     if getattr(args, "browse_static", None):
         os.environ["JP_TV_BROWSE_STATIC_DIR"] = str(Path(args.browse_static).resolve())
-    from work_catalog_yaml.jp_tv.browse_settings import reset_browse_settings_cache
-
-    reset_browse_settings_cache()
-
     try:
         import uvicorn
 

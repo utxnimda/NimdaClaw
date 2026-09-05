@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import os
+import hashlib
 import unicodedata
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
 from work_catalog_yaml.jp_tv.validate import (
+    entry_air_dates,
     entry_collection_type_data,
     entry_country_slug,
     entry_display_name,
@@ -46,6 +49,10 @@ class CatalogWork:
     release_type: str
     presses: tuple[PressRecord, ...]
     source_file: str
+    source_index: int = -1
+    source_sha256: str = ""
+    start_date: str = ""
+    end_date: str = ""
 
     @property
     def identity(self) -> str:
@@ -60,6 +67,70 @@ class CatalogWork:
             if normalized_value(press.press_format) == fmt_key
             and (not group_key or normalized_value(press.press_group) == group_key)
         )
+
+
+class CatalogMatchIndex(Sequence[CatalogWork]):
+    """One preview's immutable-name evidence, indexed without global caching.
+
+    Alias configuration is copied into normalized rows when constructed. A new
+    preview builds a new index, so edits to settings or catalog records cannot
+    reuse stale matches. Duplicate database records remain separate candidates.
+    """
+
+    def __init__(
+        self,
+        works: Iterable[CatalogWork],
+        work_aliases: Mapping[str, Iterable[str]],
+    ) -> None:
+        self._works = tuple(works)
+        configured: dict[str, list[str]] = {}
+        for name, aliases in work_aliases.items():
+            configured.setdefault(normalized_identity(name), []).extend(aliases)
+
+        self._aliases: dict[int, tuple[tuple[str, str], ...]] = {}
+        self._identities: dict[int, str] = {}
+        exact: dict[str, list[tuple[CatalogWork, str]]] = {}
+        known: set[str] = set()
+        press_values: set[str] = set()
+        for work in self._works:
+            identity = work.identity
+            self._identities[id(work)] = identity
+            aliases = dict.fromkeys(
+                alias for alias in (work.name, *configured.get(identity, ())) if alias.strip()
+            )
+            rows = tuple((alias, normalized_identity(alias)) for alias in aliases)
+            self._aliases[id(work)] = rows
+            seen: set[str] = set()
+            for alias, alias_identity in rows:
+                if len(alias_identity) >= 5:
+                    known.add(alias_identity)
+                if alias_identity and alias_identity not in seen:
+                    exact.setdefault(alias_identity, []).append((work, alias))
+                    seen.add(alias_identity)
+            for press in work.presses:
+                press_values.add(normalized_value(press.press_format))
+                press_values.add(normalized_value(press.press_group))
+        self._exact = {key: tuple(rows) for key, rows in exact.items()}
+        self.known_identities = frozenset(known)
+        self.press_values = frozenset(press_values)
+
+    def __iter__(self) -> Iterator[CatalogWork]:
+        return iter(self._works)
+
+    def __len__(self) -> int:
+        return len(self._works)
+
+    def __getitem__(self, index: int | slice) -> CatalogWork | tuple[CatalogWork, ...]:
+        return self._works[index]
+
+    def aliases_for(self, work: CatalogWork) -> tuple[tuple[str, str], ...]:
+        return self._aliases[id(work)]
+
+    def identity_for(self, work: CatalogWork) -> str:
+        return self._identities[id(work)]
+
+    def exact_matches(self, identity: str) -> tuple[tuple[CatalogWork, str], ...]:
+        return self._exact.get(identity, ())
 
 
 @dataclass(frozen=True)
@@ -82,16 +153,18 @@ class MediaCatalog:
         errors: list[str] = []
         for yaml_path in sorted(root.glob("*.yaml")):
             try:
+                source_sha256 = hashlib.sha256(yaml_path.read_bytes()).hexdigest()
                 entries = load_jp_tv_yaml_file(yaml_path)
             except (OSError, ValueError) as exc:
                 errors.append(f"{yaml_path.name}: {exc}")
                 continue
-            for entry in entries:
+            for source_index, entry in enumerate(entries):
                 if domain and normalized_value(entry_domain_slug(entry)) != normalized_value(domain):
                     continue
                 if country and normalized_value(entry_country_slug(entry)) != normalized_value(country):
                     continue
                 data = entry_collection_type_data(entry)
+                begin_date, end_date = entry_air_dates(entry)
                 rows = data.get("collectioned")
                 presses: list[PressRecord] = []
                 if isinstance(rows, list):
@@ -118,6 +191,10 @@ class MediaCatalog:
                         release_type=entry_release_type_slug(entry).strip(),
                         presses=tuple(presses),
                         source_file=str(yaml_path),
+                        source_index=source_index,
+                        source_sha256=source_sha256,
+                        start_date=str(begin_date or "").strip(),
+                        end_date=str(end_date or "").strip(),
                     )
                 )
         if errors:
@@ -147,9 +224,9 @@ class MediaCatalog:
             and (work.identity.startswith(root_identity) or root_identity.startswith(work.identity))
         ]
         combined: list[CatalogWork] = []
-        seen: set[tuple[str, str]] = set()
+        seen: set[tuple[str, int, str]] = set()
         for work in (*anchors, *related):
-            key = (work.source_file, work.name)
+            key = (work.source_file, work.source_index, work.name)
             if key in seen:
                 continue
             seen.add(key)

@@ -1,14 +1,26 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
+
+from work_catalog_yaml import persistence
 
 from work_catalog_yaml.jp_tv.browse_save import (
+    CatalogRollbackConflictError,
+    apply_catalog_yaml_mutation,
     browse_apply_enum_edits_from_ui_body,
     browse_save_yaml_from_ui_body,
+    catalog_write_transaction,
+    rollback_catalog_yaml_mutation,
 )
 from work_catalog_yaml.jp_tv.browse_settings import (
     JpTvBrowseSettings,
@@ -58,6 +70,115 @@ def _catalog_yaml(*names: str, press_format: str = "A") -> str:
 
 
 class JpTvBrowseEditTest(unittest.TestCase):
+    def test_invalid_later_catalog_does_not_partially_save_earlier_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            first, second = db / "a.yaml", db / "b.yaml"
+            first.write_text(_catalog_yaml("Original"), encoding="utf-8")
+            second.write_text(_catalog_yaml("Other"), encoding="utf-8")
+            before = first.read_bytes()
+            with self.assertRaisesRegex(ValueError, "越界"):
+                browse_save_yaml_from_ui_body({"rows": [
+                    {"yaml_source_rel": "a.yaml", "index_in_file": 0, "name": "Changed"},
+                    {"yaml_source_rel": "b.yaml", "index_in_file": 99, "name": "Invalid"},
+                ]}, settings=_settings(db, first, second))
+            self.assertEqual(first.read_bytes(), before)
+            self.assertFalse((db.parent / "History").exists())
+
+    def test_enum_config_write_failure_restores_renamed_catalog(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "DB"
+            db.mkdir()
+            catalog, config = db / "works.yaml", root / "config.yaml"
+            catalog.write_text(_catalog_yaml("Original"), encoding="utf-8")
+            config.write_text("enum:\n- name: press_format\n  values: [A]\n", encoding="utf-8")
+            original_catalog, original_config = catalog.read_bytes(), config.read_bytes()
+            original_write = persistence.atomic_write_bytes
+
+            def fail_config(target: Path, content: bytes) -> None:
+                if target == config:
+                    raise OSError("configuration write failed")
+                original_write(target, content)
+
+            with patch.object(persistence, "atomic_write_bytes", side_effect=fail_config):
+                with self.assertRaisesRegex(OSError, "configuration write failed"):
+                    browse_apply_enum_edits_from_ui_body({"edits": [
+                        {"enum_key": "press_format", "action": "rename", "value": "A", "new_value": "B"},
+                    ]}, settings=_settings(db, catalog), config_path=config)
+            self.assertEqual(catalog.read_bytes(), original_catalog)
+            self.assertEqual(config.read_bytes(), original_config)
+
+    def test_catalog_mutation_rollback_refuses_to_overwrite_later_ui_save(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "DB"
+            db.mkdir()
+            catalog = db / "[JP][TVInfo][2099].yaml"
+            before = _catalog_yaml("Before")
+            repair = _catalog_yaml("Repair")
+            catalog.write_text(before, encoding="utf-8")
+            settings = _settings(db, catalog)
+
+            receipt = apply_catalog_yaml_mutation(
+                target=catalog,
+                after_bytes=repair.encode("utf-8"),
+                settings=settings,
+                expected_before_sha256=hashlib.sha256(catalog.read_bytes()).hexdigest(),
+                work_ref={"yaml_source_rel": catalog.name, "index_in_file": 0},
+            )
+            browse_save_yaml_from_ui_body(
+                {
+                    "rows": [
+                        {
+                            "yaml_source_rel": catalog.name,
+                            "index_in_file": 0,
+                            "name": "Later UI Save",
+                        }
+                    ]
+                },
+                settings=settings,
+            )
+
+            with self.assertRaisesRegex(CatalogRollbackConflictError, "拒绝自动回滚"):
+                rollback_catalog_yaml_mutation(receipt)
+            self.assertIn("Later UI Save", catalog.read_text(encoding="utf-8"))
+
+    def test_catalog_transaction_uses_cross_process_root_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            code = textwrap.dedent(
+                f"""
+                import time
+                from pathlib import Path
+                from work_catalog_yaml.jp_tv.browse_save import catalog_write_transaction
+                with catalog_write_transaction(Path({json.dumps(str(db))}), timeout_seconds=2):
+                    print('locked', flush=True)
+                    time.sleep(1.0)
+                """
+            )
+            child = subprocess.Popen(
+                [sys.executable, "-c", code],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=os.environ.copy(),
+            )
+            try:
+                self.assertEqual(child.stdout.readline().strip(), "locked")
+                with self.assertRaisesRegex(TimeoutError, "文件锁超时"):
+                    with catalog_write_transaction(db, timeout_seconds=0.1):
+                        self.fail("a second process must not enter the catalog transaction")
+            finally:
+                try:
+                    _stdout, stderr = child.communicate(timeout=3)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    _stdout, stderr = child.communicate()
+                self.assertEqual(child.returncode, 0, stderr)
+
     def test_app_features_are_loaded_from_framework_config(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

@@ -13,6 +13,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.egg-info/
 
 # Frontend/runtime dependencies and build output.
 node_modules/
@@ -26,6 +27,8 @@ data/features/**/db/index/
 data/features/**/history/
 data/framework/logs/
 data/framework/runtime/
+**/.nimda-catalog.lock
+**/.nimda-collection-info.lock
 
 # OS/editor noise.
 .DS_Store

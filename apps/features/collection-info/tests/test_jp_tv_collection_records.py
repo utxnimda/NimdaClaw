@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from collection_info import service
+from work_catalog_yaml import persistence
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.jp_tv.collection_records import (
     collection_records_payload,
@@ -29,6 +31,53 @@ def _settings(db: Path) -> JpTvBrowseSettings:
 
 
 class JpTvCollectionRecordsTest(unittest.TestCase):
+    def test_quick_successive_saves_keep_distinct_recovery_snapshots(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db, finish = root / "DB", root / "Finish"
+            db.mkdir()
+            finish.mkdir()
+            with patch.dict(os.environ, {"JP_TV_COLLECTION_FINISH_DIR": str(finish)}):
+                first = save_collection_records_from_ui_body({"record": {"completed_years": ["2024"]}}, settings=_settings(db))
+                target = Path(first["path"])
+                first_bytes = target.read_bytes()
+                second = save_collection_records_from_ui_body({"record": {"completed_years": ["2025"]}}, settings=_settings(db))
+                second_bytes = target.read_bytes()
+                third = save_collection_records_from_ui_body({"record": {"completed_years": ["2026"]}}, settings=_settings(db))
+            history = service.collection_records_history_root(_settings(db))
+            self.assertNotEqual(second["history_file"], third["history_file"])
+            self.assertEqual((history / second["history_file"]).read_bytes(), first_bytes)
+            self.assertEqual((history / third["history_file"]).read_bytes(), second_bytes)
+
+    def test_failed_replace_keeps_collection_records_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db, finish = root / "DB", root / "Finish"
+            db.mkdir()
+            finish.mkdir()
+            with patch.dict(os.environ, {"JP_TV_COLLECTION_FINISH_DIR": str(finish)}):
+                result = save_collection_records_from_ui_body({"record": {"completed_years": ["2024"]}}, settings=_settings(db))
+                target = Path(result["path"])
+                original = target.read_bytes()
+                with patch.object(persistence, "atomic_write_bytes", side_effect=OSError("disk failure")):
+                    with self.assertRaisesRegex(OSError, "disk failure"):
+                        save_collection_records_from_ui_body({"record": {"completed_years": ["2025"]}}, settings=_settings(db))
+                self.assertEqual(target.read_bytes(), original)
+                self.assertEqual(collection_records_payload(_settings(db))["records"][0]["completed_years"], ["2024"])
+
+    def test_relative_feature_paths_are_resolved_under_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            with (
+                patch.dict(os.environ, {"JP_TV_COLLECTION_INFO_PATH": "", "JP_TV_COLLECTION_RECORDS_PATH": "", "JP_TV_COLLECTION_FINISH_DIR": ""}),
+                patch("work_catalog_yaml.layout.workspace_root", return_value=root),
+                patch.object(service, "_use_workspace_collection_info_config", return_value=True),
+                patch.object(service, "_feature_config_paths", return_value={"database_path": "data/records.yaml", "history_root": "data/history", "finish_dir": "media/Finish"}),
+            ):
+                self.assertEqual(service.collection_records_path(_settings(root / "DB")), root / "data" / "records.yaml")
+                self.assertEqual(service.collection_records_history_root(_settings(root / "DB")), root / "data" / "history")
+                self.assertEqual(service.collection_finish_dir(), root / "media" / "Finish")
+
     def test_scan_finish_years_uses_finish_directory_buckets(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import stat
 import subprocess
 import threading
 import base64
@@ -11,10 +12,12 @@ import hashlib
 import json
 import unicodedata
 from datetime import datetime
-from pathlib import Path
+from io import StringIO
+from pathlib import Path, PureWindowsPath
 from typing import Any, cast
 
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from work_catalog_yaml.jp_tv.browse_settings import (
     JpTvBrowseSettings,
@@ -33,13 +36,28 @@ from work_catalog_yaml.jp_tv.validate import (
     jp_tv_press_pair_from_row,
     load_jp_tv_entries_from_yaml,
 )
-from work_catalog_yaml.layout import feature_config_path, feature_data_root
+from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
+from work_catalog_yaml.persistence import FileWrite, atomic_write_bytes, commit_file_writes
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml, load_yaml_string
 
 from collection_detail.payload import build_collectioned_ordered
+from collection_detail.resource_cache import (
+    generation_directory,
+    node_cache_path,
+    publish_resource_snapshot,
+    remove_previous_generation,
+    serialized_cache_access,
+    write_node_cache,
+)
+from collection_detail.resource_tree import (
+    RESOURCE_SCAN_METRICS_VERSION as _RESOURCE_SCAN_METRICS_VERSION,
+    resource_search_entries_from_main_cache as _resource_search_entries_from_main_cache,
+    resource_search_tree_from_entries as _resource_search_tree_from_entries,
+)
 from collection_detail.save import (
     _assert_save_target_allowed,
     _works_list_mut,
+    catalog_write_transaction,
     history_catalog_root,
     history_snapshot_name,
 )
@@ -56,14 +74,31 @@ _FEATURE_CONFIG_CACHE: dict[str, Any] = {"signature": None, "data": None}
 _RESOURCE_SCAN_CACHE_FILENAME = "resource-library-scan-cache.yaml"
 _RESOURCE_SCAN_LEGACY_JSON_FILENAME = "resource-library-scan-cache.json"
 _RESOURCE_SCAN_NODE_DIRNAME = "resource-library-scan-cache"
-_RESOURCE_SCAN_METRICS_VERSION = 2
 _SHORTCUT_SCAN_CACHE_FILENAME = "link-index-shortcut-scan-cache.yaml"
 _LINK_INDEX_DB_FILENAME = "link-index.yaml"
 _PRESS_ALIAS_TOKENS = ("VCB", "CK")
+_COMPACT_DATE_RE = re.compile(r"^\d{8}$")
+_ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 
 
 def _str_or_blank(v: Any) -> str:
     return v.strip() if isinstance(v, str) else ""
+
+
+def _compact_shortcut_date(raw: Any) -> str:
+    value = _str_or_blank(raw)
+    if _COMPACT_DATE_RE.fullmatch(value):
+        return value
+    matched = _ISO_DATE_RE.fullmatch(value)
+    if matched is not None:
+        return "".join(matched.groups())
+    return value
+
+
+def _shortcut_date_range_label(begin_date: str, end_date: str) -> str:
+    if begin_date and end_date:
+        return f"[{begin_date}][{end_date}]"
+    return f"[{begin_date or end_date}]" if begin_date or end_date else ""
 
 
 def _invalidate_feature_config_cache() -> None:
@@ -101,7 +136,7 @@ def _link_index_config() -> dict[str, Any]:
 
 def _path_from_config(key: str, fallback: Path | str) -> Path:
     raw = _str_or_blank(_paths_config().get(key))
-    return Path(raw or fallback).expanduser()
+    return resolve_workspace_path(raw or fallback)
 
 
 def _legacy_media_root() -> Path:
@@ -121,7 +156,7 @@ def resource_roots() -> list[Path]:
     for item in values:
         if not item:
             continue
-        p = Path(item).expanduser().resolve()
+        p = resolve_workspace_path(item)
         key = str(p).casefold()
         if key in seen:
             continue
@@ -168,7 +203,7 @@ def _normal_resource_excludes(raw: Any) -> list[str]:
 
 def _resource_root_config_key(root: Path | str) -> str:
     try:
-        return str(Path(str(root)).expanduser().resolve()).casefold()
+        return str(resolve_workspace_path(root)).casefold()
     except (OSError, ValueError):
         return str(root).casefold()
 
@@ -214,7 +249,7 @@ def _shortcut_root_profiles() -> list[dict[str, Any]]:
             continue
         out.append(
             {
-                "root": Path(root_s).expanduser().resolve(),
+                "root": resolve_workspace_path(root_s),
                 "match": normal_match,
             }
         )
@@ -325,11 +360,6 @@ def _resource_scan_node_dir() -> Path:
     return (feature_data_root("collection-detail") / "cache" / _RESOURCE_SCAN_NODE_DIRNAME).resolve()
 
 
-def _resource_scan_node_path(relpath: str) -> Path:
-    digest = hashlib.sha1(str(relpath or "").encode("utf-8")).hexdigest()
-    return (_resource_scan_node_dir() / digest[:2] / f"{digest[2:]}.yaml").resolve()
-
-
 def _empty_resource_tree() -> dict[str, Any]:
     return {"type": "folder", "name": "资源库", "relpath": "", "path": "", "children": [], "children_loaded": True}
 
@@ -362,279 +392,25 @@ def _resource_scan_cache_empty() -> dict[str, Any]:
     }
 
 
-def _resource_node_summary(node: dict[str, Any]) -> dict[str, Any]:
-    children = [child for child in node.get("children", []) or [] if isinstance(child, dict)]
-    files = [item for item in node.get("files", []) or [] if isinstance(item, dict)]
-    out = {k: v for k, v in node.items() if k not in {"children", "files"}}
-    out["children"] = []
-    out["files"] = []
-    out["children_loaded"] = False
-    out["has_children"] = bool(children)
-    out["child_count"] = len(children)
-    out["direct_file_count"] = len(files)
-    out.setdefault("direct_child_count", len(children) + len(files))
-    out.setdefault(
-        "total_child_count",
-        int(out.get("dir_count") or 0) + int(out.get("file_count") or 0),
-    )
-    out.setdefault("size", 0)
-    out.setdefault("mtime", 0)
-    return out
-
-
-def _resource_node_cache_payload(node: dict[str, Any]) -> dict[str, Any]:
-    children = [child for child in node.get("children", []) or [] if isinstance(child, dict)]
-    files = [item for item in node.get("files", []) or [] if isinstance(item, dict)]
-    out = {k: v for k, v in node.items() if k not in {"children", "files"}}
-    out["children"] = [_resource_node_summary(child) for child in children]
-    out["files"] = files
-    out["children_loaded"] = True
-    out["has_children"] = bool(children)
-    out["child_count"] = len(children)
-    out["direct_file_count"] = len(files)
-    out.setdefault("direct_child_count", len(children) + len(files))
-    out.setdefault(
-        "total_child_count",
-        int(out.get("dir_count") or 0) + int(out.get("file_count") or 0),
-    )
-    out.setdefault("size", 0)
-    out.setdefault("mtime", 0)
-    return {
-        "ok": True,
-        "metrics_version": _RESOURCE_SCAN_METRICS_VERSION,
-        "relpath": str(out.get("relpath") or ""),
-        "node": out,
-    }
-
-
-def _resource_parent_relpath(relpath: str) -> str:
-    rel = str(relpath or "")
-    if not rel:
+def _resource_scan_config_signature(config: Any) -> str:
+    if not isinstance(config, dict):
         return ""
-    return rel.rsplit("/", 1)[0] if "/" in rel else ""
-
-
-def _resource_entry_search_text(entry: dict[str, Any]) -> str:
-    return "\n".join(
-        str(entry.get(key) or "").casefold()
-        for key in ("name", "relpath", "path", "error", "series_name", "work_name", "press_info")
-    )
-
-
-def _resource_entry_matches(entry: dict[str, Any], needle: str) -> bool:
-    return bool(needle) and needle in _resource_entry_search_text(entry)
-
-
-def _resource_search_tree_from_entries(entries: list[dict[str, Any]], query: str) -> tuple[dict[str, Any], dict[str, int]]:
-    needle = query.casefold()
-    folders = {str(item.get("relpath") or ""): item for item in entries if item.get("type") == "folder"}
-    folder_keep: set[str] = {""}
-    matched_folder_rels: set[str] = set()
-    matched_files: list[dict[str, Any]] = []
-    for entry in entries:
-        if not _resource_entry_matches(entry, needle):
-            continue
-        if entry.get("type") == "folder":
-            relpath = str(entry.get("relpath") or "")
-            matched_folder_rels.add(relpath)
-            cur = relpath
-            while True:
-                folder_keep.add(cur)
-                if not cur:
-                    break
-                cur = str(folders.get(cur, {}).get("parent_relpath") or _resource_parent_relpath(cur))
-        elif entry.get("type") == "file":
-            matched_files.append(entry)
-            cur = str(entry.get("parent_relpath") or _resource_parent_relpath(str(entry.get("relpath") or "")))
-            while True:
-                folder_keep.add(cur)
-                if not cur:
-                    break
-                cur = str(folders.get(cur, {}).get("parent_relpath") or _resource_parent_relpath(cur))
-
-    def folder_node(relpath: str) -> dict[str, Any]:
-        raw = folders.get(relpath) or {"type": "folder", "name": "资源库", "relpath": relpath, "path": ""}
-        return {
-            "type": "folder",
-            "name": str(raw.get("name") or ("资源库" if not relpath else relpath.rsplit("/", 1)[-1])),
-            "relpath": relpath,
-            "path": str(raw.get("path") or ""),
-            "exists": bool(raw.get("exists", True)),
-            "error": str(raw.get("error") or ""),
-            "size": int(raw.get("size") or 0),
-            "mtime": int(raw.get("mtime") or 0),
-            "children": [],
-            "files": [],
-            "children_loaded": True,
-            "has_children": False,
-            "_resource_search_match": relpath in matched_folder_rels,
-        }
-
-    nodes = {relpath: folder_node(relpath) for relpath in folder_keep}
-    for file_entry in matched_files:
-        parent = str(file_entry.get("parent_relpath") or _resource_parent_relpath(str(file_entry.get("relpath") or "")))
-        if parent not in nodes:
-            nodes[parent] = folder_node(parent)
-        nodes[parent]["files"].append(
-            {
-                "type": "file",
-                "name": str(file_entry.get("name") or ""),
-                "relpath": str(file_entry.get("relpath") or ""),
-                "path": str(file_entry.get("path") or ""),
-                "size": int(file_entry.get("size") or 0),
-                "mtime": int(file_entry.get("mtime") or 0),
-            }
-        )
-
-    rels_by_depth = sorted((rel for rel in nodes if rel), key=lambda x: (x.count("/"), x.casefold()))
-    for relpath in rels_by_depth:
-        parent = str(folders.get(relpath, {}).get("parent_relpath") or _resource_parent_relpath(relpath))
-        if parent not in nodes:
-            continue
-        nodes[parent]["children"].append(nodes[relpath])
-
-    def sort_and_count(node: dict[str, Any]) -> tuple[int, int, int]:
-        node["children"].sort(key=lambda x: str(x.get("name") or "").casefold())
-        node["files"].sort(key=lambda x: str(x.get("name") or "").casefold())
-        dir_count = 0
-        file_count = len(node["files"])
-        size = sum(int(item.get("size") or 0) for item in node["files"])
-        for child in node["children"]:
-            child_dirs, child_files, child_size = sort_and_count(child)
-            dir_count += 1 + child_dirs
-            file_count += child_files
-            size += child_size
-        node["child_count"] = len(node["children"])
-        node["direct_file_count"] = len(node["files"])
-        node["direct_child_count"] = len(node["children"]) + len(node["files"])
-        node["dir_count"] = dir_count
-        node["file_count"] = file_count
-        node["total_child_count"] = dir_count + file_count
-        node["has_children"] = bool(node["children"] or node["files"])
-        if not node.get("_resource_search_match") or not node.get("relpath"):
-            node["size"] = size
-        return dir_count, file_count, int(node.get("size") or 0)
-
-    root = nodes.get("") or folder_node("")
-    sort_and_count(root)
-    return root, {
-        "matched_folder_count": len(matched_folder_rels),
-        "matched_file_count": len(matched_files),
-        "matched_count": len(matched_folder_rels) + len(matched_files),
-        "shown_folder_count": max(0, len(nodes) - 1),
-        "shown_file_count": len(matched_files),
+    relevant = {
+        key: config.get(key)
+        for key in ("resource_roots", "resource_excludes", "shortcut_root", "resource_scan_max_dirs", "resource_scan_max_depth")
     }
+    return hashlib.sha256(json.dumps(relevant, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
 
 
-def _resource_search_entries_from_main_cache(cache: dict[str, Any]) -> list[dict[str, Any]]:
-    entries: list[dict[str, Any]] = [
-        {
-            "type": "folder",
-            "name": "资源库",
-            "relpath": "",
-            "parent_relpath": "",
-            "path": "",
-            "size": int(((cache.get("summary") if isinstance(cache.get("summary"), dict) else {}) or {}).get("size") or 0),
-        }
-    ]
-    roots = cache.get("roots") if isinstance(cache.get("roots"), list) else []
-    for root_idx, root in enumerate(roots):
-        if not isinstance(root, dict):
-            continue
-        root_rel = f"root:{root_idx}"
-        root_entry = {
-            "type": "folder",
-            "name": str(root.get("root") or f"resource-root-{root_idx + 1}"),
-            "relpath": root_rel,
-            "parent_relpath": "",
-            "path": str(root.get("root") or ""),
-            "exists": bool(root.get("exists")),
-            "error": str(root.get("error") or ""),
-            "size": int(root.get("size") or 0),
-            "mtime": int(root.get("mtime") or 0),
-            "direct_child_count": int(root.get("direct_child_count") or 0),
-            "total_child_count": int(root.get("total_child_count") or 0),
-            "dir_count": int(root.get("dir_count") or 0),
-            "file_count": int(root.get("file_count") or 0),
-            "child_count": int(root.get("series_count") or 0),
-            "direct_file_count": 0,
-            "has_children": True,
-        }
-        entries.append(root_entry)
-        series_rows = root.get("series") if isinstance(root.get("series"), list) else []
-        for series in series_rows:
-            if not isinstance(series, dict):
-                continue
-            series_name = str(series.get("name") or "")
-            series_rel = f"{root_rel}/{series.get('relpath') or series_name}"
-            child_rows = series.get("children") if isinstance(series.get("children"), list) else []
-            entries.append(
-                {
-                    "type": "folder",
-                    "name": series_name,
-                    "relpath": series_rel,
-                    "parent_relpath": root_rel,
-                    "path": str(series.get("path") or ""),
-                    "exists": True,
-                    "error": str(series.get("error") or ""),
-                    "size": int(series.get("size") or 0),
-                    "mtime": int(series.get("mtime") or 0),
-                    "direct_child_count": len(child_rows),
-                    "total_child_count": len(child_rows),
-                    "dir_count": len(child_rows),
-                    "file_count": 0,
-                    "child_count": len(child_rows),
-                    "direct_file_count": 0,
-                    "has_children": bool(child_rows),
-                    "series_name": series_name,
-                }
-            )
-            for child in child_rows:
-                if not isinstance(child, dict):
-                    continue
-                child_name = str(child.get("name") or "")
-                child_rel_raw = str(child.get("relpath") or "")
-                child_rel = f"{root_rel}/{child_rel_raw}" if child_rel_raw else f"{series_rel}/{child_name}"
-                entries.append(
-                    {
-                        "type": "folder",
-                        "name": child_name,
-                        "relpath": child_rel,
-                        "parent_relpath": series_rel,
-                        "path": str(child.get("path") or ""),
-                        "exists": True,
-                        "error": str(child.get("error") or ""),
-                        "size": int(child.get("size") or 0),
-                        "mtime": int(child.get("mtime") or 0),
-                        "direct_child_count": 0,
-                        "total_child_count": 0,
-                        "dir_count": 0,
-                        "file_count": 0,
-                        "child_count": 0,
-                        "direct_file_count": 0,
-                        "has_children": False,
-                        "series_name": str(child.get("series_name") or series_name),
-                        "work_name": str(child.get("work_name") or ""),
-                        "press_info": str(child.get("press_info") or ""),
-                    }
-                )
-    return entries
+def _read_resource_scan_manifest(path: Path) -> dict[str, Any] | None:
+    try:
+        raw = load_yaml(path)
+    except (OSError, UnicodeError, YAMLError):
+        return None
+    return raw if isinstance(raw, dict) else None
 
 
-def _write_resource_node_cache(node: dict[str, Any]) -> None:
-    relpath = str(node.get("relpath") or "")
-    path = _resource_scan_node_path(relpath)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if node.get("children_loaded") is False:
-        return
-    else:
-        payload = _resource_node_cache_payload(node)
-    path.write_text(dump_yaml_string(payload), encoding="utf-8")
-    for child in node.get("children", []) or []:
-        if isinstance(child, dict):
-            _write_resource_node_cache(child)
-
-
+@serialized_cache_access
 def _load_resource_scan_cache() -> dict[str, Any]:
     path = _resource_scan_cache_path()
     if not path.is_file():
@@ -644,21 +420,34 @@ def _load_resource_scan_cache() -> dict[str, Any]:
             out["legacy_cache_path"] = str(legacy)
             out["cache_note"] = "检测到旧 JSON 缓存，请重新扫描生成 YAML 缓存。"
         return out
-    raw = load_yaml(path)
-    if not isinstance(raw, dict):
-        return _resource_scan_cache_empty()
-    if int(raw.get("metrics_version") or 0) != _RESOURCE_SCAN_METRICS_VERSION:
+    raw = _read_resource_scan_manifest(path)
+    if raw is None:
+        out = _resource_scan_cache_empty()
+        out["cache_note"] = "资源库缓存无法读取，请重新扫描资源库。"
+        return out
+    current_config = collection_link_index_config_json()
+    try:
+        generation_dir = generation_directory(_resource_scan_node_dir(), str(raw.get("generation") or ""))
+    except ValueError:
+        generation_dir = None
+    if (
+        raw.get("metrics_version") != _RESOURCE_SCAN_METRICS_VERSION
+        or generation_dir is None
+        or not generation_dir.is_dir()
+        or _resource_scan_config_signature(raw.get("config")) != _resource_scan_config_signature(current_config)
+    ):
         out = _resource_scan_cache_empty()
         out["stale_cache_path"] = str(path)
-        out["cache_note"] = "资源库目录大小统计已更新，请重新扫描资源库。"
+        out["cache_note"] = "资源库目录、排除规则或缓存格式已更新，请重新扫描资源库。"
         return out
     raw["ok"] = True
     raw["cached"] = True
     raw["metrics_version"] = _RESOURCE_SCAN_METRICS_VERSION
     raw["cache_path"] = str(path)
-    raw["node_cache_dir"] = str(_resource_scan_node_dir())
-    raw["config"] = collection_link_index_config_json()
-    raw.setdefault("summary", _resource_scan_cache_empty()["summary"])
+    raw["node_cache_dir"] = str(generation_dir)
+    raw["config"] = current_config
+    if "summary" not in raw:
+        raw["summary"] = _resource_scan_cache_empty()["summary"]
     raw.setdefault("roots", [])
     raw.setdefault("items", [])
     raw.setdefault("tree", _empty_resource_tree())
@@ -666,46 +455,44 @@ def _load_resource_scan_cache() -> dict[str, Any]:
     return raw
 
 
+@serialized_cache_access
 def _save_resource_scan_cache(payload: dict[str, Any]) -> None:
+    if _resource_scan_config_signature(payload.get("config")) != _resource_scan_config_signature(collection_link_index_config_json()):
+        raise ValueError("扫描期间资源库配置已改变，请重新扫描。")
     path = _resource_scan_cache_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
     node_dir = _resource_scan_node_dir()
-    if node_dir.exists():
-        shutil.rmtree(node_dir)
-    node_dir.mkdir(parents=True, exist_ok=True)
-
-    cache_payload = dict(payload)
-    cache_payload["ok"] = True
-    cache_payload["cached"] = True
-    cache_payload["metrics_version"] = _RESOURCE_SCAN_METRICS_VERSION
-    cache_payload["cache_path"] = str(path)
-    cache_payload["node_cache_dir"] = str(node_dir)
-    tree = cache_payload.get("tree") if isinstance(cache_payload.get("tree"), dict) else _empty_resource_tree()
-    _write_resource_node_cache(tree)
-    cache_payload["tree"] = _resource_node_cache_payload(tree)["node"]
-    path.write_text(dump_yaml_string(cache_payload), encoding="utf-8")
-
+    previous = _read_resource_scan_manifest(path)
+    previous_generation = str(previous.get("generation") or "") if isinstance(previous, dict) else ""
+    tree = payload.get("tree") if isinstance(payload.get("tree"), dict) else _empty_resource_tree()
+    publish_resource_snapshot(path, node_dir, payload, tree)
+    remove_previous_generation(node_dir, previous_generation)
     legacy = _resource_scan_legacy_json_path()
     if legacy.is_file():
         legacy.unlink()
 
 
+@serialized_cache_access
 def resource_libraries_node_payload(relpath: str) -> dict[str, Any]:
     rel = str(relpath or "")
-    path = _resource_scan_node_path(rel)
-    if not path.is_file():
+    if rel and _resource_path_for_relpath(rel) is None:
+        raise FileNotFoundError(rel)
+    cache = _load_resource_scan_cache()
+    generation = str(cache.get("generation") or "") if cache.get("cached") else ""
+    path = node_cache_path(_resource_scan_node_dir(), rel, generation) if generation else None
+    if path is None or not path.is_file():
         live_node = _resource_live_node_from_relpath(rel)
         if live_node is not None:
-            _write_resource_node_cache(live_node)
+            if generation:
+                write_node_cache(_resource_scan_node_dir(), generation, live_node)
             return {"ok": True, "cached": False, "relpath": rel, "node": live_node}
         raise FileNotFoundError(rel or "资源库根目录")
     raw = load_yaml(path)
     if not isinstance(raw, dict) or not isinstance(raw.get("node"), dict):
         raise ValueError("资源库目录缓存损坏，请重新扫描。")
-    if int(raw.get("metrics_version") or 0) != _RESOURCE_SCAN_METRICS_VERSION:
+    if raw.get("metrics_version") != _RESOURCE_SCAN_METRICS_VERSION or raw.get("generation") != generation:
         live_node = _resource_live_node_from_relpath(rel)
         if live_node is not None:
-            _write_resource_node_cache(live_node)
+            write_node_cache(_resource_scan_node_dir(), generation, live_node)
             return {"ok": True, "cached": False, "relpath": rel, "node": live_node}
         raise ValueError("resource library node cache is stale; please rescan")
     node = raw["node"]
@@ -713,7 +500,7 @@ def resource_libraries_node_payload(relpath: str) -> dict[str, Any]:
         raise ValueError("资源库目录缓存索引不一致，请重新扫描。")
     if node.get("children_loaded") is False and node.get("path"):
         node = _resource_live_node_for_relpath(node)
-        _write_resource_node_cache(node)
+        write_node_cache(_resource_scan_node_dir(), generation, node)
     return {"ok": True, "cached": True, "relpath": rel, "node": node}
 
 
@@ -756,13 +543,14 @@ def _normal_resource_root_entries(raw: Any) -> tuple[list[str], dict[str, list[s
     return roots, excludes
 
 
+@serialized_cache_access
 def save_resource_library_roots_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     roots, excludes = _normal_resource_root_entries(body.get("roots"))
     cfg_path = feature_config_path("collection-detail")
     y = _yaml_roundtrip()
-    if cfg_path.is_file():
-        with cfg_path.open(encoding="utf-8") as fp:
-            doc = y.load(fp) or {}
+    previous = cfg_path.read_bytes() if cfg_path.is_file() else None
+    if previous is not None:
+        doc = y.load(previous.decode("utf-8")) or {}
     else:
         doc = {"version": 1}
     if not isinstance(doc, dict):
@@ -776,9 +564,9 @@ def save_resource_library_roots_from_ui_body(body: dict[str, Any]) -> dict[str, 
         paths["resource_excludes"] = excludes
     else:
         paths.pop("resource_excludes", None)
-    cfg_path.parent.mkdir(parents=True, exist_ok=True)
-    with cfg_path.open("w", encoding="utf-8") as fp:
-        y.dump(doc, fp)
+    buffer = StringIO()
+    y.dump(doc, buffer)
+    commit_file_writes([FileWrite(cfg_path, buffer.getvalue().encode("utf-8"), previous)])
     _invalidate_feature_config_cache()
     _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
     _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
@@ -796,9 +584,9 @@ def _split_resource_leaf_name(name: str) -> tuple[str, str]:
     return raw, ""
 
 
-def _resource_file_entry(root: Path, path: Path) -> dict[str, Any]:
+def _resource_file_entry(root: Path, path: Path, *, scan_entry: os.DirEntry[str] | None = None) -> dict[str, Any]:
     try:
-        st = path.stat()
+        st = scan_entry.stat() if scan_entry is not None else path.stat()
         size = int(st.st_size)
         mtime = int(st.st_mtime)
     except OSError:
@@ -821,7 +609,7 @@ def _resource_file_entry(root: Path, path: Path) -> dict[str, Any]:
 def _resource_dir_stat(path: Path) -> tuple[bool, int]:
     try:
         st = path.stat()
-        return path.is_dir(), int(st.st_mtime)
+        return stat.S_ISDIR(st.st_mode), int(st.st_mtime)
     except OSError:
         return False, 0
 
@@ -842,35 +630,26 @@ def _resource_dir_metric_summary(
     while stack:
         cur = stack.pop()
         try:
-            entries = list(cur.iterdir())
+            with os.scandir(cur) as iterator:
+                entries = list(iterator)
         except OSError:
             continue
-        if first:
-            for entry in entries:
-                try:
-                    is_dir = entry.is_dir()
-                except OSError:
-                    continue
-                if is_dir and (
-                    (shortcut_root_key and _path_compare_key(entry) == shortcut_root_key)
-                    or _is_resource_scan_excluded(root, entry, excludes)
-                ):
-                    continue
-                direct_child_count += 1
-            first = False
         for entry in entries:
             try:
                 is_dir = entry.is_dir()
             except OSError:
                 continue
             if is_dir:
-                if shortcut_root_key and _path_compare_key(entry) == shortcut_root_key:
+                directory = Path(entry.path)
+                if shortcut_root_key and _path_compare_key(directory) == shortcut_root_key:
                     continue
-                if _is_resource_scan_excluded(root, entry, excludes):
+                if _is_resource_scan_excluded(root, directory, excludes):
                     continue
                 dir_count += 1
                 total_child_count += 1
-                stack.append(entry)
+                if first:
+                    direct_child_count += 1
+                stack.append(directory)
                 continue
             try:
                 size += int(entry.stat().st_size)
@@ -878,6 +657,9 @@ def _resource_dir_metric_summary(
                 pass
             file_count += 1
             total_child_count += 1
+            if first:
+                direct_child_count += 1
+        first = False
     return {
         "size": size,
         "direct_child_count": direct_child_count,
@@ -967,12 +749,14 @@ def _resource_dir_node(
         node["error"] = "目录不存在"
         return node
     try:
-        entries = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.casefold()))
+        with os.scandir(path) as iterator:
+            entries = sorted(iterator, key=lambda entry: (not entry.is_dir(), entry.name.casefold()))
     except OSError as exc:
         node["error"] = str(exc)
         return node
-    for entry in entries:
-        if entry.is_dir():
+    for scan_entry in entries:
+        entry = Path(scan_entry.path)
+        if scan_entry.is_dir():
             if shortcut_root_key and _path_compare_key(entry) == shortcut_root_key:
                 continue
             if _is_resource_scan_excluded(root, entry, excludes):
@@ -1011,7 +795,7 @@ def _resource_dir_node(
                 else int(child.get("dir_count") or 0) + int(child.get("file_count") or 0)
             )
         else:
-            file_item = _resource_file_entry(root, entry)
+            file_item = _resource_file_entry(root, entry, scan_entry=scan_entry)
             node["files"].append(file_item)
             counters["files"] += 1
             node["file_count"] += 1
@@ -1038,9 +822,25 @@ def _resource_path_for_relpath(relpath: str) -> Path | None:
     if root is None:
         return None
     rest = rel.split("/", 1)[1] if "/" in rel else ""
+    parts = rest.split("/") if rest else []
+    if any(not part or part in {".", ".."} or PureWindowsPath(part).drive for part in parts):
+        return None
     try:
         root_r = root.resolve()
-        path = (root_r / rest).resolve() if rest else root_r
+        excludes = resource_excludes_for_root(root)
+        shortcut_root_key = _path_compare_key(shortcut_root())
+        candidate = root_r
+        if _path_compare_key(candidate) == shortcut_root_key:
+            return None
+        # Validate each lexical component before resolve() can erase a junction,
+        # symlink or an excluded directory name such as Alias -> Target.
+        for part in parts:
+            candidate = candidate / part
+            if _is_resource_scan_excluded(root_r, candidate, excludes):
+                return None
+            if _path_compare_key(candidate) == shortcut_root_key:
+                return None
+        path = candidate.resolve()
         path.relative_to(root_r)
         return path
     except (OSError, ValueError):
@@ -1091,12 +891,13 @@ def _resource_live_node_from_relpath(relpath: str) -> dict[str, Any] | None:
         shortcut_root_key = _path_compare_key(shortcut_root())
     except (OSError, ValueError):
         shortcut_root_key = ""
+    root_excludes = resource_excludes_for_root(root)
     counters: dict[str, Any] = {"dirs": 0, "files": 0, "truncated": False}
     return _resource_dir_node(
         root,
         path,
         rel,
-        resource_excludes_for_root(root),
+        root_excludes,
         shortcut_root_key,
         counters,
         _resource_scan_max_dirs(),
@@ -1154,6 +955,8 @@ def resource_libraries_search_payload(query: str) -> dict[str, Any]:
 
 
 def _is_resource_scan_excluded(root: Path, path: Path, excludes: list[str]) -> bool:
+    if path.is_symlink() or (hasattr(path, "is_junction") and path.is_junction()):
+        return True
     if not excludes:
         return False
     try:
@@ -1177,7 +980,9 @@ def _is_resource_scan_excluded(root: Path, path: Path, excludes: list[str]) -> b
     return False
 
 
+@serialized_cache_access
 def scan_resource_libraries_payload() -> dict[str, Any]:
+    scan_config = collection_link_index_config_json()
     max_dirs = _resource_scan_max_dirs()
     max_depth = _resource_scan_max_depth()
     try:
@@ -1323,7 +1128,7 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
     payload = {
         "ok": True,
         "cached": False,
-        "config": collection_link_index_config_json(),
+        "config": scan_config,
         "summary": {
             "root_count": len(roots_out),
             "existing_root_count": sum(1 for item in roots_out if item.get("exists")),
@@ -1384,7 +1189,7 @@ def _air_date_parts(entry: Any) -> tuple[str, str]:
         start, end = entry_air_dates(entry)
     except ValueError:
         return "", ""
-    return _str_or_blank(start), _str_or_blank(end)
+    return _compact_shortcut_date(start), _compact_shortcut_date(end)
 
 
 def _enum_display(settings: JpTvBrowseSettings, enum_key: str, raw: str) -> str:
@@ -1518,11 +1323,7 @@ def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
                     "year_label": f"[{year}]" if year else "",
                     "begin_date": begin_date,
                     "end_date": end_date,
-                    "date_range_label": (
-                        f"[{begin_date}][{end_date}]"
-                        if begin_date and end_date
-                        else f"[{begin_date or end_date}]" if begin_date or end_date else ""
-                    ),
+                    "date_range_label": _shortcut_date_range_label(begin_date, end_date),
                     "domain": domain,
                     "domain_label": _enum_display(settings, "domain", domain),
                     "country": country,
@@ -1663,7 +1464,7 @@ def _load_link_index_db() -> dict[str, Any]:
 def _save_link_index_db(payload: dict[str, Any]) -> None:
     path = _link_index_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(dump_yaml_string(payload), encoding="utf-8")
+    atomic_write_bytes(path, dump_yaml_string(payload).encode("utf-8"))
 
 
 def _index_entry_key(work: dict[str, Any], press: dict[str, Any]) -> str:
@@ -1677,6 +1478,12 @@ def _index_entry_key(work: dict[str, Any], press: dict[str, Any]) -> str:
 
 def _index_relpath_for(work: dict[str, Any], press: dict[str, Any]) -> tuple[str, list[str]]:
     ctx = _plan_context(work, press)
+    begin_date = _compact_shortcut_date(ctx.get("begin_date"))
+    end_date = _compact_shortcut_date(ctx.get("end_date"))
+    if begin_date or end_date:
+        ctx["begin_date"] = begin_date
+        ctx["end_date"] = end_date
+        ctx["date_range_label"] = _shortcut_date_range_label(begin_date, end_date)
     parts = [_template_text(level, ctx) for level in _layout_levels()]
     filename = _template_text(_shortcut_name_template(), ctx)
     if not filename.lower().endswith(".lnk"):
@@ -2210,7 +2017,7 @@ def _save_shortcut_scan_cache(signature: tuple[Any, ...], leaves: list[dict[str,
         "signature": _shortcut_scan_signature_payload(signature),
         "leaves": [_shortcut_leaf_cache_payload(item) for item in leaves],
     }
-    path.write_text(dump_yaml_string(payload), encoding="utf-8")
+    atomic_write_bytes(path, dump_yaml_string(payload).encode("utf-8"))
 
 
 def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, Any]]:
@@ -2867,7 +2674,7 @@ def _set_mapping_on_raw_work(work: Any, mapping: dict[str, Any]) -> bool:
     return changed
 
 
-def _save_ui_mappings_to_catalog(
+def _save_ui_mappings_to_catalog_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
@@ -2883,11 +2690,13 @@ def _save_ui_mappings_to_catalog(
         by_rel.setdefault(str(item["yaml_source_rel"]), []).append(item)
 
     writes: list[dict[str, Any]] = []
+    staged: list[FileWrite] = []
     hist_root = history_catalog_root(settings)
     for rel_s in sorted(by_rel.keys()):
         target = resolve_safe_yaml_under_root(settings.filesystem_root, rel_s).expanduser().resolve()
         _assert_save_target_allowed(target, settings)
-        raw_text = target.read_text(encoding="utf-8")
+        previous = target.read_bytes()
+        raw_text = previous.decode("utf-8")
         doc = load_yaml_string(raw_text)
         works = _works_list_mut(doc)
         changed = 0
@@ -2904,12 +2713,22 @@ def _save_ui_mappings_to_catalog(
             load_jp_tv_entries_from_yaml(load_yaml_string(new_text))
         except Exception as exc:
             raise ValueError(f"{rel_s} 写回索引关联后的 YAML 校验失败：{exc}") from exc
-        hist_root.mkdir(parents=True, exist_ok=True)
         hist_name = history_snapshot_name(target)
-        shutil.copy2(target, hist_root / hist_name)
-        target.write_text(new_text, encoding="utf-8")
+        staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name))
         writes.append({"path": str(target), "history_file": hist_name, "changes": changed})
+    commit_file_writes(staged)
     return writes
+
+
+def _save_ui_mappings_to_catalog(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+) -> list[dict[str, Any]]:
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能写回索引关联")
+    with catalog_write_transaction(settings.filesystem_root):
+        return _save_ui_mappings_to_catalog_unlocked(body, settings=settings)
 
 
 def _create_windows_shortcut(shortcut_path: Path, target_path: Path) -> None:
@@ -3020,8 +2839,8 @@ _SCOPED_SHORTCUT_LOCK = threading.RLock()
 
 def _scoped_work_context(work: dict[str, Any]) -> dict[str, Any]:
     date = work.get("date") if isinstance(work.get("date"), dict) else {}
-    begin_date = _str_or_blank(date.get("start") or work.get("begin_date"))
-    end_date = _str_or_blank(date.get("end") or work.get("end_date"))
+    begin_date = _compact_shortcut_date(date.get("start") or work.get("begin_date"))
+    end_date = _compact_shortcut_date(date.get("end") or work.get("end_date"))
     year_match = re.search(r"(?:19|20)\d{2}", begin_date)
     year = year_match.group(0) if year_match else ""
     return {
@@ -3037,13 +2856,7 @@ def _scoped_work_context(work: dict[str, Any]) -> dict[str, Any]:
         "year_label": f"[{year}]" if year else "",
         "begin_date": begin_date,
         "end_date": end_date,
-        "date_range_label": (
-            f"[{begin_date}][{end_date}]"
-            if begin_date and end_date
-            else f"[{begin_date or end_date}]"
-            if begin_date or end_date
-            else ""
-        ),
+        "date_range_label": _shortcut_date_range_label(begin_date, end_date),
     }
 
 
@@ -3163,16 +2976,16 @@ def refresh_link_index_db_from_catalog(settings: JpTvBrowseSettings) -> dict[str
     }
 
 
-def apply_scoped_shortcuts_for_work(
+def _apply_scoped_shortcuts_for_work_process_locked(
     items: list[dict[str, Any]],
     *,
     settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
-    """Create only the reviewed work's missing shortcuts and refresh index DB."""
-
     with _SCOPED_SHORTCUT_LOCK:
         prepared: list[tuple[Path, Path, dict[str, Any]]] = []
+        planned_targets: dict[str, str] = {}
         already_exists = 0
+        duplicate_count = 0
         for index, item in enumerate(items):
             if not isinstance(item, dict):
                 raise ValueError(f"scoped shortcut item {index + 1} must be an object")
@@ -3185,6 +2998,13 @@ def apply_scoped_shortcuts_for_work(
             target = Path(_str_or_blank(item.get("target_path"))).expanduser().resolve()
             if not target.is_dir() or not _path_under_any_root(target, resource_roots()):
                 raise FileNotFoundError(f"shortcut target directory is missing or outside resource roots: {target}")
+            shortcut_key, target_key = _path_compare_key(shortcut_path), _path_compare_key(target)
+            if shortcut_key in planned_targets:
+                if planned_targets[shortcut_key] != target_key:
+                    raise FileExistsError(f"同一个快捷方式路径对应多个目标目录：{shortcut_path}")
+                duplicate_count += 1
+                continue
+            planned_targets[shortcut_key] = target_key
             if shortcut_path.exists():
                 existing_target = _windows_shortcut_target(shortcut_path) if shortcut_path.is_file() else ""
                 if existing_target and _path_compare_key(existing_target) == _path_compare_key(target):
@@ -3207,17 +3027,33 @@ def apply_scoped_shortcuts_for_work(
             if previous_index is None:
                 index_path.unlink(missing_ok=True)
             else:
-                index_path.parent.mkdir(parents=True, exist_ok=True)
-                index_path.write_bytes(previous_index)
+                atomic_write_bytes(index_path, previous_index)
             raise
         return {
             "ok": True,
             "planned_count": len(items),
             "created_count": len(created),
             "already_exists_count": already_exists,
+            "duplicate_count": duplicate_count,
             "shortcut_paths": [str(path) for path in created],
             "index_db": index_result,
         }
+
+
+def apply_scoped_shortcuts_for_work(
+    items: list[dict[str, Any]],
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    """Create reviewed shortcuts and refresh the index as one cross-process transaction."""
+
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能创建作品快捷方式")
+    # The same catalog-root lock also serializes the shared .lnk/index transaction
+    # across a packaged app and a source server. Repair already holds this lock;
+    # catalog_write_transaction is deliberately reentrant for that call path.
+    with catalog_write_transaction(settings.filesystem_root):
+        return _apply_scoped_shortcuts_for_work_process_locked(items, settings=settings)
 
 
 def _payload_from_works(
@@ -3347,16 +3183,17 @@ def _shortcut_root_direct_entries(root: Path) -> list[Path]:
 
 
 def _safe_shortcut_path_from_rel(root: Path, relpath: Any) -> Path:
-    rel = _str_or_blank(relpath).replace("\\", "/").strip("/")
+    rel = _str_or_blank(relpath).replace("\\", "/")
     if not rel:
         raise ValueError("索引项缺少相对路径")
     rel_path = Path(rel)
-    if rel_path.is_absolute() or any(part in {"", ".", ".."} for part in rel_path.parts):
+    if rel_path.is_absolute() or PureWindowsPath(rel).drive or any(part in {"", ".", ".."} for part in rel.split("/")):
         raise ValueError(f"索引项路径非法：{rel}")
-    target = (root / rel_path).resolve()
-    target.relative_to(root)
+    target = root / rel_path
     if target.suffix.lower() != ".lnk":
         target = target.with_suffix(target.suffix + ".lnk") if target.suffix else target.with_suffix(".lnk")
+    target = target.resolve()
+    target.relative_to(root.resolve())
     return target
 
 
@@ -3408,7 +3245,30 @@ def _shortcut_root_for_index_item(item: dict[str, Any]) -> Path:
     return Path(configured).expanduser().resolve() if configured else _shortcut_root_for_work(item)
 
 
+def _shortcut_generation_conflicts(items: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Check the complete cached plan before a rebuild can clear output folders."""
+    configured = {_path_compare_key(root) for root in shortcut_roots()}
+    destinations: dict[str, str] = {}
+    conflicts: list[dict[str, str]] = []
+    for item in items:
+        root = _shortcut_root_for_index_item(item)
+        rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath"))
+        try:
+            if _path_compare_key(root) not in configured:
+                raise ValueError(f"索引输出目录已不在当前配置中，请重新生成索引：{root}")
+            destination = _safe_shortcut_path_from_rel(root, rel)
+            key = _path_compare_key(destination)
+            target = _path_compare_key(item.get("target_path"))
+            if key in destinations and destinations[key] != target:
+                raise ValueError(f"同一个快捷方式路径对应多个目标目录：{destination}")
+            destinations[key] = target
+        except (OSError, ValueError) as exc:
+            conflicts.append({"shortcut_relpath": rel, "error": str(exc)})
+    return conflicts
+
+
 def _link_index_file_generation_preview(items: list[dict[str, Any]]) -> dict[str, Any]:
+    conflicts = _shortcut_generation_conflicts(items)
     roots_in_plan: list[Path] = []
     seen_roots: set[str] = set()
     for item in items:
@@ -3467,10 +3327,12 @@ def _link_index_file_generation_preview(items: list[dict[str, Any]]) -> dict[str
         "creatable": creatable,
         "skipped_empty_target": skipped_empty_target,
         "skipped_missing_target": skipped_missing_target,
+        "conflict_count": len(conflicts),
+        "conflicts": conflicts,
     }
 
 
-def generate_link_index_files_from_ui_body(
+def _generate_link_index_files_from_ui_body_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
@@ -3483,6 +3345,10 @@ def generate_link_index_files_from_ui_body(
             "config": collection_link_index_config_json(),
             "file_generation": preview,
         }
+    if preview["conflict_count"]:
+        raise ValueError("快捷方式计划存在冲突，尚未清空或创建文件：" + "; ".join(
+            conflict["error"] for conflict in preview["conflicts"][:5]
+        ))
     roots = [Path(value).expanduser().resolve() for value in preview["output_roots"]]
     for root in roots:
         root.mkdir(parents=True, exist_ok=True)
@@ -3502,6 +3368,7 @@ def generate_link_index_files_from_ui_body(
     skipped_empty_target = 0
     skipped_missing_target = 0
     failed: list[dict[str, Any]] = []
+    created_paths: set[str] = set()
     for item in items:
         rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath"))
         target_s = _str_or_blank(item.get("target_path"))
@@ -3518,7 +3385,11 @@ def generate_link_index_files_from_ui_body(
         try:
             item_root = _shortcut_root_for_index_item(item)
             shortcut_path = _safe_shortcut_path_from_rel(item_root, rel)
+            shortcut_key = _path_compare_key(shortcut_path)
+            if shortcut_key in created_paths:
+                continue
             _create_windows_shortcut(shortcut_path, target_path)
+            created_paths.add(shortcut_key)
             created += 1
         except (OSError, ValueError, subprocess.CalledProcessError) as exc:
             failed.append(
@@ -3545,6 +3416,19 @@ def generate_link_index_files_from_ui_body(
     return payload
 
 
+def generate_link_index_files_from_ui_body(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    if body.get("preview") is True:
+        return _generate_link_index_files_from_ui_body_unlocked(body, settings=settings)
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能创建作品快捷方式")
+    with catalog_write_transaction(settings.filesystem_root):
+        return _generate_link_index_files_from_ui_body_unlocked(body, settings=settings)
+
+
 def _path_under_any_root(path: Path, roots: list[Path]) -> bool:
     for root in roots:
         try:
@@ -3560,6 +3444,28 @@ def _windows_shortcut_target(shortcut_path: Path) -> str:
         return ""
     info = _windows_shortcut_targets([shortcut_path]).get(str(shortcut_path.expanduser().resolve())) or {}
     return str(info.get("target_path") or "")
+
+
+def shortcut_target_matches(
+    shortcut_path: str | Path,
+    target_path: str | Path,
+) -> bool:
+    """Return whether an existing shortcut currently points at ``target_path``.
+
+    This is a read-only public boundary for callers that need to validate a
+    previously committed shortcut operation without depending on the Windows
+    shortcut reader implementation.
+    """
+
+    shortcut = Path(shortcut_path).expanduser()
+    expected_key = _path_compare_key(target_path)
+    if not expected_key or shortcut.suffix.lower() != ".lnk" or not shortcut.is_file():
+        return False
+    try:
+        actual_target = _windows_shortcut_target(shortcut)
+    except (OSError, ValueError):
+        return False
+    return bool(actual_target) and _path_compare_key(actual_target) == expected_key
 
 
 def _windows_shortcut_targets(shortcut_paths: list[Path]) -> dict[str, dict[str, Any]]:

@@ -42,11 +42,13 @@ def _looks_like_workspace(path: Path) -> bool:
 def resolve_desktop_workspace(explicit: str | Path | None = None) -> Path:
     """Resolve the application-resource root used by source and frozen runs."""
     candidates: list[Path] = []
-    if explicit:
-        candidates.append(Path(explicit).expanduser())
     configured = os.environ.get(_APPLICATION_ROOT_ENV, "").strip()
-    if configured:
-        candidates.append(Path(configured).expanduser())
+    selected = explicit if explicit is not None else configured
+    if selected:
+        root = Path(selected).expanduser().resolve()
+        if not _looks_like_application_root(root):
+            raise FileNotFoundError(f"Nimda 应用资源目录无效：{root}（缺少 apps 目录）")
+        return root
     if getattr(sys, "frozen", False):
         candidates.append(Path(sys.executable).resolve().parent)
     shared_workspace = os.environ.get(_WORKSPACE_ROOT_ENV, "").strip()
@@ -133,37 +135,21 @@ def load_desktop_configuration(
 
 
 def configure_desktop_workspace(application_root: Path, workspace_root: Path | None = None) -> None:
+    from work_catalog_yaml.layout import ensure_feature_backend_paths
+
     application_root = application_root.resolve()
     workspace_root = (workspace_root or application_root).resolve()
     os.environ[_APPLICATION_ROOT_ENV] = str(application_root)
     os.environ[_WORKSPACE_ROOT_ENV] = str(workspace_root)
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     os.chdir(workspace_root)
-    feature_backends = sorted(
-        (application_root / "apps" / "features").glob("*/backend")
-    )
-    for backend in (
-        application_root / "apps" / "framework" / "backend",
-        *feature_backends,
-    ):
-        if not backend.is_dir():
-            continue
-        value = str(backend.resolve())
-        if value not in sys.path:
-            sys.path.insert(0, value)
+    ensure_feature_backend_paths(application_root)
 
 
 def _configure_desktop_logging(root: Path) -> Path:
     log_dir = root / "data" / "framework" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "desktop.log"
-    handler = RotatingFileHandler(
-        log_path,
-        maxBytes=2 * 1024 * 1024,
-        backupCount=3,
-        encoding="utf-8",
-    )
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
     if not any(
@@ -171,6 +157,13 @@ def _configure_desktop_logging(root: Path) -> Path:
         and Path(getattr(item, "baseFilename", "")).resolve() == log_path.resolve()
         for item in root_logger.handlers
     ):
+        handler = RotatingFileHandler(
+            log_path,
+            maxBytes=2 * 1024 * 1024,
+            backupCount=3,
+            encoding="utf-8",
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
         root_logger.addHandler(handler)
     return log_path
 
@@ -223,31 +216,37 @@ class DesktopServer:
 
         import uvicorn
 
+        self._stopped = False
+        self._server = None
+        self._thread = None
         self._listener = _bind_desktop_socket(self.host, self.preferred_port)
         self.port = int(self._listener.getsockname()[1])
         self.url = f"http://{self.host}:{self.port}/"
-        config = uvicorn.Config(
-            self.app,
-            host=self.host,
-            port=self.port,
-            loop="asyncio",
-            http="h11",
-            ws="none",
-            log_config=None,
-            log_level="info",
-            access_log=False,
-            server_header=False,
-            timeout_graceful_shutdown=5,
-        )
-        self._server = uvicorn.Server(config)
-        self._serve_error = None
-        self._stopped = False
-        self._thread = threading.Thread(
-            target=self._serve,
-            name="nimda-uvicorn",
-            daemon=True,
-        )
-        self._thread.start()
+        try:
+            config = uvicorn.Config(
+                self.app,
+                host=self.host,
+                port=self.port,
+                loop="asyncio",
+                http="h11",
+                ws="none",
+                log_config=None,
+                log_level="info",
+                access_log=False,
+                server_header=False,
+                timeout_graceful_shutdown=5,
+            )
+            self._server = uvicorn.Server(config)
+            self._serve_error = None
+            self._thread = threading.Thread(
+                target=self._serve,
+                name="nimda-uvicorn",
+                daemon=True,
+            )
+            self._thread.start()
+        except BaseException:
+            self.stop()
+            raise
 
         deadline = time.monotonic() + self.startup_timeout
         while time.monotonic() < deadline:
@@ -281,15 +280,29 @@ class DesktopServer:
                     pass
 
     def stop(self) -> bool:
+        from work_catalog_yaml.api_runtime import api_work_queues
+
         with self._stop_lock:
             if self._stopped:
                 return True
             thread = self._thread
             server = self._server
+            queues = api_work_queues(self.app)
+            for queue in queues:
+                queue.begin_shutdown()
             if server is not None:
                 server.should_exit = True
             if thread is not None and thread.is_alive() and thread is not threading.current_thread():
                 thread.join(self.shutdown_timeout)
+            # The ASGI loop can fail before its worker completes. Waiting is
+            # independent of server-thread liveness so the workspace mutex is
+            # never released while this instance still owns an active write.
+            if any(queue.snapshot()["running"] for queue in queues):
+                _LOG.info("Waiting for started API work to finish before desktop exit")
+                for queue in queues:
+                    queue.wait_for_running()
+            if thread is not None and thread.is_alive() and thread is not threading.current_thread():
+                thread.join(2.0)
                 if thread.is_alive() and server is not None:
                     _LOG.warning("Graceful shutdown timed out; forcing Uvicorn exit")
                     server.force_exit = True
@@ -394,9 +407,6 @@ def _show_information(title: str, message: str) -> None:
 
 
 def _load_application() -> Any:
-    from work_catalog_yaml.jp_tv.browse_settings import reset_browse_settings_cache
-
-    reset_browse_settings_cache()
     from work_catalog_yaml.jp_tv.browse_app import app
 
     return app
@@ -417,8 +427,8 @@ def run_desktop(
     preferred_port: int = 8765,
     debug: bool = False,
 ) -> int:
-    application_root = resolve_desktop_workspace(workspace)
     try:
+        application_root = resolve_desktop_workspace(workspace)
         configuration = load_desktop_configuration(application_root, desktop_config)
     except Exception as exc:
         _show_error("Nimda 启动失败", str(exc))

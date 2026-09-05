@@ -5,13 +5,13 @@ import hashlib
 import os
 import re
 import shutil
-import tempfile
-import threading
 import unicodedata
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Iterator, cast
+from io import StringIO
 
 from ruamel.yaml import YAML
 
@@ -34,8 +34,27 @@ from work_catalog_yaml.jp_tv.validate import (
     load_jp_tv_entries_from_yaml,
 )
 from work_catalog_yaml.layout import feature_data_root
+from work_catalog_yaml.persistence import (
+    FileWrite,
+    atomic_write_bytes as _atomic_write_bytes,
+    commit_file_writes,
+    directory_write_transaction,
+    history_snapshot_name,
+)
 from work_catalog_yaml.media_groups import media_group_code_known
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml_string
+
+
+@contextmanager
+def catalog_write_transaction(
+    filesystem_root: Path,
+    *,
+    timeout_seconds: float = 10.0,
+) -> Iterator[None]:
+    """Serialize catalog writes across threads and local app processes."""
+
+    with directory_write_transaction(filesystem_root, timeout_seconds=timeout_seconds):
+        yield
 
 
 def _assert_save_target_allowed(target: Path, settings: JpTvBrowseSettings) -> None:
@@ -59,13 +78,6 @@ def history_catalog_root(settings: JpTvBrowseSettings) -> Path:
         return (feature_data_root("collection-detail") / "history").resolve()
     except ValueError:
         return (db.parent / "History").resolve()
-
-
-def history_snapshot_name(yaml_path: Path, *, now: datetime | None = None) -> str:
-    """``{stem}__saved-{YYYYMMDD-HHMMSS}{suffix}``（写入 ``History/``）。"""
-    dt = now or datetime.now()
-    stamp = dt.strftime("%Y%m%d-%H%M%S")
-    return f"{yaml_path.stem}__saved-{stamp}{yaml_path.suffix}"
 
 
 def current_year_catalog_relpath(*, now: datetime | None = None) -> str:
@@ -291,7 +303,7 @@ def _apply_row_patch_to_work(work: Any, patch: dict[str, Any]) -> None:
         _set_scalar_attr(work, "collection-type", coll_data)
 
 
-def browse_save_yaml_from_ui_body(
+def _browse_save_yaml_from_ui_body_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
@@ -369,18 +381,19 @@ def browse_save_yaml_from_ui_body(
         raise ValueError("无可写文件路径")
 
     out: list[tuple[Path, str]] = []
+    staged: list[FileWrite] = []
     for rel_s in sorted_rels:
         target = resolve_safe_yaml_under_root(settings.filesystem_root, rel_s).expanduser().resolve()
         new_seq = new_by_rel.get(rel_s, [])
         target_existed = target.is_file()
+        previous = target.read_bytes() if target_existed else None
         if target_existed:
             _assert_save_target_allowed(target, settings)
-            raw_text = target.read_text(encoding="utf-8")
+            raw_text = previous.decode("utf-8")
             doc = load_yaml_string(raw_text)
         else:
             if not new_seq:
                 _assert_save_target_allowed(target, settings)
-            target.parent.mkdir(parents=True, exist_ok=True)
             doc = []
         works = _works_list_mut(doc)
 
@@ -409,20 +422,28 @@ def browse_save_yaml_from_ui_body(
             raise ValueError(f"{rel_s} 写回后的 YAML 校验失败：{e}") from e
 
         hist_root = history_catalog_root(settings)
-        hist_root.mkdir(parents=True, exist_ok=True)
         hist_name = ""
         if target_existed:
             hist_name = history_snapshot_name(target)
-            hist_fp = hist_root / hist_name
-            shutil.copy2(target, hist_fp)
-
-        target.write_text(new_text, encoding="utf-8")
+        staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name if hist_name else None))
         out.append((target, hist_name))
 
+    commit_file_writes(staged)
     return out
 
 
-_CATALOG_APPEND_LOCK = threading.RLock()
+def browse_save_yaml_from_ui_body(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+    now: datetime | None = None,
+) -> list[tuple[Path, str]]:
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，禁止写盘")
+    with catalog_write_transaction(settings.filesystem_root):
+        return _browse_save_yaml_from_ui_body_unlocked(body, settings=settings, now=now)
+
+
 _ISO_DATE_RE = re.compile(r"^(?P<year>(?:19|20)\d{2})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
 _COUNTRY_FILE_CODES = {
     "japan": "JP",
@@ -434,12 +455,22 @@ _COUNTRY_FILE_CODES = {
 
 
 @dataclass(frozen=True)
-class CatalogAppendReceipt:
+class CatalogMutationReceipt:
     target: Path
     target_existed: bool
     previous_bytes: bytes
     history_path: Path | None
     work_ref: dict[str, Any]
+    written_sha256: str
+
+
+# Compatibility name for callers that still describe the operation as an
+# append. Receipts now cover both append and update mutations.
+CatalogAppendReceipt = CatalogMutationReceipt
+
+
+class CatalogRollbackConflictError(RuntimeError):
+    """The catalog changed after our write, so restoring would lose data."""
 
 
 def _normalized_catalog_identity(value: Any) -> str:
@@ -546,6 +577,8 @@ def _catalog_files(settings: JpTvBrowseSettings) -> list[Path]:
 def _existing_catalog_match(
     patch: dict[str, Any],
     settings: JpTvBrowseSettings,
+    *,
+    allow_shared_path_with_different_name: bool = False,
 ) -> tuple[Path, int, bool] | None:
     wanted_name = _normalized_catalog_identity(patch["name"])
     wanted_path = os.path.normcase(os.path.abspath(str(patch["path"])))
@@ -566,6 +599,11 @@ def _existing_catalog_match(
             existing_path = str(data.get("path") or "").strip()
             path_matches = bool(existing_path) and os.path.normcase(os.path.abspath(existing_path)) == wanted_path
             if not name_matches and not path_matches:
+                continue
+            if allow_shared_path_with_different_name and path_matches and not name_matches:
+                # A family root may intentionally contain several distinct works.  This
+                # opt-in is only used by the organizer's explicit "append independent"
+                # flow; a normalized-name match remains fail-closed below.
                 continue
             if name_matches != path_matches:
                 raise ValueError(
@@ -606,9 +644,14 @@ def preview_catalog_work_append(
     patch: Any,
     *,
     settings: JpTvBrowseSettings,
+    allow_shared_path_with_different_name: bool = False,
 ) -> dict[str, Any]:
     normalized = _strict_new_work_patch(patch)
-    existing = _existing_catalog_match(normalized, settings)
+    existing = _existing_catalog_match(
+        normalized,
+        settings,
+        allow_shared_path_with_different_name=allow_shared_path_with_different_name,
+    )
     if existing is not None:
         yaml_path, index, exact = existing
         if not exact:
@@ -646,19 +689,72 @@ def preview_catalog_work_append(
     }
 
 
-def _atomic_write_bytes(target: Path, data: bytes) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    handle, temporary_raw = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
-    temporary = Path(temporary_raw)
-    try:
-        with os.fdopen(handle, "wb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(target)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
+def apply_catalog_yaml_mutation(
+    *,
+    target: Path,
+    after_bytes: bytes,
+    settings: JpTvBrowseSettings,
+    expected_before_sha256: str,
+    work_ref: dict[str, Any],
+) -> CatalogMutationReceipt:
+    """CAS-write one catalog YAML and return an exact rollback receipt."""
+
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 collection-detail filesystem_root")
+    with catalog_write_transaction(settings.filesystem_root):
+        root = settings.filesystem_root.resolve()
+        target = target.expanduser().resolve()
+        target.relative_to(root)
+        if target.parent != root or target.suffix.casefold() not in {".yaml", ".yml"}:
+            raise ValueError("作品数据库写入目标必须是配置目录内的 YAML 文件")
+        if target.exists() and not target.is_file():
+            raise ValueError("作品数据库写入目标不是普通文件")
+
+        target_existed = target.is_file()
+        previous = target.read_bytes() if target_existed else b""
+        if _file_sha256(previous) != str(expected_before_sha256):
+            raise ValueError("作品数据库在写入前发生变化，尚未写入；请重新预览")
+
+        history_path: Path | None = None
+        if target_existed:
+            history_root = history_catalog_root(settings)
+            history_root.mkdir(parents=True, exist_ok=True)
+            history_path = history_root / history_snapshot_name(target)
+            shutil.copy2(target, history_path)
+
+        written_sha256 = _file_sha256(after_bytes)
+        _atomic_write_bytes(target, after_bytes)
+        if not target.is_file() or _file_sha256(target.read_bytes()) != written_sha256:
+            raise OSError("作品数据库原子写入后的内容校验失败")
+        return CatalogMutationReceipt(
+            target=target,
+            target_existed=target_existed,
+            previous_bytes=previous,
+            history_path=history_path,
+            work_ref=dict(work_ref),
+            written_sha256=written_sha256,
+        )
+
+
+def rollback_catalog_yaml_mutation(receipt: CatalogMutationReceipt | None) -> None:
+    """CAS-rollback without overwriting a later successful catalog write."""
+
+    if receipt is None:
+        return
+    with catalog_write_transaction(receipt.target.parent):
+        if not receipt.target.is_file():
+            raise CatalogRollbackConflictError(
+                "作品数据库在修复写入后已被删除或替换；为避免覆盖后续改动，拒绝自动回滚"
+            )
+        current_sha256 = _file_sha256(receipt.target.read_bytes())
+        if current_sha256 != receipt.written_sha256:
+            raise CatalogRollbackConflictError(
+                "作品数据库在修复写入后又有其他成功改动；为避免丢失数据，拒绝自动回滚"
+            )
+        if receipt.target_existed:
+            _atomic_write_bytes(receipt.target, receipt.previous_bytes)
+        else:
+            receipt.target.unlink()
 
 
 def append_catalog_work_from_preview(
@@ -666,35 +762,31 @@ def append_catalog_work_from_preview(
     *,
     settings: JpTvBrowseSettings,
     expected_before_sha256: str,
-) -> tuple[dict[str, Any], CatalogAppendReceipt | None]:
-    with _CATALOG_APPEND_LOCK:
-        preview = preview_catalog_work_append(patch, settings=settings)
+    allow_shared_path_with_different_name: bool = False,
+) -> tuple[dict[str, Any], CatalogMutationReceipt | None]:
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 collection-detail filesystem_root")
+    with catalog_write_transaction(settings.filesystem_root):
+        preview = preview_catalog_work_append(
+            patch,
+            settings=settings,
+            allow_shared_path_with_different_name=allow_shared_path_with_different_name,
+        )
         if str(preview["before_sha256"]) != str(expected_before_sha256):
             raise ValueError("作品数据库在预览后发生变化，尚未写入；请重新预览")
         if preview["action"] == "already_exists":
             public = {key: value for key, value in preview.items() if not key.startswith("_")}
             return public, None
         target = Path(str(preview["target"])).resolve()
-        target_existed = target.is_file()
-        previous = target.read_bytes() if target_existed else b""
-        if _file_sha256(previous) != expected_before_sha256:
-            raise ValueError("作品数据库在写入前再次发生变化，尚未写入")
-        history_path: Path | None = None
-        if target_existed:
-            history_root = history_catalog_root(settings)
-            history_root.mkdir(parents=True, exist_ok=True)
-            history_path = history_root / history_snapshot_name(target)
-            shutil.copy2(target, history_path)
-        _atomic_write_bytes(target, str(preview["_after_text"]).encode("utf-8"))
         work_ref = {
             "yaml_source_rel": preview["yaml_source_rel"],
             "index_in_file": preview["index_in_file"],
         }
-        receipt = CatalogAppendReceipt(
+        receipt = apply_catalog_yaml_mutation(
             target=target,
-            target_existed=target_existed,
-            previous_bytes=previous,
-            history_path=history_path,
+            after_bytes=str(preview["_after_text"]).encode("utf-8"),
+            settings=settings,
+            expected_before_sha256=expected_before_sha256,
             work_ref=work_ref,
         )
         public = {key: value for key, value in preview.items() if not key.startswith("_")}
@@ -702,13 +794,9 @@ def append_catalog_work_from_preview(
 
 
 def rollback_catalog_work_append(receipt: CatalogAppendReceipt | None) -> None:
-    if receipt is None:
-        return
-    with _CATALOG_APPEND_LOCK:
-        if receipt.target_existed:
-            _atomic_write_bytes(receipt.target, receipt.previous_bytes)
-        else:
-            receipt.target.unlink(missing_ok=True)
+    """Compatibility wrapper for the CAS-protected catalog rollback."""
+
+    rollback_catalog_yaml_mutation(receipt)
 
 
 _ENUM_EDIT_KEYS = {TV_JP_PRESS_FORMAT_KEY, TV_JP_PRESS_GROUP_KEY}
@@ -907,7 +995,7 @@ def _apply_enum_renames_to_doc(doc: Any, renames: list[dict[str, str]]) -> int:
     return changed
 
 
-def browse_apply_enum_edits_from_ui_body(
+def _browse_apply_enum_edits_from_ui_body_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
@@ -920,8 +1008,8 @@ def browse_apply_enum_edits_from_ui_body(
         raise ValueError("当前使用包内兜底配置，不能直接编辑枚举；请先使用工程配置文件")
 
     y = _yaml_rt()
-    with config_path.open(encoding="utf-8") as fp:
-        raw_cfg = y.load(fp) or {}
+    config_previous = config_path.read_bytes()
+    raw_cfg = y.load(config_previous.decode("utf-8")) or {}
     if not isinstance(raw_cfg, dict):
         raise ValueError(f"浏览配置须为对象：{config_path}")
 
@@ -931,18 +1019,16 @@ def browse_apply_enum_edits_from_ui_body(
         if _apply_one_enum_edit_to_values(vals, ed):
             config_changed = True
 
-    if config_changed:
-        with config_path.open("w", encoding="utf-8") as fp:
-            y.dump(raw_cfg, fp)
-
     renames = [ed for ed in edits if ed["action"] == "rename"]
     data_writes: list[dict[str, Any]] = []
+    staged: list[FileWrite] = []
     if renames and settings.filesystem_root is not None:
         hist_root = history_catalog_root(settings)
         for abs_s in settings.resolved_catalog_yaml_paths:
             target = Path(abs_s).resolve()
             _assert_save_target_allowed(target, settings)
-            raw_text = target.read_text(encoding="utf-8")
+            previous = target.read_bytes()
+            raw_text = previous.decode("utf-8")
             doc = load_yaml_string(raw_text)
             touched = _apply_enum_renames_to_doc(doc, renames)
             if touched <= 0:
@@ -952,10 +1038,8 @@ def browse_apply_enum_edits_from_ui_body(
                 load_jp_tv_entries_from_yaml(load_yaml_string(new_text))
             except Exception as e:
                 raise ValueError(f"{target.name} 枚举同步后的 YAML 校验失败：{e}") from e
-            hist_root.mkdir(parents=True, exist_ok=True)
             hist_name = history_snapshot_name(target)
-            shutil.copy2(target, hist_root / hist_name)
-            target.write_text(new_text, encoding="utf-8")
+            staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name))
             data_writes.append(
                 {
                     "path": str(target),
@@ -964,12 +1048,37 @@ def browse_apply_enum_edits_from_ui_body(
                 },
             )
 
+    if config_changed:
+        buffer = StringIO()
+        y.dump(raw_cfg, buffer)
+        staged.append(FileWrite(config_path, buffer.getvalue().encode("utf-8"), config_previous))
+    commit_file_writes(staged)
     return {
         "config_path": str(config_path.resolve()),
         "config_changed": config_changed,
         "edits_applied": edits,
         "data_writes": data_writes,
     }
+
+
+def browse_apply_enum_edits_from_ui_body(
+    body: dict[str, Any],
+    *,
+    settings: JpTvBrowseSettings,
+    config_path: Path | None,
+) -> dict[str, Any]:
+    if settings.filesystem_root is None:
+        return _browse_apply_enum_edits_from_ui_body_unlocked(
+            body,
+            settings=settings,
+            config_path=config_path,
+        )
+    with catalog_write_transaction(settings.filesystem_root):
+        return _browse_apply_enum_edits_from_ui_body_unlocked(
+            body,
+            settings=settings,
+            config_path=config_path,
+        )
 
 
 def annotate_save_capabilities(

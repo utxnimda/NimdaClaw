@@ -18,6 +18,10 @@ nimda/
         backend/              "收集情况" API/service
         frontend/             "收集情况" tab module
         tests/
+      media-directory-organizer/
+        backend/              Preview, classification, media/DB/shortcut coordination
+        frontend/             "目录整理" tab module
+        tests/
   config/
     framework/
       app.yaml                Global app shell config: feature labels/order
@@ -66,6 +70,9 @@ Install the backend and Web dependencies from the workspace root:
 python -m pip install -e ".\apps\framework\backend[web]"
 ```
 
+`apps/framework/backend/pyproject.toml` is the backend dependency source of
+truth; there is no separate backend `requirements.txt` to keep in sync.
+
 Start the local application:
 
 ```powershell
@@ -85,11 +92,21 @@ package contains no database or normal feature-config copy;
 server lifecycle, so closing the application also closes its listener.
 See `docs/desktop-app.md` for packaging and source-mode launch details.
 
-Run all Python tests and JavaScript syntax checks:
+Run all framework/feature Python tests, JavaScript behavior tests and syntax checks:
 
 ```powershell
 .\scripts\test.cmd
 ```
+
+Run the read-only API and synthetic resource/matching/frontend benchmarks:
+
+```powershell
+.\scripts\benchmark.cmd -Python "D:\SoftIDE\Python\python.exe" -Rounds 3
+```
+
+The API benchmark reads the configured database. Resource scans use temporary
+fixtures; no real media scan, database write or shortcut creation is performed.
+`-SkipJavaScript` is available for test/benchmark runs without Node.js.
 
 If Python is not on `PATH`, pass its executable explicitly:
 
@@ -105,3 +122,15 @@ explicitly; remote use should also have network-level access controls.
 Feature history snapshots and `data/features/**/db/index/` are generated local
 artifacts. They are ignored by Git; canonical collection mappings remain in the
 yearly collection-detail YAML files.
+
+Workspace-configured relative paths are resolved against the shared workspace,
+independently of the current terminal directory. Renaming the checkout does not
+change its layout. Desktop runtime and packaging use the same backend discovery
+in `work_catalog_yaml.layout`; feature frontend resources are discovered by the
+packaging script under `apps/features/*/frontend`.
+
+Source launch, organizer, test and benchmark entrypoints use
+`scripts/lib/workspace.ps1` to discover all feature backends and pin the source
+workspace. The helper restores the caller's environment and working directory
+on success or failure, so a packaged app's environment cannot redirect a source
+run to another configuration/data directory.

@@ -287,7 +287,12 @@ def _infer_group(
     atomic_rows, combination_rows = _registry_group_rows(group_registry)
     for row in atomic_rows:
         code = str(row["code"])
-        if _phrase_matches(haystack, code):
+        # ``catalog-only`` entries were learned from historic catalog values.
+        # Their short codes are valid manual choices, but are not trustworthy
+        # source-name markers: titles such as "Fate Zero" would otherwise be
+        # misclassified as the legacy group ``ZERO``.  A curated name/alias is
+        # still usable when one is added to the registry explicitly.
+        if row.get("kind") != "catalog-only" and _phrase_matches(haystack, code):
             _add_candidate(candidates, code, score=480, evidence=code, kind="group")
         for field in ("names", "aliases"):
             for marker in row.get(field, []):
@@ -464,6 +469,74 @@ def _group_suffix(group: str, settings: Any) -> str:
     return group.strip()
 
 
+def parse_press_directory_name(
+    source_name: Any,
+    *,
+    settings: Any,
+    press_formats: Iterable[Any] = (),
+) -> dict[str, str] | None:
+    """Parse a canonical ``<work>_<format>[(group)]`` directory name.
+
+    The separator and format must be at the very end of the first-level
+    directory name (apart from one optional parenthesized group).  This makes
+    the prefix safe to use as strong work-name evidence while deliberately
+    rejecting generated category names such as ``Work_BDRip_CD``.  The
+    original work-name spelling, including embedded underscores, is kept.
+
+    Configured format aliases are accepted for incoming directories, while
+    ``press_formats`` lets callers add canonical formats already present in
+    the catalog even when the local marker configuration has not learned them
+    yet.
+    """
+
+    value = str(source_name or "").strip()
+    if not value:
+        return None
+
+    configured = _settings_mapping(settings, "format_markers")
+    tokens: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    def add(canonical: Any, token: Any) -> None:
+        canonical_value = str(canonical or "").strip()
+        token_value = str(token or "").strip()
+        identity = _normalized_text(token_value)
+        if not canonical_value or not identity or identity in seen:
+            return
+        seen.add(identity)
+        tokens.append((canonical_value, token_value))
+
+    for canonical, aliases in configured.items():
+        add(canonical, canonical)
+        for alias in aliases:
+            add(canonical, alias)
+    for press_format in press_formats:
+        add(press_format, press_format)
+
+    # Prefer the longest terminal token when one configured alias contains
+    # another (for example ``web`` and ``web-rip``).
+    tokens.sort(key=lambda item: len(item[1]), reverse=True)
+    for canonical, token in tokens:
+        matched = re.fullmatch(
+            rf"(?P<work>.+)_{re.escape(token)}"
+            r"(?:\s*\((?P<group>[^()]+)\))?",
+            value,
+            flags=re.IGNORECASE,
+        )
+        if matched is None:
+            continue
+        work_name = matched.group("work").strip()
+        if not work_name or work_name.endswith(("_", ".")):
+            return None
+        return {
+            "work_name": work_name,
+            "press_format": canonical,
+            "press_group": str(matched.group("group") or "").strip(),
+            "authority": "directory_press_suffix",
+        }
+    return None
+
+
 def suggest_press_paths(
     work_name: str,
     presses: Iterable[Mapping[str, Any]],
@@ -539,6 +612,7 @@ def suggest_press_paths(
 
 __all__ = [
     "infer_source_press",
+    "parse_press_directory_name",
     "safe_windows_component",
     "suggest_press_paths",
 ]

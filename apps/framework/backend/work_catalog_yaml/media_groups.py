@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from work_catalog_yaml.layout import feature_data_root, workspace_root
+from work_catalog_yaml.persistence import atomic_write_bytes
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml
 
 
@@ -406,11 +407,7 @@ def save_media_group_registry(
     payload = validate_media_group_registry(
         build_media_group_registry(note_path=note_path, catalog_root=catalog_root)
     )
-    registry_path.parent.mkdir(parents=True, exist_ok=True)
-    text = dump_yaml_string(payload)
-    temporary = registry_path.with_suffix(registry_path.suffix + ".tmp")
-    temporary.write_text(text, encoding="utf-8")
-    temporary.replace(registry_path)
+    atomic_write_bytes(registry_path, dump_yaml_string(payload).encode("utf-8"))
     return registry_path, payload
 
 

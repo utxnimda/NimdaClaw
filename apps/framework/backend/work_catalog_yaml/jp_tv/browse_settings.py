@@ -11,6 +11,7 @@ from typing import Any
 from work_catalog_yaml.layout import (
     feature_config_path,
     framework_config_path,
+    resolve_workspace_path,
     workspace_catalog_data_root,
     workspace_config_root,
 )
@@ -186,7 +187,7 @@ def _filesystem_root_from_raw(raw: Any) -> Path | None:
     root_s = _str_or_blank(paths.get("filesystem_root"))
     if not root_s:
         return None
-    return Path(root_s).expanduser()
+    return resolve_workspace_path(root_s)
 
 
 def _default_app_features_by_id() -> dict[str, dict[str, Any]]:

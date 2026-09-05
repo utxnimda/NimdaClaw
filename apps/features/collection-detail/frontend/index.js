@@ -35,6 +35,8 @@
   var linkIndexSelectedPath = "";
   var linkIndexCollapsedPaths = {};
   var linkIndexTooltipEl = null;
+  var linkIndexTooltipTarget = null;
+  var linkIndexTooltipPosition = null;
   var resourceRootDrafts = null;
   var resourceExcludeDrafts = null;
   var resourceScanState = null;
@@ -44,18 +46,50 @@
   var resourceNodeLoadingPaths = {};
   var resourceConfigSaving = false;
   var resourceTreeCollapsedPaths = {};
+  var resourceSearchCollapsedPaths = {};
   var resourceSelectedPath = "";
   var resourceTreeSearchDraft = "";
   var resourceTreeSearchKeyword = "";
   var resourceRootConfigCollapsed = true;
-  var resourceTreeWidth = Number(localStorage.getItem("nimda.resourceTreeWidth") || "360");
+  var resourceTreeWidth = Number(readPreference("nimda.resourceTreeWidth") || "360");
   var resourceTreeResizing = false;
-  var linkIndexTreeWidth = Number(localStorage.getItem("nimda.linkIndexTreeWidth") || "360");
+  var linkIndexTreeWidth = Number(readPreference("nimda.linkIndexTreeWidth") || "360");
   var linkIndexTreeResizing = false;
   var linkIndexGroupByEmptyPath =
-    localStorage.getItem("nimda.linkIndexGroupByEmptyPath") === "1" ||
-    localStorage.getItem("nimda.linkIndexEmptyPathOnly") === "1";
+    readPreference("nimda.linkIndexGroupByEmptyPath") === "1" ||
+    readPreference("nimda.linkIndexEmptyPathOnly") === "1";
   var activeSubtab = "list";
+  var linkIndexRequestSerial = 0;
+  var resourceRequestSerial = 0;
+  var resourceSearchSerial = 0;
+
+  function readPreference(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  function writePreference(key, value) {
+    try {
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    } catch (_e) {}
+  }
+
+  function resourceRequestCurrent(serial) {
+    return serial === resourceRequestSerial && resourcePanelActive();
+  }
+
+  function beginResourceRead() {
+    resourceRequestSerial += 1;
+    resourceSearchSerial += 1;
+    resourceSearchLoading = false;
+    resourceNodeLoadingPaths = {};
+    resourceScanLoading = true;
+    return resourceRequestSerial;
+  }
 
   function ctx() {
     return featureCtx || {};
@@ -82,19 +116,25 @@
   }
 
   function releaseResourcePayload() {
+    resourceRequestSerial += 1;
+    resourceSearchSerial += 1;
     resourceScanState = null;
+    resourceScanLoading = false;
     resourceSearchState = null;
     resourceSearchLoading = false;
     resourceNodeLoadingPaths = {};
     resourceSelectedPath = "";
     resourceTreeSearchKeyword = "";
+    resourceSearchCollapsedPaths = {};
   }
 
   function releaseLinkIndexPayload() {
+    linkIndexRequestSerial += 1;
     linkIndexState = null;
     linkIndexLoading = false;
     linkIndexOperationNotice = null;
     linkIndexSelectedPath = "";
+    hideLinkTooltip();
   }
 
   function releaseLargePayloads() {
@@ -326,6 +366,15 @@
     return String(resourceTreeSearchKeyword || "").trim();
   }
 
+  function resourceCollapseState() {
+    return resourceTreeSearchQuery() ? resourceSearchCollapsedPaths : resourceTreeCollapsedPaths;
+  }
+
+  function replaceResourceCollapseState(paths) {
+    if (resourceTreeSearchQuery()) resourceSearchCollapsedPaths = paths;
+    else resourceTreeCollapsedPaths = paths;
+  }
+
   function resourceNodeDirectChildCount(node) {
     var n = Number(node && node.child_count);
     return Number.isFinite(n) ? n : folderChildren(node).length;
@@ -520,8 +569,7 @@
     var hasChildren = resourceNodeHasChildren(node);
     var loaded = resourceNodeLoaded(node);
     var loading = !!resourceNodeLoadingPaths[relpath];
-    var searchActive = !!resourceTreeSearchQuery();
-    var collapsed = hasChildren && (searchActive && loaded ? false : resourceTreeCollapsedPaths[relpath] === true || !loaded);
+    var collapsed = hasChildren && (resourceCollapseState()[relpath] === true || !loaded);
     var selectedClass = relpath === resourceSelectedPath ? " is-selected" : "";
     return (
       '<div class="link-tree-folder-wrap resource-tree-folder-wrap">' +
@@ -558,7 +606,7 @@
         ? '<div class="link-tree-children"' +
           (collapsed ? " hidden" : "") +
           ">" +
-          (loaded
+          (collapsed ? "" : loaded
             ? children
                 .map(function (child) {
                   return renderResourceTreeNode(child, (depth || 0) + 1);
@@ -1316,13 +1364,6 @@
     );
   }
 
-  function parentPath(raw) {
-    var s = String(raw || "").trim();
-    if (!s) return "";
-    s = s.replace(/[\\/]+$/g, "");
-    var idx = Math.max(s.lastIndexOf("\\"), s.lastIndexOf("/"));
-    return idx > 0 ? s.slice(0, idx) : "";
-  }
   function renderLinkIndexPanel() {
     var el = slot();
     if (el) {
@@ -1366,6 +1407,7 @@
 
   async function loadLinkIndex(opts) {
     opts = opts || {};
+    var serial = ++linkIndexRequestSerial;
     var refreshLinks = !!opts.refreshLinks;
     linkIndexLoading = true;
     setLinkIndexNotice("", false);
@@ -1374,11 +1416,21 @@
     var params = new URLSearchParams();
     params.set("lite", "1");
     if (refreshLinks) params.set("refresh_links", "1");
-    var out = await fetchJson("/api/collection-detail/link-index?" + params.toString(), {
-      method: "GET",
-    });
-    linkIndexLoading = false;
-    if (!linkIndexPanelActive()) return;
+    var out;
+    try {
+      out = await fetchJson("/api/collection-detail/link-index?" + params.toString(), {
+        method: "GET",
+      });
+    } catch (error) {
+      if (serial !== linkIndexRequestSerial || !linkIndexPanelActive()) return;
+      throw error;
+    } finally {
+      if (serial === linkIndexRequestSerial) {
+        linkIndexLoading = false;
+        renderLinkIndexPanel();
+      }
+    }
+    if (serial !== linkIndexRequestSerial || !linkIndexPanelActive()) return;
     if (!out.res.ok || !out.data || !out.data.ok) {
       renderLinkIndexPanel();
       setStatus((out.data && out.data.error) || "索引目录读取失败。", true);
@@ -1391,17 +1443,27 @@
   }
 
   async function loadResourceScanCache() {
-    var out = await fetchJson("/api/collection-detail/resource-libraries/cache", { method: "GET" });
-    if (!out.res.ok || !out.data || !out.data.ok) {
-      throw new Error((out.data && out.data.error) || "资源库缓存读取失败。");
-    }
-    if (!resourcePanelActive()) return;
-    resourceScanState = out.data;
-    resourceSearchState = null;
-    resourceSearchLoading = false;
-    resourceNodeLoadingPaths = {};
-    syncResourceRootDraftsFromConfig(resourceScanState);
+    var serial = beginResourceRead();
     renderLinkIndexPanel();
+    try {
+      var out = await fetchJson("/api/collection-detail/resource-libraries/cache", { method: "GET" });
+      if (!resourceRequestCurrent(serial)) return;
+      if (!out.res.ok || !out.data || !out.data.ok) {
+        throw new Error((out.data && out.data.error) || "资源库缓存读取失败。");
+      }
+      resourceScanState = out.data;
+      resourceSearchState = null;
+      resourceSearchLoading = false;
+      resourceNodeLoadingPaths = {};
+      syncResourceRootDraftsFromConfig(resourceScanState);
+    } catch (error) {
+      if (resourceRequestCurrent(serial)) throw error;
+    } finally {
+      if (serial === resourceRequestSerial) {
+        resourceScanLoading = false;
+        renderLinkIndexPanel();
+      }
+    }
   }
 
   function mergeResourceTreeNode(target, source) {
@@ -1429,6 +1491,7 @@
 
   async function loadResourceTreeNode(relpath) {
     relpath = String(relpath || "");
+    var serial = resourceRequestSerial;
     var existing = findTreeNodeByRelpath(resourceTreeRoot(resourceScanState || {}), relpath);
     if (existing && resourceNodeLoaded(existing)) return existing;
     if (resourceNodeLoadingPaths[relpath]) return existing || null;
@@ -1438,19 +1501,28 @@
       var params = new URLSearchParams();
       params.set("relpath", relpath);
       var out = await fetchJson("/api/collection-detail/resource-libraries/node?" + params.toString(), { method: "GET" });
+      if (!resourceRequestCurrent(serial)) return null;
       if (!out.res.ok || !out.data || !out.data.ok || !out.data.node) {
         throw new Error((out.data && out.data.error) || "资源库目录读取失败。");
       }
-      if (!resourcePanelActive()) return existing || null;
       return applyResourceTreeNode(out.data.node);
+    } catch (error) {
+      if (resourceRequestCurrent(serial)) throw error;
+      return null;
     } finally {
-      delete resourceNodeLoadingPaths[relpath];
+      if (serial === resourceRequestSerial) delete resourceNodeLoadingPaths[relpath];
     }
   }
 
   async function searchResourceTree() {
     var query = String(resourceTreeSearchDraft || "").trim();
+    var serial = ++resourceSearchSerial;
+    var generation = resourceRequestSerial;
+    function current() {
+      return serial === resourceSearchSerial && resourceRequestCurrent(generation);
+    }
     resourceTreeSearchKeyword = query;
+    resourceSearchCollapsedPaths = {};
     resourceSelectedPath = "";
     if (!query) {
       resourceSearchState = null;
@@ -1468,16 +1540,19 @@
       var out = await fetchJson("/api/collection-detail/resource-libraries/search?" + params.toString(), {
         method: "GET",
       });
+      if (!current()) return;
       if (!out.res.ok || !out.data || !out.data.ok) {
         throw new Error((out.data && out.data.error) || "资源库目录搜索失败。");
       }
-      if (resourcePanelActive() && resourceTreeSearchKeyword === query) {
-        resourceSearchState = out.data;
-        setStatus("", false);
-      }
+      resourceSearchState = out.data;
+      setStatus("", false);
+    } catch (error) {
+      if (current()) throw error;
     } finally {
-      resourceSearchLoading = false;
-      renderLinkIndexPanel();
+      if (current()) {
+        resourceSearchLoading = false;
+        renderLinkIndexPanel();
+      }
     }
   }
 
@@ -1524,9 +1599,7 @@
         return resourceExcludesForRoot({ config: out.data.config }, root).join(", ");
       });
       if (linkIndexState) linkIndexState.config = out.data.config || linkIndexState.config;
-      resourceScanState = null;
-      resourceSearchState = null;
-      resourceSearchLoading = false;
+      releaseResourcePayload();
       setStatus("资源库目录已保存。", false);
     } finally {
       resourceConfigSaving = false;
@@ -1535,15 +1608,15 @@
   }
 
   async function scanResourceLibraries() {
-    resourceScanLoading = true;
+    var serial = beginResourceRead();
     renderLinkIndexPanel();
     setStatus("资源库扫描中...", false);
     try {
       var out = await fetchJson("/api/collection-detail/resource-libraries/scan", { method: "GET" });
+      if (!resourceRequestCurrent(serial)) return;
       if (!out.res.ok || !out.data || !out.data.ok) {
         throw new Error((out.data && out.data.error) || "资源库扫描失败。");
       }
-      if (!resourcePanelActive()) return;
       resourceScanState = out.data;
       resourceSearchState = null;
       resourceSearchLoading = false;
@@ -1551,9 +1624,13 @@
       resourceTreeCollapsedPaths = {};
       if (linkIndexState && out.data.config) linkIndexState.config = out.data.config;
       setStatus("", false);
+    } catch (error) {
+      if (resourceRequestCurrent(serial)) throw error;
     } finally {
-      resourceScanLoading = false;
-      renderLinkIndexPanel();
+      if (serial === resourceRequestSerial) {
+        resourceScanLoading = false;
+        renderLinkIndexPanel();
+      }
     }
   }
 
@@ -1815,6 +1892,7 @@
   }
 
   function placeLinkTooltip(ev) {
+    linkIndexTooltipPosition = ev;
     var tip = linkTooltipElement();
     var pad = 14;
     var x = ev.clientX + pad;
@@ -1850,16 +1928,18 @@
       btn.setAttribute("data-link-target-error", "目标路径解析失败：" + (e.message || String(e)));
     } finally {
       btn.removeAttribute("data-link-target-loading");
-      var tip = linkTooltipElement();
-      if (!tip.hidden) {
+      var currentSlot = slot();
+      if (linkIndexTooltipTarget === btn && linkIndexPanelActive() && currentSlot && currentSlot.contains(btn)) {
+        var tip = linkTooltipElement();
         tip.textContent = linkTooltipText(btn);
         tip.classList.toggle("is-error", !!btn.getAttribute("data-link-target-error"));
-        if (ev) placeLinkTooltip(ev);
+        if (linkIndexTooltipPosition || ev) placeLinkTooltip(linkIndexTooltipPosition || ev);
       }
     }
   }
 
   function showLinkTooltip(btn, ev) {
+    linkIndexTooltipTarget = btn;
     var tip = linkTooltipElement();
     var text = linkTooltipText(btn);
     tip.textContent = text;
@@ -1873,8 +1953,9 @@
   }
 
   function hideLinkTooltip() {
-    var tip = linkTooltipElement();
-    tip.hidden = true;
+    linkIndexTooltipTarget = null;
+    linkIndexTooltipPosition = null;
+    if (linkIndexTooltipEl) linkIndexTooltipEl.hidden = true;
   }
 
   function collectCollapsibleFolderPaths(node, out) {
@@ -1897,13 +1978,13 @@
 
   function setAllResourceFoldersCollapsed(collapsed) {
     if (!collapsed) {
-      resourceTreeCollapsedPaths = {};
+      replaceResourceCollapseState({});
       renderLinkIndexPanel();
       return;
     }
     var next = {};
     collectResourceTreeFolderPaths(resourceDisplayTree(resourceScanState || {}), next);
-    resourceTreeCollapsedPaths = next;
+    replaceResourceCollapseState(next);
     renderLinkIndexPanel();
   }
 
@@ -1927,7 +2008,7 @@
     var next = Math.round(clientX - rect.left);
     next = Math.max(220, Math.min(720, next));
     linkIndexTreeWidth = next;
-    localStorage.setItem("nimda.linkIndexTreeWidth", String(next));
+    writePreference("nimda.linkIndexTreeWidth", String(next));
     browser.style.setProperty("--link-tree-width", next + "px");
   }
 
@@ -1939,7 +2020,7 @@
     var next = Math.round(clientX - rect.left);
     next = Math.max(220, Math.min(720, next));
     resourceTreeWidth = next;
-    localStorage.setItem("nimda.resourceTreeWidth", String(next));
+    writePreference("nimda.resourceTreeWidth", String(next));
     browser.style.setProperty("--link-tree-width", next + "px");
   }
 
@@ -2003,17 +2084,14 @@
           });
         } else if (resourceActionName === "scan") {
           scanResourceLibraries().catch(function (e) {
-            resourceScanLoading = false;
-            renderLinkIndexPanel();
             setStatus("资源库扫描失败：" + (e.message || String(e)), true);
           });
         } else if (resourceActionName === "search-tree") {
           searchResourceTree().catch(function (e) {
-            resourceSearchLoading = false;
-            renderLinkIndexPanel();
             setStatus("资源库目录搜索失败：" + (e.message || String(e)), true);
           });
         } else if (resourceActionName === "clear-search") {
+          resourceSearchSerial += 1;
           resourceTreeSearchDraft = "";
           resourceTreeSearchKeyword = "";
           resourceSearchState = null;
@@ -2048,11 +2126,10 @@
           findTreeNodeByRelpath(resourceTreeRoot(resourceScanState || {}), resourceRelpath);
         var isCollapsed = resourceToggle.classList.contains("is-collapsed");
         if (isCollapsed) {
-          resourceTreeCollapsedPaths[resourceRelpath] = false;
+          resourceCollapseState()[resourceRelpath] = false;
           if (!resourceSearchActive && resourceNode && !resourceNodeLoaded(resourceNode)) {
             loadResourceTreeNode(resourceRelpath)
               .then(function () {
-                resourceTreeCollapsedPaths[resourceRelpath] = false;
                 renderLinkIndexPanel();
               })
               .catch(function (e) {
@@ -2063,7 +2140,7 @@
             renderLinkIndexPanel();
           }
         } else {
-          resourceTreeCollapsedPaths[resourceRelpath] = true;
+          resourceCollapseState()[resourceRelpath] = true;
           renderLinkIndexPanel();
         }
         return;
@@ -2080,7 +2157,6 @@
           if (!selectSearchActive && !resourceNodeLoaded(resourceNode)) {
             loadResourceTreeNode(selectedResourceRelpath)
               .then(function () {
-                resourceSelectedPath = selectedResourceRelpath;
                 renderLinkIndexPanel();
               })
               .catch(function (e) {
@@ -2142,8 +2218,6 @@
       var action = btn.getAttribute("data-link-index-action");
       if (action === "reload") {
         loadLinkIndex().catch(function (e) {
-          linkIndexLoading = false;
-          renderLinkIndexPanel();
           setStatus("索引目录读取失败：" + (e.message || String(e)), true);
         });
       } else if (action === "validate") {
@@ -2175,8 +2249,8 @@
       if (!t || !t.matches || !owner) return;
       if (t.matches("[data-link-index-classify-empty]")) {
         linkIndexGroupByEmptyPath = !!t.checked;
-        localStorage.setItem("nimda.linkIndexGroupByEmptyPath", linkIndexGroupByEmptyPath ? "1" : "0");
-        localStorage.removeItem("nimda.linkIndexEmptyPathOnly");
+        writePreference("nimda.linkIndexGroupByEmptyPath", linkIndexGroupByEmptyPath ? "1" : "0");
+        writePreference("nimda.linkIndexEmptyPathOnly", null);
         linkIndexSelectedPath = "";
         renderLinkIndexPanel();
         setStatus(linkIndexGroupByEmptyPath ? "已按空路径分类展示。" : "已取消空路径分类。", false);
@@ -2201,8 +2275,6 @@
       if (t.matches("[data-resource-tree-search-input]") && ev.key === "Enter") {
         resourceTreeSearchDraft = t.value;
         searchResourceTree().catch(function (e) {
-          resourceSearchLoading = false;
-          renderLinkIndexPanel();
           setStatus("资源库目录搜索失败：" + (e.message || String(e)), true);
         });
         ev.preventDefault();

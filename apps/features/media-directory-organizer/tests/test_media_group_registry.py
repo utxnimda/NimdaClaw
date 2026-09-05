@@ -38,7 +38,7 @@ class MediaGroupRegistryTest(unittest.TestCase):
         cls.registry = load_media_group_registry(cls.registry_path)
         cls.rows = _rows_by_code(cls.registry)
 
-    def test_generated_registry_is_current_and_has_242_globally_unique_codes(self) -> None:
+    def test_generated_registry_is_current_and_has_244_globally_unique_codes(self) -> None:
         generated_at = datetime.fromisoformat(str(self.registry["generated_at"]))
         rebuilt = build_media_group_registry(generated_at=generated_at)
         self.assertEqual(self.registry, rebuilt)
@@ -48,8 +48,8 @@ class MediaGroupRegistryTest(unittest.TestCase):
             for section in SECTIONS
             for row in self.registry[section]
         ]
-        self.assertEqual(len(section_codes), 242)
-        self.assertEqual(len(set(section_codes)), 242)
+        self.assertEqual(len(section_codes), 244)
+        self.assertEqual(len(set(section_codes)), 244)
         self.assertEqual(self.registry["press_group_codes"], sorted(section_codes))
         self.assertEqual(
             self.registry["statistics"],
@@ -57,9 +57,9 @@ class MediaGroupRegistryTest(unittest.TestCase):
                 "release_group_count": 31,
                 "translation_group_count": 94,
                 "combination_count": 101,
-                "catalog_only_group_count": 16,
-                "press_group_code_count": 242,
-                "observed_catalog_code_count": 143,
+                "catalog_only_group_count": 18,
+                "press_group_code_count": 244,
+                "observed_catalog_code_count": 194,
             },
         )
 

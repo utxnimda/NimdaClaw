@@ -7,11 +7,11 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 repo_root = Path(SPEC).resolve().parent.parent
 framework_backend = repo_root / "apps" / "framework" / "backend"
-detail_backend = repo_root / "apps" / "features" / "collection-detail" / "backend"
-info_backend = repo_root / "apps" / "features" / "collection-info" / "backend"
-organizer_backend = repo_root / "apps" / "features" / "media-directory-organizer" / "backend"
 entrypoint = framework_backend / "work_catalog_yaml" / "desktop.py"
-backend_paths = [framework_backend, detail_backend, info_backend, organizer_backend]
+sys.path.insert(0, str(framework_backend))
+from work_catalog_yaml.layout import backend_roots
+
+backend_paths = backend_roots(repo_root)
 
 for backend_path in backend_paths:
     value = str(backend_path)
@@ -28,21 +28,8 @@ def add_tree(datas, source, destination):
 
 datas = []
 add_tree(datas, repo_root / "apps" / "framework" / "frontend", "apps/framework/frontend")
-add_tree(
-    datas,
-    repo_root / "apps" / "features" / "collection-detail" / "frontend",
-    "apps/features/collection-detail/frontend",
-)
-add_tree(
-    datas,
-    repo_root / "apps" / "features" / "collection-info" / "frontend",
-    "apps/features/collection-info/frontend",
-)
-add_tree(
-    datas,
-    repo_root / "apps" / "features" / "media-directory-organizer" / "frontend",
-    "apps/features/media-directory-organizer/frontend",
-)
+for frontend in sorted((repo_root / "apps" / "features").glob("*/frontend")):
+    add_tree(datas, frontend, frontend.relative_to(repo_root))
 
 default_config = framework_backend / "work_catalog_yaml" / "jp_tv" / "browse_config.default.yaml"
 datas.append((str(default_config), "work_catalog_yaml/jp_tv"))
@@ -55,9 +42,12 @@ for package_name in ("webview", "clr_loader", "pythonnet"):
     binaries += package_binaries
     hiddenimports += package_hidden
 hiddenimports += collect_submodules("uvicorn")
-hiddenimports += collect_submodules("collection_detail")
-hiddenimports += collect_submodules("collection_info")
-hiddenimports += collect_submodules("media_directory_organizer")
+for backend in backend_paths:
+    if backend == framework_backend:
+        continue
+    for package in sorted(backend.iterdir()):
+        if package.is_dir() and (package / "__init__.py").is_file():
+            hiddenimports += collect_submodules(package.name)
 
 a = Analysis(
     [str(entrypoint)],

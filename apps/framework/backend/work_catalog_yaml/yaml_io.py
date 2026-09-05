@@ -7,6 +7,11 @@ from typing import IO, Any
 
 from ruamel.yaml import YAML
 
+from work_catalog_yaml.yaml_cache import YamlParseCache
+
+
+_PARSED_YAML_CACHE = YamlParseCache()
+
 
 def _yaml_reader() -> YAML:
     y = YAML(typ="safe")
@@ -24,16 +29,29 @@ def _yaml_writer() -> YAML:
 
 
 def load_yaml(path: str | Path | IO[str]) -> Any:
-    y = _yaml_reader()
     if isinstance(path, (str, Path)):
+        # Always read current content, even on a cache hit. Path/mtime caches can
+        # miss same-size edits or atomic replacements with preserved timestamps.
         with Path(path).open(encoding="utf-8") as fp:
-            return y.load(fp)
-    return y.load(path)
+            source = fp.read()
+        return _load_yaml_content(source, name=str(path))
+    # Preserve caller-owned stream position, lifetime and parser diagnostics.
+    return _yaml_reader().load(path)
+
+
+def _load_yaml_content(source: str, *, name: str | None = None) -> Any:
+    def parse() -> Any:
+        stream = StringIO(source)
+        if name is not None:
+            stream.name = name
+        return _yaml_reader().load(stream)
+
+    return _PARSED_YAML_CACHE.parse(source, parse)
 
 
 def load_yaml_string(source: str) -> Any:
     """从 UTF-8 文本解析 YAML（多用于上传 / 测试中）。"""
-    return _yaml_reader().load(StringIO(source))
+    return _load_yaml_content(source)
 
 
 def dump_yaml_string(data: Any) -> str:

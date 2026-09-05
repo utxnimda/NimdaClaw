@@ -1,5 +1,5 @@
 version: 1
-generated_at: '2026-08-23T17:33:47'
+generated_at: '2026-08-30T18:27:02'
 sources:
   note:
     path: data/source/Animation/Note.h
@@ -3240,6 +3240,12 @@ catalog_only_groups:
   aliases: []
   source: collection-detail catalog
   classifier_family: ''
+- code: DBDR
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: ''
 - code: DMZJ
   kind: catalog-only
   names: []
@@ -3306,6 +3312,12 @@ catalog_only_groups:
   aliases: []
   source: collection-detail catalog
   classifier_family: ''
+- code: VCBH
+  kind: catalog-only
+  names: []
+  aliases: []
+  source: collection-detail catalog
+  classifier_family: VCB
 - code: ZERO
   kind: catalog-only
   names: []
@@ -3407,6 +3419,7 @@ press_group_codes:
 - CSYA
 - CX
 - DBD
+- DBDR
 - DFL
 - DHFM
 - DHR
@@ -3557,6 +3570,7 @@ press_group_codes:
 - VCBD
 - VCBE
 - VCBF
+- VCBH
 - VCBJ
 - VCBK
 - VCBL
@@ -3596,6 +3610,6 @@ statistics:
   release_group_count: 31
   translation_group_count: 94
   combination_count: 101
-  catalog_only_group_count: 16
-  press_group_code_count: 242
-  observed_catalog_code_count: 143
+  catalog_only_group_count: 18
+  press_group_code_count: 244
+  observed_catalog_code_count: 194

@@ -25,6 +25,7 @@
   var root = ensureFeatureRegistry();
 
   var collectionRecordsPayload = null;
+  var collectionRecordsSaving = false;
   var collectionRecordsBound = false;
   var cleanupCallbacks = [];
   var featureCtx = null;
@@ -52,7 +53,12 @@
   }
 
   function esc(s) {
-    return ctx().esc ? ctx().esc(s) : String(s);
+    if (ctx().esc) return ctx().esc(s);
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   function defaultEnumValue(enumKey, fallback) {
@@ -254,9 +260,20 @@
     }
     h += "</section>";
     view.innerHTML = h;
+    syncCollectionSaveButtons();
+  }
+
+  function syncCollectionSaveButtons() {
+    var view = collectionView();
+    if (!view) return;
+    arrSlice().call(view.querySelectorAll('[data-collection-action="save"], [data-collection-action="reload"]'))
+      .forEach(function (button) {
+        button.disabled = collectionRecordsSaving;
+      });
   }
 
   async function loadCollectionRecords() {
+    if (collectionRecordsSaving) return;
     var view = collectionView();
     if (!view) return;
     if (ctx().loadServerConfig) {
@@ -307,29 +324,45 @@
   }
 
   async function saveCollectionRecords() {
+    if (collectionRecordsSaving) return;
     var records = gatherCollectionRecordsFromView();
     if (!records.length) {
       ctx().setStatus && ctx().setStatus("没有可保存的收集情况。", true);
       return;
     }
-    ctx().setStatus && ctx().setStatus("收集情况保存中...", false);
-    var out = await ctx().fetchJson("/api/collection-info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ records: records }),
-    });
-    if (!out.res.ok || !out.data || !out.data.ok) {
-      ctx().setStatus &&
-        ctx().setStatus(
-          (out.data && out.data.error) ||
-            ctx().browseHttpFailHint(out.res.status, "收集情况保存"),
-          true,
-        );
-      return;
+    var savedSnapshot = JSON.stringify(records);
+    collectionRecordsSaving = true;
+    syncCollectionSaveButtons();
+    try {
+      ctx().setStatus && ctx().setStatus("收集情况保存中...", false);
+      var out = await ctx().fetchJson("/api/collection-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ records: records }),
+      });
+      if (!out.res.ok || !out.data || !out.data.ok) {
+        ctx().setStatus &&
+          ctx().setStatus(
+            (out.data && out.data.error) ||
+              ctx().browseHttpFailHint(out.res.status, "收集情况保存"),
+            true,
+          );
+        return;
+      }
+      var currentRecords = gatherCollectionRecordsFromView();
+      var editedDuringSave = JSON.stringify(currentRecords) !== savedSnapshot;
+      collectionRecordsPayload = collectionRecordsPayload || {};
+      collectionRecordsPayload.records = editedDuringSave ? currentRecords : (out.data.records || records);
+      if (out.data.path) collectionRecordsPayload.path = out.data.path;
+      if (!editedDuringSave) renderCollectionRecords(collectionRecordsPayload);
+      ctx().setStatus && ctx().setStatus(
+        editedDuringSave ? "收集情况已保存；保存期间的新编辑尚未保存。" : "收集情况已保存。",
+        false,
+      );
+    } finally {
+      collectionRecordsSaving = false;
+      syncCollectionSaveButtons();
     }
-    collectionRecordsPayload.records = out.data.records || records;
-    ctx().setStatus && ctx().setStatus("收集情况已保存。", false);
-    await loadCollectionRecords().catch(function () {});
   }
 
   function addCollectionRecord() {

@@ -16,7 +16,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Mapping, Protocol, runtime_checkable
+from typing import Callable, Iterable, Mapping, Protocol, runtime_checkable
 
 from media_directory_organizer.catalog import normalized_identity, normalized_value
 from work_catalog_yaml.media_groups import media_group_classifier_family
@@ -81,6 +81,21 @@ _CD_AUDIO_EXTENSIONS = {
     ".wv",
 }
 _DISC_SIDECAR_AUDIO_EXTENSIONS = {".ac3", ".dts", ".mka"}
+_CHECKSUM_EXTENSIONS = {
+    ".crc",
+    ".crc32",
+    ".md5",
+    ".md5sum",
+    ".sfv",
+    ".sha1",
+    ".sha224",
+    ".sha256",
+    ".sha256sum",
+    ".sha384",
+    ".sha512",
+    ".xxh",
+    ".xxh3",
+}
 _IMAGE_EXTENSIONS = {
     ".bmp",
     ".gif",
@@ -140,7 +155,8 @@ _SUBS_RE = re.compile(
 )
 _CD_RE = re.compile(
     r"(?<![0-9a-z])(?:ost|original[ ._-]*soundtrack|soundtrack|"
-    r"character[ ._-]*song|drama[ ._-]*cd|spcd\d*|cd\d+)(?![0-9a-z])|"
+    r"character[ ._-]*song|drama[ ._-]*cd|spcd[ ._-]*\d*(?:v\d+)?|"
+    r"cd[ ._-]*\d+(?:v\d+)?)(?![0-9a-z])|"
     r"オリジナルサウンドトラック|サウンドトラック|キャラクターソング|ドラマ[ ._-]*cd",
     re.IGNORECASE,
 )
@@ -150,7 +166,7 @@ _AUDIO_ARCHIVE_RE = re.compile(
 )
 _MENU_RE = re.compile(r"(?<![0-9a-z])(?:bd[ ._-]*)?menu\d*(?![0-9a-z])|メニュー", re.IGNORECASE)
 _CM_RE = re.compile(
-    r"(?<![0-9a-z])(?:tv[ ._-]*cm|cm\d*|commercials?)(?![0-9a-z])",
+    r"(?<![0-9a-z])(?:tv[ ._-]*cm|cm\d*(?:v\d+)?|commercials?)(?![0-9a-z])",
     re.IGNORECASE,
 )
 _PREVIEW_RE = re.compile(
@@ -158,11 +174,12 @@ _PREVIEW_RE = re.compile(
     re.IGNORECASE,
 )
 _PV_RE = re.compile(
-    r"(?<![0-9a-z])(?:pv\d*|promotion(?:al)?[ ._-]*(?:video|movie))(?![0-9a-z])",
+    r"(?<![0-9a-z])(?:pv\d*(?:v\d+)?|promotion(?:al)?[ ._-]*(?:video|movie))(?![0-9a-z])",
     re.IGNORECASE,
 )
 _OP_ED_RE = re.compile(
-    r"(?<![0-9a-z])(?:ncop\d*|nced\d*|op\d*|ed\d*|"
+    r"(?<![0-9a-z])(?:nc[ ._-]*(?:op|ed)\d*(?:v\d+)?|"
+    r"op\d*(?:v\d+)?|ed\d*(?:v\d+)?|"
     r"clean[ ._-]*(?:op|ed|opening|ending)|"
     r"creditless[ ._-]*(?:op|ed|opening|ending))(?![0-9a-z])",
     re.IGNORECASE,
@@ -178,7 +195,12 @@ _LIVE_RE = re.compile(
     re.IGNORECASE,
 )
 _SP_RE = re.compile(
-    r"(?<![0-9a-z])(?:sp\d+|specials?\d*|bonus[ ._-]*video|mini[ ._-]*ova|oad|tokuten)(?![0-9a-z])|特典",
+    r"(?<![0-9a-z])(?:sp[ ._-]*\d+(?:v\d+)?|specials?\d*(?:v\d+)?|"
+    r"bonus[ ._-]*video|mini[ ._-]*ova|recap|summary|tokuten)(?![0-9a-z])|特典",
+    re.IGNORECASE,
+)
+_OVA_OAD_RE = re.compile(
+    r"(?<![0-9a-z])(?:ova|oad)[ ._-]*\d*(?:v\d+)?(?![0-9a-z])",
     re.IGNORECASE,
 )
 _IMAGE_RE = re.compile(
@@ -186,18 +208,81 @@ _IMAGE_RE = re.compile(
     re.IGNORECASE,
 )
 _OTHERS_RE = re.compile(
-    r"(?<![0-9a-z])(?:logo|advice|notice|bansen|interview|iv\d*|info|"
-    r"making|commentary|readme|torrent|checksum)(?![0-9a-z])",
+    r"(?<![0-9a-z])(?:logo|advice|notice|bansen|interview|iv\d+|info|"
+    r"making|commentary|readme|torrent|checksum)(?![0-9a-z])|[\[(]iv[\])]",
+    re.IGNORECASE,
+)
+_COMMENTARY_RE = re.compile(r"(?<![0-9a-z])commentary(?![0-9a-z])", re.IGNORECASE)
+_COMMENTARY_INTERVIEW_RE = re.compile(
+    r"(?<![0-9a-z])(?:interview|making)(?![0-9a-z])",
     re.IGNORECASE,
 )
 _RELEASE_SIDECAR_RE = re.compile(
     r"(?<![0-9a-z])(?:x26[45]|ma10p|hi10p|1080p|2160p)(?![0-9a-z])",
     re.IGNORECASE,
 )
-_SIDECAR_LANGUAGE_RE = re.compile(
-    r"(?:\.(?:sc|tc|chs|cht|jpn?|ja|eng?|commentary))+$",
+_RESOLUTION_PRESS_FORMAT_RE = re.compile(
+    r"^(?:\d{3,4}[pi]|[248]k|\d{3,4}[x×]\d{3,4})$",
     re.IGNORECASE,
 )
+_SIDECAR_LANGUAGE_RE = re.compile(
+    r"(?:\.(?:sc|tc|chs|cht|jpn?|ja|eng?|commentary|zh[-_]?hans|zh[-_]?hant))+$",
+    re.IGNORECASE,
+)
+
+_SEASON_EPISODE_RE = re.compile(
+    r"(?<![0-9a-z])s\s*0*(?P<season>\d{1,2})[ ._-]*e(?:p(?:isode)?)?\s*"
+    r"(?P<episode>\d{1,4}(?:\.\d+)?)(?:v\d+)?(?!\d)",
+    re.IGNORECASE,
+)
+_LABELED_EPISODE_RE = re.compile(
+    r"(?<![0-9a-z])(?:ep(?:isode)?|e|#)\s*0*(?P<episode>\d{1,4}(?:\.\d+)?)"
+    r"(?:v\d+)?(?!\d)",
+    re.IGNORECASE,
+)
+_CJK_EPISODE_RE = re.compile(
+    r"第\s*0*(?P<episode>\d{1,4}(?:\.\d+)?)\s*(?:話|话|集)",
+    re.IGNORECASE,
+)
+_BRACKET_EPISODE_RE = re.compile(
+    r"[\[【(]\s*0*(?P<start>\d{1,4}(?:\.\d+)?)"
+    r"(?:\s*[-~～]\s*0*(?P<end>\d{1,4}(?:\.\d+)?))?"
+    r"(?:v\d+|\+)?(?:\s*(?:fin|end))?"
+    r"(?:\s*\([^()\[\]\r\n]{1,80}\))?\s*[\]】)]",
+    re.IGNORECASE,
+)
+_TRAILING_EPISODE_RE = re.compile(
+    r"(?<![0-9a-z])(?<!\d\.)0*(?P<start>\d{1,3}(?:\.\d+)?)"
+    r"(?:\s*[-~～]\s*0*(?P<end>\d{1,3}(?:\.\d+)?))?"
+    r"(?:v\d+|\+)?(?=\s*(?:(?:tv|oa|dc|commentary|full[ ._-]*ver)(?![0-9a-z])|[\[【(]|$))",
+    re.IGNORECASE,
+)
+_NON_EPISODE_NUMBERS = {
+    240,
+    264,
+    265,
+    360,
+    480,
+    576,
+    720,
+    1080,
+    2160,
+    4320,
+}
+_DISC_VERSION_DETAIL_RE = re.compile(
+    r"(?<![0-9a-z])(?:"
+    r"tv|oa|on[ ._-]*air|dc|director(?:'s)?[ ._-]*cut|commentary|"
+    r"full[ ._-]*ver(?:sion)?|"
+    r"v\d+|ver(?:sion)?[ ._-]*\d+|rev(?:ision)?[ ._-]*\d+|"
+    r"bd|bdrip|blu[ ._-]*ray|dvd|remux|web(?:[ ._-]*dl)?|"
+    r"\d{3,4}[pi]|\d{3,4}\s*[x×]\s*\d{3,4}|"
+    r"ma\d+p|hi\d+p|\d+bit|x26[45]|h26[45]|avc|hevc|av1|"
+    r"flac|aac|ac3|eac3|dts|truehd|pcm|"
+    r"chs|cht|sc|tc|jpn?|ja|eng?|zh[ ._-]*hans|zh[ ._-]*hant"
+    r")(?![0-9a-z])",
+    re.IGNORECASE,
+)
+_HASH_BRACKET_RE = re.compile(r"[\[【(][0-9a-f]{8,64}[\]】)]", re.IGNORECASE)
 
 
 def is_vcb_family_group(value: str) -> bool:
@@ -275,8 +360,162 @@ def _structural_layout(relative_path: Path) -> tuple[str | None, Path, str]:
 
 
 def _sidecar_stem(path: Path) -> str:
-    stem = _SIDECAR_LANGUAGE_RE.sub("", path.stem)
+    """Return the owning media stem for video, subtitle and checksum sidecars."""
+
+    name = unicodedata.normalize("NFKC", path.name)
+    suffix = Path(name).suffix.casefold()
+    stem = name[: -len(suffix)] if suffix else name
+    if suffix in _CHECKSUM_EXTENSIONS:
+        nested_suffix = Path(stem).suffix.casefold()
+        if nested_suffix in (
+            _VIDEO_EXTENSIONS
+            | _SUBTITLE_EXTENSIONS
+            | _DISC_SIDECAR_AUDIO_EXTENSIONS
+            | _CD_AUDIO_EXTENSIONS
+        ):
+            stem = stem[: -len(nested_suffix)]
+    stem = _SIDECAR_LANGUAGE_RE.sub("", stem)
     return normalized_identity(stem)
+
+
+def _episode_component(raw: str) -> str | None:
+    value = raw.strip()
+    if not value:
+        return None
+    whole_raw, dot, fraction_raw = value.partition(".")
+    try:
+        whole = int(whole_raw)
+    except ValueError:
+        return None
+    if not fraction_raw and (
+        whole in _NON_EPISODE_NUMBERS
+        or (len(whole_raw) == 4 and 1900 <= whole <= 2099)
+    ):
+        return None
+    if whole > 9999:
+        return None
+    component = f"{whole:02d}"
+    if dot:
+        fraction = fraction_raw.rstrip("0") or "0"
+        component += f".{fraction}"
+    return component
+
+
+def _episode_range(start: str, end: str = "") -> tuple[str, str] | None:
+    first = _episode_component(start)
+    if first is None:
+        return None
+    last = _episode_component(end) if end else None
+    if end and last is None:
+        return None
+    identity = f"e:{first}" if last is None else f"e:{first}-{last}"
+    directory = first if last is None else f"{first}-{last}"
+    return identity, directory
+
+
+def _episode_marker_in_text(value: str) -> tuple[str, str] | None:
+    text = unicodedata.normalize("NFKC", value)
+    season_match = _SEASON_EPISODE_RE.search(text)
+    if season_match is not None:
+        episode = _episode_component(season_match.group("episode"))
+        if episode is not None:
+            season = int(season_match.group("season"))
+            return f"s:{season}:e:{episode}", f"S{season:02d}E{episode}"
+
+    for pattern in (_LABELED_EPISODE_RE, _CJK_EPISODE_RE):
+        matched = pattern.search(text)
+        if matched is not None:
+            marker = _episode_range(matched.group("episode"))
+            if marker is not None:
+                return marker
+
+    for matched in _BRACKET_EPISODE_RE.finditer(text):
+        marker = _episode_range(matched.group("start"), matched.group("end") or "")
+        if marker is not None:
+            return marker
+
+    for matched in _TRAILING_EPISODE_RE.finditer(text):
+        prefix = text[: matched.start()].rstrip(" ._-").casefold()
+        if re.search(
+            r"(?:vol(?:ume)?|disc|cd|sp|ova|oad|ncop|nced|op|ed|pv|cm)$",
+            prefix,
+            re.IGNORECASE,
+        ):
+            continue
+        marker = _episode_range(matched.group("start"), matched.group("end") or "")
+        if marker is not None:
+            return marker
+    return None
+
+
+def _disc_episode_marker(path: Path) -> tuple[str, str] | None:
+    filename = unicodedata.normalize("NFKC", path.name)
+    known_suffixes = (
+        _VIDEO_EXTENSIONS
+        | _SUBTITLE_EXTENSIONS
+        | _DISC_SIDECAR_AUDIO_EXTENSIONS
+        | _CD_AUDIO_EXTENSIONS
+        | _CHECKSUM_EXTENSIONS
+    )
+    while Path(filename).suffix.casefold() in known_suffixes:
+        suffix = Path(filename).suffix
+        filename = filename[: -len(suffix)]
+    filename = _SIDECAR_LANGUAGE_RE.sub("", filename)
+    marker = _episode_marker_in_text(filename)
+    if marker is not None:
+        return marker
+    for component in reversed(path.parts[:-1]):
+        marker = _episode_marker_in_text(component)
+        if marker is not None:
+            return marker
+    return None
+
+
+def _disc_version_core(path: Path) -> str:
+    """Return filename identity after removing episode and version details."""
+
+    text = unicodedata.normalize("NFKC", path.name)
+    suffix = Path(text).suffix.casefold()
+    if suffix:
+        text = text[: -len(suffix)]
+    if suffix in _CHECKSUM_EXTENSIONS:
+        nested_suffix = Path(text).suffix.casefold()
+        if nested_suffix in (
+            _VIDEO_EXTENSIONS
+            | _SUBTITLE_EXTENSIONS
+            | _DISC_SIDECAR_AUDIO_EXTENSIONS
+            | _CD_AUDIO_EXTENSIONS
+        ):
+            text = text[: -len(nested_suffix)]
+    text = _SIDECAR_LANGUAGE_RE.sub("", text)
+    text = _SEASON_EPISODE_RE.sub(" ", text)
+    text = _LABELED_EPISODE_RE.sub(" ", text)
+    text = _CJK_EPISODE_RE.sub(" ", text)
+    text = _BRACKET_EPISODE_RE.sub(" ", text)
+    text = _TRAILING_EPISODE_RE.sub(" ", text)
+    text = _DISC_VERSION_DETAIL_RE.sub(" ", text)
+    text = _HASH_BRACKET_RE.sub(" ", text)
+    return normalized_identity(text)
+
+
+def _disc_version_cores_compatible(left: str, right: str) -> bool:
+    """Return whether two same-episode names share a credible title core."""
+
+    if left == right:
+        return True
+    if not left or not right:
+        # An empty core may pair with another empty core (handled above), but
+        # must never bridge two otherwise contradictory title cores.
+        return False
+    shorter, longer = sorted((left, right), key=len)
+    if len(shorter) >= 4 and shorter in longer:
+        return True
+    common_prefix = 0
+    for lchar, rchar in zip(left, right):
+        if lchar != rchar:
+            break
+        common_prefix += 1
+    return common_prefix >= max(4, (len(shorter) * 3) // 5)
 
 
 @dataclass(frozen=True)
@@ -288,6 +527,7 @@ class ClassificationContext:
     work_name: str = ""
     press_format: str = ""
     press_group: str = ""
+    release_type: str = ""
     source_dir_name: str = ""
     target_dir_name: str = ""
 
@@ -335,6 +575,21 @@ class ClassificationContext:
             and _sidecar_stem(sibling) == stem
             for sibling in self.siblings()
         )
+
+    def has_same_episode_video(self) -> bool:
+        """Return whether exactly one sibling video owns this episode marker."""
+
+        marker = _disc_episode_marker(self.relative_path)
+        if marker is None:
+            return False
+        episode_key = marker[0]
+        matches = [
+            sibling
+            for sibling in self.siblings()
+            if sibling.suffix.casefold() in _VIDEO_EXTENSIONS
+            and (_disc_episode_marker(sibling) or (None,))[0] == episode_key
+        ]
+        return len(matches) == 1
 
     def has_disc_image_sibling(self) -> bool:
         stem = _sidecar_stem(self.relative_path)
@@ -384,6 +639,210 @@ class LayoutDecision:
         for field_name in ("classifier_id", "rule_id", "stage", "reason"):
             if not str(getattr(self, field_name)).strip():
                 raise ValueError(f"LayoutDecision.{field_name} 不能为空")
+
+
+def disc_version_subdirectories(
+    items: Iterable[tuple[str, str, Path, LayoutDecision]],
+    *,
+    directory_stem: str,
+    release_type: str = "",
+    press_format: str = "",
+) -> dict[str, Path]:
+    """Plan one stable episode directory for a multi-file Disc episode bundle.
+
+    Each item is ``(file_id, source_scope_id, source_relative_path, decision)``.
+    Opaque source scope IDs prevent a sidecar in one release directory from
+    attaching to a same-named video in another release directory.  Episode
+    version counting, however, intentionally spans all scopes in this one
+    already-validated work/format/group route.  A bundle is eligible when it
+    has multiple compatible video versions, or when one video has at least one
+    matching Disc sidecar such as an external subtitle, audio track or checksum.
+    Resolution-named releases (for example ``1080p``) are the exception: a
+    single video plus subtitles is the ordinary release shape and stays flat;
+    only actual multiple video versions create an episode directory.
+    """
+
+    safe_stem = _safe_category(directory_stem)
+    if normalized_value(release_type) in {"movie", "film"}:
+        return {}
+    resolution_release = is_resolution_press_format(press_format)
+    rows: list[tuple[str, str, Path, LayoutDecision]] = []
+    seen_ids: set[str] = set()
+    for raw_file_id, raw_scope_id, raw_path, decision in items:
+        file_id = str(raw_file_id).strip()
+        scope_id = str(raw_scope_id).strip()
+        if not file_id or file_id in seen_ids:
+            raise ValueError("Disc 多版本布局的 file_id 必须非空且唯一")
+        if not scope_id:
+            raise ValueError("Disc 多版本布局的 source_scope_id 不能为空")
+        if not isinstance(decision, LayoutDecision):
+            raise TypeError("Disc 多版本布局必须接收 LayoutDecision")
+        path = _safe_relative_path(raw_path)
+        seen_ids.add(file_id)
+        rows.append((file_id, scope_id, path, decision))
+
+    markers_by_file: dict[str, tuple[str, str, str]] = {}
+    video_ids_by_owner: dict[tuple[str, str, str], set[str]] = {}
+    sidecar_ids_by_video: dict[str, set[str]] = {}
+    video_ids_by_episode: dict[str, list[str]] = {}
+    entry_by_episode: dict[str, str] = {}
+    for file_id, scope_id, path, decision in rows:
+        if decision.category != CATEGORY_DISC or path.suffix.casefold() not in _VIDEO_EXTENSIONS:
+            continue
+        marker = _disc_episode_marker(path)
+        if marker is None:
+            continue
+        episode_key, entry_key = marker
+        core = _disc_version_core(path)
+        classified_marker = (episode_key, entry_key, core)
+        markers_by_file[file_id] = classified_marker
+        entry_by_episode.setdefault(episode_key, entry_key)
+        video_ids_by_episode.setdefault(episode_key, []).append(file_id)
+        owner_key = (
+            scope_id,
+            _normalized_text(path.parent),
+            _sidecar_stem(path),
+        )
+        video_ids_by_owner.setdefault(owner_key, set()).add(file_id)
+
+    disc_sidecar_extensions = (
+        _SUBTITLE_EXTENSIONS
+        | _DISC_SIDECAR_AUDIO_EXTENSIONS
+        | _CD_AUDIO_EXTENSIONS
+        | _CHECKSUM_EXTENSIONS
+    )
+    for file_id, scope_id, path, decision in rows:
+        if (
+            decision.category != CATEGORY_DISC
+            or path.suffix.casefold() not in disc_sidecar_extensions
+        ):
+            continue
+        owner_key = (
+            scope_id,
+            _normalized_text(path.parent),
+            _sidecar_stem(path),
+        )
+        for video_id in video_ids_by_owner.get(owner_key, set()):
+            sidecar_ids_by_video.setdefault(video_id, set()).add(file_id)
+
+    # The verified Macross Delta pre-air edition uses 0.89 for what becomes
+    # episode 01.  Do not generalize this to arbitrary 0.xx specials; alias
+    # only exact 0.89 when a core-compatible explicit 01 exists in this route.
+    episode_one_ids = tuple(video_ids_by_episode.get("e:01", ()))
+    if episode_one_ids:
+        episode_one_cores = {
+            markers_by_file[file_id][2] for file_id in episode_one_ids
+        }
+        for episode_key, file_ids in tuple(video_ids_by_episode.items()):
+            if episode_key != "e:00.89":
+                continue
+            for file_id in file_ids:
+                marker = markers_by_file[file_id]
+                if any(
+                    _disc_version_cores_compatible(marker[2], core)
+                    for core in episode_one_cores
+                ):
+                    markers_by_file[file_id] = ("e:01", "01", marker[2])
+
+        video_ids_by_episode = {}
+        entry_by_episode = {}
+        for file_id, marker in markers_by_file.items():
+            video_ids_by_episode.setdefault(marker[0], []).append(file_id)
+            entry_by_episode.setdefault(marker[0], marker[1])
+
+    eligible_video_ids: set[str] = set()
+    eligible_cores_by_episode: dict[str, set[str]] = {}
+    for episode_key, file_ids in video_ids_by_episode.items():
+        if len(file_ids) == 1:
+            video_id = file_ids[0]
+            if resolution_release or not sidecar_ids_by_video.get(video_id):
+                continue
+            eligible_video_ids.add(video_id)
+            eligible_cores_by_episode[episode_key] = {
+                markers_by_file[video_id][2]
+            }
+            continue
+        if len(file_ids) < 2:
+            continue
+        remaining = set(file_ids)
+        components: list[set[str]] = []
+        while remaining:
+            seed = remaining.pop()
+            component = {seed}
+            frontier = [seed]
+            while frontier:
+                current = frontier.pop()
+                current_core = markers_by_file[current][2]
+                compatible = {
+                    candidate
+                    for candidate in remaining
+                    if _disc_version_cores_compatible(
+                        current_core,
+                        markers_by_file[candidate][2],
+                    )
+                }
+                if not compatible:
+                    continue
+                remaining.difference_update(compatible)
+                component.update(compatible)
+                frontier.extend(compatible)
+            components.append(component)
+        version_components = [component for component in components if len(component) > 1]
+        # More than one unrelated multi-version core reusing one episode number
+        # is ambiguous because both would require the same target directory.
+        if len(version_components) != 1:
+            continue
+        chosen = version_components[0]
+        eligible_video_ids.update(chosen)
+        eligible_cores_by_episode[episode_key] = {
+            markers_by_file[file_id][2] for file_id in chosen
+        }
+
+    if not eligible_video_ids:
+        return {}
+
+    planned: dict[str, Path] = {}
+    for file_id, scope_id, path, decision in rows:
+        if decision.category != CATEGORY_DISC:
+            continue
+        marker = markers_by_file.get(file_id)
+        if path.suffix.casefold() in _VIDEO_EXTENSIONS:
+            if file_id not in eligible_video_ids:
+                continue
+        elif marker is None:
+            owner_key = (
+                scope_id,
+                _normalized_text(path.parent),
+                _sidecar_stem(path),
+            )
+            owner_ids = video_ids_by_owner.get(owner_key, set()) & eligible_video_ids
+            owner_markers = {markers_by_file[owner_id] for owner_id in owner_ids}
+            if len(owner_markers) == 1:
+                marker = next(iter(owner_markers))
+        if marker is None:
+            direct_marker = _disc_episode_marker(path)
+            if direct_marker is not None:
+                marker = (*direct_marker, _disc_version_core(path))
+        if marker is None:
+            continue
+        eligible_cores = eligible_cores_by_episode.get(marker[0], set())
+        if not eligible_cores or not any(
+            _disc_version_cores_compatible(marker[2], core)
+            for core in eligible_cores
+        ):
+            continue
+        directory = Path(f"{safe_stem}_{entry_by_episode[marker[0]]}")
+        _safe_relative_path(directory)
+        planned[file_id] = directory
+    return planned
+
+
+def is_resolution_press_format(value: str) -> bool:
+    """Return whether a press format is itself a display resolution."""
+
+    normalized = unicodedata.normalize("NFKC", str(value or "")).strip()
+    normalized = re.sub(r"\s+", "", normalized)
+    return bool(_RESOLUTION_PRESS_FORMAT_RE.fullmatch(normalized))
 
 
 def _checked_decision(source: Path, decision: LayoutDecision) -> LayoutDecision:
@@ -490,14 +949,42 @@ class CommonClassifier:
         existing = self._existing(context, CATEGORY_DISC)
         if existing is not None or self._blocked_by_existing_category(context):
             return existing
+        if (
+            context.suffix in _VIDEO_EXTENSIONS
+            and _COMMENTARY_RE.search(context.match_text)
+            and not _COMMENTARY_INTERVIEW_RE.search(context.match_text)
+            and _disc_episode_marker(context.relative_path) is not None
+        ):
+            return self._result(
+                context,
+                "disc-episode-commentary-video",
+                "带明确正片集号的 commentary 视频作为该集版本归入 Disc",
+            )
+        if context.suffix in _CHECKSUM_EXTENSIONS and context.has_matching_video():
+            return self._result(
+                context,
+                "disc-matching-checksum",
+                "与同目录正片同名的校验文件跟随进入 Disc",
+            )
+        resolution_episode_sidecar = (
+            is_resolution_press_format(context.press_format)
+            and context.suffix in _SUBTITLE_EXTENSIONS
+            and context.has_same_episode_video()
+        )
+        if context.suffix in (
+            _DISC_SIDECAR_AUDIO_EXTENSIONS | _SUBTITLE_EXTENSIONS | _CD_AUDIO_EXTENSIONS
+        ) and (context.has_matching_video() or resolution_episode_sidecar):
+            return self._result(
+                context,
+                "disc-matching-sidecar",
+                "与同目录正片同名的字幕或音轨跟随进入 Disc",
+            )
         if _OTHERS_RE.search(context.match_text):
             return None
         if context.suffix in _VIDEO_EXTENSIONS:
             return self._result(context, "disc-video", "未命中特典规则的普通视频归入正片 Disc")
         if context.suffix in _DISC_SIDECAR_AUDIO_EXTENSIONS:
             return self._result(context, "disc-audio-sidecar", "外挂正片音轨归入 Disc")
-        if context.suffix in (_SUBTITLE_EXTENSIONS | _CD_AUDIO_EXTENSIONS) and context.has_matching_video():
-            return self._result(context, "disc-matching-sidecar", "与同目录正片同名的字幕或音轨跟随进入 Disc")
         return None
 
     def filter_cd(self, context: ClassificationContext) -> FolderFilterResult | None:
@@ -511,7 +998,13 @@ class CommonClassifier:
         if context.suffix == ".log" and context.has_audio_sibling():
             return self._result(context, "cd-rip-log", "与音频同名的抓轨日志归入 CD")
         if _CD_RE.search(context.match_text):
-            if context.suffix in (_ARCHIVE_EXTENSIONS | _CD_AUDIO_EXTENSIONS | _IMAGE_EXTENSIONS | {".cue", ".log"}):
+            if context.suffix in (
+                _ARCHIVE_EXTENSIONS
+                | _CD_AUDIO_EXTENSIONS
+                | _IMAGE_EXTENSIONS
+                | _VIDEO_EXTENSIONS
+                | {".cue", ".log"}
+            ):
                 return self._result(context, "cd-name", "文件名明确标识 OST/CD/SPCD/音乐内容")
         if context.suffix in _ARCHIVE_EXTENSIONS and _AUDIO_ARCHIVE_RE.search(context.match_text):
             return self._result(context, "cd-audio-archive", "包含 EAC/抓轨格式标记的音频压缩包归入 CD")
@@ -575,7 +1068,16 @@ class CommonClassifier:
         existing = self._existing(context, CATEGORY_SP)
         if existing is not None or self._blocked_by_existing_category(context):
             return existing
-        if _SP_RE.search(context.match_text) or normalized_value(context.coarse_container) == "sps":
+        release_type = normalized_value(context.release_type)
+        ova_or_oad_extra = (
+            release_type not in {"ova", "oad"}
+            and _OVA_OAD_RE.search(context.match_text) is not None
+        )
+        if (
+            _SP_RE.search(context.match_text)
+            or ova_or_oad_extra
+            or normalized_value(context.coarse_container) == "sps"
+        ):
             return self._result(context, "sp-name", "明确的 SP/Special/Bonus Video 归入 SP")
         return None
 
@@ -591,12 +1093,17 @@ class CommonClassifier:
         existing = self._existing(context, CATEGORY_SUBS)
         if existing is not None or self._blocked_by_existing_category(context):
             return existing
-        if _SUBS_RE.search(context.match_text):
+        resolution_episode_sidecar = (
+            is_resolution_press_format(context.press_format)
+            and context.suffix in _SUBTITLE_EXTENSIONS
+            and context.has_same_episode_video()
+        )
+        if _SUBS_RE.search(context.match_text) and not resolution_episode_sidecar:
             return self._result(context, "subs-name", "文件名明确标识独立字幕包")
         if context.suffix in _SUBTITLE_EXTENSIONS:
             if context.suffix == ".sub" and context.has_disc_image_sibling():
                 return None
-            if context.has_matching_video():
+            if context.has_matching_video() or resolution_episode_sidecar:
                 return None
             return self._result(context, "subs-standalone", "没有同名正片的独立字幕文件归入 Subs")
         return None
@@ -667,7 +1174,7 @@ class VcbClassifier(GenericClassifier):
 
     def filter_others(self, context: ClassificationContext) -> FolderFilterResult | None:
         if context.structural_category is None and re.search(
-            r"(?<![0-9a-z])(?:logo|advice|notice|iv\d*|info)(?![0-9a-z])",
+            r"(?<![0-9a-z])(?:logo|advice|notice|iv\d+|info)(?![0-9a-z])|[\[(]iv[\])]",
             context.match_text,
             re.IGNORECASE,
         ):
@@ -823,5 +1330,7 @@ __all__ = [
     "PressGroupClassifier",
     "VcbClassifier",
     "VcbmClassifier",
+    "disc_version_subdirectories",
+    "is_resolution_press_format",
     "is_vcb_family_group",
 ]

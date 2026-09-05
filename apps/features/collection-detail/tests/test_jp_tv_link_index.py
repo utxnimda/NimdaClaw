@@ -160,6 +160,90 @@ def _find_link_by_relpath_suffix(node: dict, suffix: str) -> dict | None:
 
 
 class JpTvLinkIndexTest(unittest.TestCase):
+    def test_rebuild_rejects_shortcut_collisions_before_clearing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db, finish = root / "DB", root / "Finish"
+            db.mkdir()
+            finish.mkdir()
+            existing = finish / "keep.txt"
+            existing.write_text("keep", encoding="utf-8")
+            targets = [root / "A", root / "B"]
+            for target in targets:
+                target.mkdir()
+            items = [{"shortcut_root": str(finish), "shortcut_relpath": "same.lnk", "target_path": str(target)} for target in targets]
+            with (
+                patch.object(link_index_mod, "_feature_config", return_value={"paths": {"shortcut_root": str(finish)}}),
+                patch.object(link_index_mod, "_link_index_file_generation_plan", return_value=(items, True)),
+                patch.object(link_index_mod, "_create_windows_shortcut") as create,
+            ):
+                preview = generate_link_index_files_from_ui_body({"preview": True}, settings=_settings(db))
+                self.assertEqual(preview["file_generation"]["conflict_count"], 1)
+                with self.assertRaisesRegex(ValueError, "同一个快捷方式路径"):
+                    generate_link_index_files_from_ui_body({"confirm_clear": True, "confirm_clear_twice": True}, settings=_settings(db))
+                create.assert_not_called()
+            self.assertEqual(existing.read_text(encoding="utf-8"), "keep")
+
+    def test_scoped_shortcuts_reject_duplicate_path_with_different_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db, media, finish = root / "DB", root / "media", root / "Finish"
+            db.mkdir()
+            targets = [media / "A", media / "B"]
+            for target in targets:
+                target.mkdir(parents=True)
+            items = [{"shortcut_root": str(finish), "shortcut_relpath": "same.lnk", "shortcut_path": str(finish / "same.lnk"), "target_path": str(target)} for target in targets]
+            with (
+                patch.object(link_index_mod, "_feature_config", return_value={"paths": {"shortcut_root": str(finish), "resource_roots": [str(media)]}}),
+                patch.object(link_index_mod, "_create_windows_shortcut") as create,
+            ):
+                with self.assertRaisesRegex(FileExistsError, "同一个快捷方式路径"):
+                    link_index_mod.apply_scoped_shortcuts_for_work(items, settings=_settings(db))
+                create.assert_not_called()
+            self.assertFalse(finish.exists())
+
+    def test_scoped_shortcut_apply_wraps_entire_process_transaction_in_catalog_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            settings = _settings(db)
+            events: list[str] = []
+
+            class TransactionProbe:
+                def __enter__(self) -> None:
+                    events.append("enter")
+
+                def __exit__(self, *_args: object) -> None:
+                    events.append("exit")
+
+            def apply_probe(
+                items: list[dict[str, object]],
+                *,
+                settings: JpTvBrowseSettings,
+            ) -> dict[str, object]:
+                self.assertEqual(items, [])
+                self.assertEqual(settings.filesystem_root, db)
+                self.assertEqual(events, ["enter"])
+                return {"ok": True}
+
+            with (
+                patch.object(
+                    link_index_mod,
+                    "catalog_write_transaction",
+                    return_value=TransactionProbe(),
+                ) as transaction,
+                patch.object(
+                    link_index_mod,
+                    "_apply_scoped_shortcuts_for_work_process_locked",
+                    side_effect=apply_probe,
+                ),
+            ):
+                result = link_index_mod.apply_scoped_shortcuts_for_work([], settings=settings)
+
+            self.assertEqual(result, {"ok": True})
+            transaction.assert_called_once_with(db)
+            self.assertEqual(events, ["enter", "exit"])
+
     def setUp(self) -> None:
         self._index_db_temp = tempfile.TemporaryDirectory()
         self.addCleanup(self._index_db_temp.cleanup)
@@ -812,6 +896,100 @@ class JpTvLinkIndexTest(unittest.TestCase):
                     "[2099]/[20990101][20990331] Mapped Work/DVDRip.lnk",
                 ],
             )
+
+    def test_default_shortcut_layout_compacts_iso_catalog_dates(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "db"
+            db.mkdir()
+            fp = db / "[JP][TVInfo][2099].yaml"
+            fp.write_text(
+                _catalog_yaml_with_press_dates(
+                    "Mapped Work",
+                    [("BDRip", "VCB")],
+                    "2099-01-01",
+                    "2099-03-31",
+                ),
+                encoding="utf-8",
+            )
+            st = _settings(db, fp)
+            cfg = {
+                "paths": {
+                    "media_root": str(root / "media"),
+                    "shortcut_root": str(root / "finish"),
+                }
+            }
+
+            with patch("collection_detail.link_index._feature_config", return_value=cfg):
+                payload = preview_link_index_from_ui_body(
+                    {
+                        "works": [
+                            {
+                                "yaml_source_rel": "[JP][TVInfo][2099].yaml",
+                                "index_in_file": 0,
+                                "path": "Mapped Work",
+                                "press": [
+                                    {
+                                        "press_key": "0:main::BDRip:VCB",
+                                        "press_path": "Mapped Work_BDRip",
+                                    }
+                                ],
+                            }
+                        ]
+                    },
+                    settings=st,
+                )
+
+            self.assertEqual(payload["works"][0]["begin_date"], "20990101")
+            self.assertEqual(payload["works"][0]["end_date"], "20990331")
+            self.assertEqual(
+                payload["plan"][0]["shortcut_relpath"],
+                "[2099]/[20990101][20990331] Mapped Work/BDRip(VCB).lnk",
+            )
+
+    def test_scoped_shortcut_preview_compacts_iso_and_preserves_compact_dates(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            media_root = root / "media"
+            target = media_root / "Mapped Work" / "Mapped Work_BDRip"
+            target.mkdir(parents=True)
+            cfg = {
+                "paths": {
+                    "resource_roots": [str(media_root)],
+                    "shortcut_root": str(root / "finish"),
+                }
+            }
+            press = {
+                "press_format": "BDRip",
+                "press_group": "VCB",
+                "press_path": target.name,
+                "target_path": str(target),
+            }
+
+            with patch.object(link_index_mod, "_feature_config", return_value=cfg):
+                for start, end in (
+                    ("2099-01-01", "2099-03-31"),
+                    ("20990101", "20990331"),
+                ):
+                    with self.subTest(start=start, end=end):
+                        planned = link_index_mod.preview_scoped_shortcuts_for_work(
+                            {
+                                "name": "Mapped Work",
+                                "path": str(target.parent),
+                                "date": {"start": start, "end": end},
+                                "domain": "animation",
+                                "country": "japan",
+                                "release_type": "tv",
+                            },
+                            [press],
+                        )
+
+                        self.assertEqual(
+                            planned[0]["shortcut_relpath"],
+                            "[2099]/[20990101][20990331] Mapped Work/BDRip(VCB).lnk",
+                        )
+                        self.assertEqual(planned[0]["index_entry"]["begin_date"], "20990101")
+                        self.assertEqual(planned[0]["index_entry"]["end_date"], "20990331")
 
     def test_save_and_generate_write_catalog_path_and_press_path(self) -> None:
         with tempfile.TemporaryDirectory() as td:

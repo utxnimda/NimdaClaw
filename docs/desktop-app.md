@@ -59,9 +59,15 @@ both applications at the same time.
 - The desktop app binds only to `127.0.0.1`.
 - It prefers port 8765 and automatically uses a free system port if occupied.
 - Only one desktop instance can run at a time.
-- Closing the final window requests graceful Uvicorn shutdown and waits for the
-  listener to close. The server is a daemon thread in the same process, so it
-  cannot remain running after the desktop process exits.
+- Closing the final window rejects new API work, cancels queued operations, and
+  waits for already-started disk/provider operations before releasing the
+  listener and desktop instance lock. Waiting also applies if the Web server
+  thread has already exited unexpectedly. A long disk operation can therefore
+  delay final process exit; it is not forcibly interrupted partway through a save
+  or move. Forced process termination and power loss are outside this guarantee.
+- Disk APIs run serially in an owned worker; provider suggestions have a separate
+  queue. `/api/health` remains responsive during work and reports running/queued
+  counts. The desktop server and workers remain within the same process.
 - Runtime state is written to
   `<workspace_root>/data/framework/runtime/desktop.json` while the app is open
   and removed during normal shutdown.

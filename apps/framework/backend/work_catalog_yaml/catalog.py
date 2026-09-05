@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from work_catalog_yaml.yaml_io import load_yaml
+from work_catalog_yaml.paths import resolve_output_path
 
 
 @dataclass
@@ -46,7 +47,7 @@ def load_catalog_from_file(file_path: str | Path) -> Catalog:
 
     meta = doc.get("metadata") if isinstance(doc.get("metadata"), dict) else {}
     rv = doc.get("root")
-    root = rv.replace("\\", "/").rstrip("/") if isinstance(rv, str) else "Data"
+    root = rv.replace("\\", "/") if isinstance(rv, str) else "Data"
 
     ver = doc.get("version")
     version = ver if isinstance(ver, int) else 1
@@ -56,9 +57,21 @@ def load_catalog_from_file(file_path: str | Path) -> Catalog:
 
 def materialize_catalog(catalog: Catalog, output_base: str | Path) -> list[Path]:
     base = Path(output_base).resolve()
-    written: list[Path] = []
+    planned: list[tuple[Path, CatalogFile]] = []
+    seen: set[Path] = set()
     for f in catalog.files:
-        dest = base / catalog.root / f.path.replace("\\", "/")
+        dest = resolve_output_path(base, catalog.root or ".", f.path)
+        if dest in seen:
+            raise ValueError(f"输出路径重复：{dest}")
+        if dest.exists() and not dest.is_file():
+            raise ValueError(f"输出文件位置已被目录占用：{dest}")
+        seen.add(dest)
+        planned.append((dest, f))
+    for dest, _ in planned:
+        if any(parent in seen or (parent.exists() and not parent.is_dir()) for parent in dest.parents):
+            raise ValueError(f"输出目录与文件冲突：{dest}")
+    written: list[Path] = []
+    for dest, f in planned:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(f.content, encoding="utf-8")
         written.append(dest)

@@ -361,7 +361,8 @@ def _finalize_loaded_tv_jp_attributes(attrs: list[CatalogAttribute]) -> list[Cat
     merged = [_copy_attr_shallow(a) for a in attrs]
     for i, a in enumerate(merged):
         if a.type == "collection-type" and isinstance(a.data, dict):
-            dc = _normalize_collection_type_dict(_deep_copy_mapping(a.data))
+            # Normalization already deep-copies its input.
+            dc = _normalize_collection_type_dict(a.data)
             merged[i] = CatalogAttribute(a.type, cast(AttributeDatum, dc), a.description)
     return _finalize_tv_jp(merged)
 
@@ -377,7 +378,8 @@ def _assert_work_item(e: object, i: int, *, lbl: str | None = None) -> JpTvEntry
     attributes = [_assert_attribute(x, f"{label}.attributes[{k}]") for k, x in enumerate(attrs_raw)]
 
     final_attrs = _finalize_loaded_tv_jp_attributes(attributes)
-    return _finalize_entry_collection_canonical(JpTvEntry(attributes=final_attrs))
+    # Collection data is canonical and isolated after the loading pass above.
+    return JpTvEntry(attributes=final_attrs)
 
 
 def load_jp_tv_yaml_document(raw: Any) -> JpTvDocument:

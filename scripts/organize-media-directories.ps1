@@ -8,20 +8,9 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptRoot
-$backendRoot = Join-Path $repoRoot "apps\framework\backend"
-$featureBackendRoot = Join-Path $repoRoot "apps\features\media-directory-organizer\backend"
+. (Join-Path $scriptRoot "lib\workspace.ps1")
 
-$env:PYTHONDONTWRITEBYTECODE = "1"
-$env:PYTHONIOENCODING = "utf-8"
-$env:PYTHONPATH = [string]::Join(
-    [IO.Path]::PathSeparator,
-    @($backendRoot, $featureBackendRoot)
-)
-
-Push-Location $repoRoot
-try {
+Invoke-NimdaWorkspace -RepositoryRoot $repoRoot -Utf8PythonIO -Action {
     & $Python -m media_directory_organizer @OrganizerArguments
-    exit $LASTEXITCODE
-} finally {
-    Pop-Location
 }
+exit $LASTEXITCODE
