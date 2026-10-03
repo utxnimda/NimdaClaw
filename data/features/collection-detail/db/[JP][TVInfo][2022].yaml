@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/からかい上手の高木さん
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: からかい上手の高木さん③_BDRip
       markers: []
   - type: country
     data: japan
@@ -43,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Love Live!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! 虹ヶ咲学園 School Idol 同好会 2_BDRip
       markers: []
   - type: country
     data: japan
@@ -60,11 +64,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/魔法少女まどか☆マギカ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝 Final_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝 Final_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -104,9 +111,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/テニスの王子様
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 新テニスの王子様 U-17 World Cup_BDRip
       markers: []
   - type: country
     data: japan
@@ -121,9 +130,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Love Live!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! Super Star!! 2_BDRip
       markers: []
   - type: country
     data: japan
@@ -138,13 +149,38 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/うる星やつら
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: うる星やつら 2022_BDRip
       - press_format: BDRip
         press_group: DBD
+        press_path: うる星やつら 2022_BDRip(DBDR)
       markers: []
   - type: country
     data: japan
   - type: name
     data: うる星やつら
+- attributes:
+  - type: date
+    data:
+      start: '20221010'
+      end: '20221226'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Bleach
+      collectioned:
+      - press_format: 1080p
+        press_group: BFL
+        press_path: Bleach 千年血戦篇_1080p
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Bleach 千年血戦篇_BDRip
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Bleach 千年血戦篇

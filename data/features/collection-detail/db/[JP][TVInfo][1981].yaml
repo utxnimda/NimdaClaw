@@ -7,11 +7,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/うる星やつら
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: うる星やつら_BDRip
       - press_format: BDRip
         press_group: DBDR
+        press_path: うる星やつら_BDRip(DBDR)
       markers: []
   - type: country
     data: japan

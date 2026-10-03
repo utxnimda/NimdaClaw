@@ -352,6 +352,7 @@
       collectioned:
       - press_format: BDRip
         press_group: ANK
+        press_path: うたわれるもの_BDRip
       - press_format: DVDRip
         press_group: CK
         press_path: うたわれるもの_DVDRip

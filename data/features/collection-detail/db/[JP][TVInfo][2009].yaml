@@ -316,9 +316,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Pandora Hearts
       collectioned:
       - press_format: DVDRip
         press_group: CASO
+        press_path: Pandora Hearts_DVDRip
       markers: []
   - type: country
     data: japan
@@ -1357,6 +1359,7 @@
         press_path: ひだまりスケッチ×365 特別編_BDRip(ANK)
       - press_format: BDRip
         press_group: RF
+        press_path: ひだまりスケッチ×365 特別編_BDRip
       markers: []
   - type: country
     data: japan

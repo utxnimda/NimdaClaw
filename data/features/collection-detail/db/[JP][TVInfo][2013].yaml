@@ -77,6 +77,7 @@
       collectioned:
       - press_format: 720p
         press_group: KAMI
+        press_path: まおゆう魔王勇者_720p
       - press_format: BDRip
         press_group: '----'
         press_path: まおゆう魔王勇者_BDRip
@@ -402,11 +403,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/僕は友達が少ない
       collectioned:
       - press_format: 720p
         press_group: CKCS
+        press_path: 僕は友達が少ないNext_720p
       - press_format: BDRip
         press_group: CKCS
+        press_path: 僕は友達が少ないNext_BDRip
       markers: []
   - type: country
     data: japan
@@ -798,11 +802,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/這いよれ！ニャル子さん
       collectioned:
       - press_format: 720p
         press_group: CK
+        press_path: 這いよれ！ニャル子さんW_720p
       - press_format: BDRip
         press_group: '----'
+        press_path: 這いよれ！ニャル子さんW_BDRip
       markers: []
   - type: country
     data: japan
@@ -2394,6 +2401,7 @@
         press_path: ガリレイドンナ_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: ガリレイドンナ_BDRip
       markers: []
   - type: country
     data: japan
@@ -2499,8 +2507,8 @@
 - attributes:
   - type: date
     data:
-      start: '2013-07-12'
-      end: '2013-09-13'
+      start: '20130712'
+      end: '20130913'
   - type: collection-type
     data:
       domain: animation

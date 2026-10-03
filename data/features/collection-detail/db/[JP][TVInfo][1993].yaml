@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/GS美神
       collectioned:
       - press_format: 528p
         press_group: ''
+        press_path: GS美神_528p
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 ルパン暗殺指令_BDRip
       markers: []
   - type: country
     data: japan
@@ -61,9 +65,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/蒼き伝説シュート!
       collectioned:
       - press_format: R2Jraw
         press_group: DMHY
+        press_path: 蒼き伝説シュート!_R2Jraw
       markers: []
   - type: country
     data: japan

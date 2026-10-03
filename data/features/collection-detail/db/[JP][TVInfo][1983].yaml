@@ -22,9 +22,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/みゆき
       collectioned:
       - press_format: 240p
         press_group: ''
+        press_path: みゆき_240p
       markers: []
   - type: country
     data: japan
@@ -39,9 +41,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Cat's Eye
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: Cat's Eye_BDRip
       markers: []
   - type: country
     data: japan

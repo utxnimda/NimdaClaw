@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 ヘミングウェイ・ペーパーの謎_BDRip
       markers: []
   - type: country
     data: japan

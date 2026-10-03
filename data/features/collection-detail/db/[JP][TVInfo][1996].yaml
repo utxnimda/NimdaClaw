@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/るろうに剣心 -明治剣客浪漫譚-
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: るろうに剣心 -明治剣客浪漫譚-_DVDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/天空のエスカフローネ
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 天空のエスカフローネ_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/水色時代
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 水色時代_480p
       markers: []
   - type: country
     data: japan
@@ -58,11 +64,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/地獄先生ぬ〜べ〜
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 地獄先生ぬ〜べ〜_BDRip
       - press_format: DVDRip
         press_group: ZAZA
+        press_path: 地獄先生ぬ〜べ〜_DVDRip
       markers: []
   - type: country
     data: japan
@@ -77,9 +86,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 トワイライト☆ジェミニの秘密_BDRip
       markers: []
   - type: country
     data: japan
@@ -94,9 +105,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ハーメルンのバイオリン弾き
       collectioned:
       - press_format: 336p
         press_group: ''
+        press_path: ハーメルンのバイオリン弾き_336p
       markers: []
   - type: country
     data: japan
@@ -111,9 +124,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/逮捕しちゃうぞ
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 逮捕しちゃうぞ_480p
       markers: []
   - type: country
     data: japan

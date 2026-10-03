@@ -17,3 +17,231 @@
     data: korea
   - type: name
     data: 法官李汉英
+- attributes:
+  - type: date
+    data:
+      start: '20260515'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/超能路人甲
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 超能路人甲_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 超能路人甲
+- attributes:
+  - type: date
+    data:
+      start: '20260711'
+      end: '20260816'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/公寓黑风暴
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 公寓黑风暴_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 公寓黑风暴
+- attributes:
+  - type: date
+    data:
+      start: '20260626'
+      end: '20260725'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/金部长
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 金部长_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 金部长
+- attributes:
+  - type: date
+    data:
+      start: '20260731'
+      end: '20260912'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/杀手妈咪
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 杀手妈咪_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 杀手妈咪
+- attributes:
+  - type: date
+    data:
+      start: '20260530'
+      end: '20260705'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/新进职员姜会长
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 新进职员姜会长_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 新进职员姜会长
+- attributes:
+  - type: date
+    data:
+      start: '20260313'
+      end: '20260502'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/神与律师事务所
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 神与律师事务所_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 神与律师事务所
+- attributes:
+  - type: date
+    data:
+      start: '20260220'
+      end: '20260403'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/在你灿烂的季节
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 在你灿烂的季节_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 在你灿烂的季节
+- attributes:
+  - type: date
+    data:
+      start: '20260228'
+      end: '20260405'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/未婚男女的效率恋爱
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 未婚男女的效率恋爱_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 未婚男女的效率恋爱
+- attributes:
+  - type: date
+    data:
+      start: '20260718'
+      end: '20260823'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/毛骨悚然的恋爱
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 毛骨悚然的恋爱_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 毛骨悚然的恋爱
+- attributes:
+  - type: date
+    data:
+      start: '20260306'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/订阅男友
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 订阅男友_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 订阅男友
+- attributes:
+  - type: date
+    data:
+      start: '20260213'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/莎拉的真伪人生
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 莎拉的真伪人生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 莎拉的真伪人生
+- attributes:
+  - type: date
+    data:
+      start: '20260116'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/爱情怎么翻译？
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 爱情怎么翻译？_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 爱情怎么翻译？

@@ -7,11 +7,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/World Trigger
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: World Trigger 2_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: World Trigger 2_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -26,9 +29,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Odd Taxi
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Odd Taxi_BDRip
       markers: []
   - type: country
     data: japan
@@ -37,8 +42,8 @@
 - attributes:
   - type: date
     data:
-      start: '2021-04-08'
-      end: '2021-06-24'
+      start: '20210408'
+      end: '20210624'
   - type: collection-type
     data:
       domain: animation
@@ -65,9 +70,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ひぐらしのなく頃に
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ひぐらしのなく頃に卒_BDRip
       markers: []
   - type: country
     data: japan
@@ -82,9 +89,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/カノジョも彼女
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: カノジョも彼女_BDRip
       markers: []
   - type: country
     data: japan
@@ -99,9 +108,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/月が導く異世界道中
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 月が導く異世界道中_BDRip
       markers: []
   - type: country
     data: japan
@@ -116,9 +127,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Love Live!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! Super Star!!_BDRip
       markers: []
   - type: country
     data: japan
@@ -133,11 +146,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/魔法少女まどか☆マギカ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝 2nd_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝 2nd_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -152,9 +168,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ジャヒー様はくじけない!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ジャヒー様はくじけない!_BDRip
       markers: []
   - type: country
     data: japan
@@ -163,7 +181,7 @@
 - attributes:
   - type: date
     data:
-      start: '2021-08-27'
+      start: '20210827'
       end: ''
   - type: collection-type
     data:
@@ -188,9 +206,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/吸血鬼すぐ死ぬ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 吸血鬼すぐ死ぬ_BDRip
       markers: []
   - type: country
     data: japan
@@ -205,11 +225,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/World Trigger
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: World Trigger 3_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: World Trigger 3_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -224,9 +247,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/逆転世界ノ電池少女
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 逆転世界ノ電池少女_BDRip
       markers: []
   - type: country
     data: japan
@@ -241,9 +266,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/王様ランキング
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 王様ランキング_BDRip
       markers: []
   - type: country
     data: japan

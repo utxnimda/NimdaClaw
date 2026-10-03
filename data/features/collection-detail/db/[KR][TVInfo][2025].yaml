@@ -397,3 +397,155 @@
     data: korea
   - type: name
     data: 现金英雄
+- attributes:
+  - type: date
+    data:
+      start: '20250802'
+      end: '20250907'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/梦想成为律师的律师们
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 梦想成为律师的律师们_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 梦想成为律师的律师们
+- attributes:
+  - type: date
+    data:
+      start: '20250410'
+      end: '20251118'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/我的荒糖恋爱
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 我的荒糖恋爱_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 我的荒糖恋爱
+- attributes:
+  - type: date
+    data:
+      start: '20251013'
+      end: '20260327'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/玛丽和奇怪的爸爸们
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+        press_path: 玛丽和奇怪的爸爸们_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 玛丽和奇怪的爸爸们
+- attributes:
+  - type: date
+    data:
+      start: '20250809'
+      end: '20260125'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/华丽的日子
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 华丽的日子_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 华丽的日子
+- attributes:
+  - type: date
+    data:
+      start: '20251025'
+      end: '20251130'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/金部长的梦想人生
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 金部长的梦想人生_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 金部长的梦想人生
+- attributes:
+  - type: date
+    data:
+      start: '20251218'
+      end: '20260108'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/Villains
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: Villains_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: Villains
+- attributes:
+  - type: date
+    data:
+      start: '20251107'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/你旁观的罪
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 你旁观的罪_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 你旁观的罪
+- attributes:
+  - type: date
+    data:
+      start: '20251105'
+      end: '20251203'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/操控游戏
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 操控游戏_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 操控游戏

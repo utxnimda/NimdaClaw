@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Cat's Eye
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: Cat's Eye 2_BDRip
       markers: []
   - type: country
     data: japan

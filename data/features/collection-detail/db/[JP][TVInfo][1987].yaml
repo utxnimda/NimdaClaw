@@ -7,13 +7,17 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/きまぐれオレンジ☆ロード
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: きまぐれオレンジ☆ロード_BDRip
       - press_format: BDRip
         press_group: MZ
+        press_path: きまぐれオレンジ☆ロード_BDRip(MZ)
       - press_format: 720p
         press_group: CFS
+        press_path: きまぐれオレンジ☆ロード_720p
       markers: []
   - type: country
     data: japan

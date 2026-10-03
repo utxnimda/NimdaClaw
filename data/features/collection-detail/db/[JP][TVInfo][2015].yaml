@@ -1931,6 +1931,7 @@
         press_path: 落第騎士の英雄譚_BDRip
       - press_format: 720p
         press_group: DMGL
+        press_path: 落第騎士の英雄譚_720p
       markers:
       - music
       - subs
@@ -2344,8 +2345,8 @@
 - attributes:
   - type: date
     data:
-      start: '2015-07-24'
-      end: '2015-09-25'
+      start: '20150724'
+      end: '20150925'
   - type: collection-type
     data:
       domain: animation

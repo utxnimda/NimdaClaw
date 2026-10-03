@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/カウボーイビバップ
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: カウボーイビバップ_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/カードキャプターさくら
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: カードキャプターさくら_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/頭文字D
       collectioned:
       - press_format: BDRip
         press_group: ANKA
+        press_path: 頭文字D_BDRip
       markers: []
   - type: country
     data: japan
@@ -58,9 +64,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Serial Experiments Lain
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: Serial Experiments Lain_BDRip
       markers: []
   - type: country
     data: japan
@@ -92,9 +100,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/彼氏彼女の事情
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 彼氏彼女の事情_480p
       markers: []
   - type: country
     data: japan
@@ -109,9 +119,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/守護月天!
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 守護月天!_BDRip
       markers: []
   - type: country
     data: japan

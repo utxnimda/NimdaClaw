@@ -7,11 +7,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/魔法少女まどか☆マギカ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: マギアレコード 魔法少女まどか☆マギカ外伝_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -26,9 +29,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/22／7
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 22／7_BDRip
       markers: []
   - type: country
     data: japan
@@ -43,9 +48,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ドロヘドロ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ドロヘドロ_BDRip
       markers: []
   - type: country
     data: japan
@@ -60,9 +67,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/八男って、それはないでしょう！
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 八男って、それはないでしょう！_BDRip
       markers: []
   - type: country
     data: japan
@@ -77,9 +86,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/波よ聞いてくれ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 波よ聞いてくれ_BDRip
       markers: []
   - type: country
     data: japan
@@ -94,9 +105,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/つぐもも
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 継つぐもも_BDRip
       markers: []
   - type: country
     data: japan
@@ -111,9 +124,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Princess Connect!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Princess Connect! Re：Dive_BDRip
       markers: []
   - type: country
     data: japan
@@ -128,9 +143,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/放課後ていぼう日誌
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 放課後ていぼう日誌_BDRip
       markers: []
   - type: country
     data: japan
@@ -145,11 +162,14 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/食戟のソーマ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 食戟のソーマ 豪ノ皿_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 食戟のソーマ 豪ノ皿_BDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -164,9 +184,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Deca-Dence
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Deca-Dence_BDRip
       markers: []
   - type: country
     data: japan
@@ -181,9 +203,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/やはり俺の青春ラブコメはまちがっている
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: やはり俺の青春ラブコメはまちがっている。完_BDRip
       markers: []
   - type: country
     data: japan
@@ -215,9 +239,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ひぐらしのなく頃に
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ひぐらしのなく頃に業_BDRip
       markers: []
   - type: country
     data: japan
@@ -232,9 +258,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ダンジョンに出会いを求めるのは間違っているだろうか
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ダンジョンに出会いを求めるのは間違っているだろうかIII_BDRip
       markers: []
   - type: country
     data: japan
@@ -249,11 +277,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/呪術廻戦
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 呪術廻戦_BDRip(Jsum)
       - press_format: BDRip
         press_group: VCB
+        press_path: 呪術廻戦_BDRip
       markers: []
   - type: country
     data: japan
@@ -268,9 +299,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Love Live!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! 虹ヶ咲学園 School Idol 同好会_BDRip
       markers: []
   - type: country
     data: japan
@@ -285,9 +318,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/おちこぼれフルーツタルト
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: おちこぼれフルーツタルト_BDRip
       markers: []
   - type: country
     data: japan
@@ -302,9 +337,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/超次元ゲイム ネプテューヌ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 超次元ゲイム ネプテューヌ Hi☆Light_BDRip
       markers: []
   - type: country
     data: japan

@@ -96,3 +96,22 @@
     data: korea
   - type: name
     data: 请回答1994
+- attributes:
+  - type: date
+    data:
+      start: '20130805'
+      end: '20131008'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/好医生
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+        press_path: 好医生_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 好医生

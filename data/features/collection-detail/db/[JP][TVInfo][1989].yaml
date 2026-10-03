@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 バイバイ・リバティー・危機一発!_BDRip
       markers: []
   - type: country
     data: japan

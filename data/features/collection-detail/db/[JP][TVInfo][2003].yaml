@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/明日のナージャ
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 明日のナージャ_480p
       markers: []
   - type: country
     data: japan
@@ -25,9 +27,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/キノの旅
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: キノの旅 -The Beautiful World-_480p
       markers: []
   - type: country
     data: japan
@@ -59,9 +63,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/成恵の世界
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 成恵の世界_480p
       markers: []
   - type: country
     data: japan
@@ -76,11 +82,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/廃棄王女
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 廃棄王女_480p
       - press_format: BDRip
         press_group: ''
+        press_path: 廃棄王女_BDRip
       markers: []
   - type: country
     data: japan
@@ -113,9 +122,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Happy★Lesson
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Happy★Lesson Advance_480p
       markers: []
   - type: country
     data: japan
@@ -147,9 +158,11 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/おねがい☆ティーチャー
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: おねがい☆ツインズ_BDRip
       markers: []
   - type: country
     data: japan
@@ -164,9 +177,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/一騎当千
       collectioned:
       - press_format: BDRip
         press_group: ALK
+        press_path: 一騎当千_BDRip
       markers: []
   - type: country
     data: japan
@@ -181,9 +196,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 お宝返却大作戦!!_BDRip
       markers: []
   - type: country
     data: japan
@@ -198,9 +215,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/まほろまてぃっく
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: まほろまてぃっく夏のTVスペシャル_BDRip
       markers: []
   - type: country
     data: japan
@@ -215,9 +234,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Full Metal Panic
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: Full Metal Panic？ふもっふ_BDRip
       markers: []
   - type: country
     data: japan
@@ -232,9 +253,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/君が望む永遠
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 君が望む永遠_BDRip
       markers: []
   - type: country
     data: japan
@@ -249,11 +272,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/ヤミと帽子と本の旅人
       collectioned:
       - press_format: 540p
         press_group: ''
+        press_path: ヤミと帽子と本の旅人_540p
       - press_format: BDRip
         press_group: ''
+        press_path: ヤミと帽子と本の旅人_BDRip
       markers: []
   - type: country
     data: japan
@@ -268,9 +294,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/まぶらほ
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: まぶらほ_480p
       markers: []
   - type: country
     data: japan
@@ -285,9 +313,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/鋼の錬金術師
       collectioned:
       - press_format: BDRip
         press_group: PHI
+        press_path: 鋼の錬金術師_BDRip
       markers: []
   - type: country
     data: japan
@@ -302,11 +332,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/月姫
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 真月譚 月姫_480p
       - press_format: DVDRip
         press_group: ''
+        press_path: 真月譚 月姫_DVDRip
       markers: []
   - type: country
     data: japan
@@ -321,9 +354,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/藍より青し
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 藍より青し~縁~_BDRip
       markers: []
   - type: country
     data: japan

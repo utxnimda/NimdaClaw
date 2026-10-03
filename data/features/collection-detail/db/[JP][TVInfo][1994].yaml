@@ -8,9 +8,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 燃えよ斬鉄剣_BDRip
       markers: []
   - type: country
     data: japan
@@ -25,9 +27,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/Blue Seed
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: Blue Seed_BDRip
       markers: []
   - type: country
     data: japan
@@ -42,9 +46,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Macross
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Macross 7_BDRip
       markers: []
   - type: country
     data: japan

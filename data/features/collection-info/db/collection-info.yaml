@@ -5,6 +5,7 @@ records:
   country: japan
   release_type: tv
   completed_years:
+  - '2005'
   - '2006'
   - '2007'
   - '2008'

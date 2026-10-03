@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/グランクレスト戦記
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: グランクレスト戦記_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/弱虫ペダル
       collectioned:
       - press_format: BDRip
         press_group: MZ
+        press_path: 弱虫ペダル Glory Line_BDRip
       markers: []
   - type: country
     data: japan
@@ -66,11 +70,14 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/七つの大罪
       collectioned:
       - press_format: 1080p
         press_group: BNLL
+        press_path: 七つの大罪 戒めの復活_1080p
       - press_format: BDRip
         press_group: RF
+        press_path: 七つの大罪 戒めの復活_BDRip
       markers: []
   - type: country
     data: japan
@@ -102,9 +109,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Wixoss
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Lostorage Conflated Wixoss_BDRip
       markers: []
   - type: country
     data: japan
@@ -157,9 +166,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/High School D×D
       collectioned:
       - press_format: BDRip
         press_group: RF
+        press_path: High School D×D Hero_BDRip
       markers: []
   - type: country
     data: japan
@@ -174,13 +185,17 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Full Metal Panic
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Full Metal Panic! Invisible Victory_BDRip(Jsum)
       - press_format: BDRip
         press_group: VCB
+        press_path: Full Metal Panic! Invisible Victory_BDRip
       - press_format: 1080p
         press_group: FL
+        press_path: Full Metal Panic! Invisible Victory_1080p
       markers: []
   - type: country
     data: japan
@@ -195,9 +210,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ヤマノススメ
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: ヤマノススメ3_BDRip
       markers: []
   - type: country
     data: japan
@@ -254,11 +271,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/High Score Girl
       collectioned:
       - press_format: 1080p
         press_group: CC
+        press_path: High Score Girl_1080p
       - press_format: BDRip
         press_group: VCB
+        press_path: High Score Girl_BDRip
       markers: []
   - type: country
     data: japan
@@ -290,9 +310,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ソラとウミのアイダ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ソラとウミのアイダ_BDRip
       markers: []
   - type: country
     data: japan
@@ -301,8 +323,8 @@
 - attributes:
   - type: date
     data:
-      start: '2018-10-04'
-      end: '2018-12-20'
+      start: '20181004'
+      end: '20181220'
   - type: collection-type
     data:
       domain: animation
@@ -331,9 +353,11 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/とある魔術の禁書目録
       collectioned:
       - press_format: 1080p
         press_group: CKDG
+        press_path: とある魔術の禁書目録 III_1080p
       markers: []
   - type: country
     data: japan
@@ -348,13 +372,17 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Sword Art Online
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Sword Art Online Alicization_BDRip
       - press_format: BDRip
         press_group: VCUR
+        press_path: Sword Art Online Alicization_BDRip(VCUR)
       - press_format: 720p
         press_group: CKCF
+        press_path: Sword Art Online Alicization_720p
       markers: []
   - type: country
     data: japan

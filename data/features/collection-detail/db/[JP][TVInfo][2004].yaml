@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/攻殻機動隊
       collectioned:
       - press_format: BDRip
         press_group: VCBP
+        press_path: 攻殻機動隊 S.A.C. 2nd GIG_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/超変身コス∞プレイヤー
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 超変身コス∞プレイヤー_480p
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/妄想代理人
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 妄想代理人_BDRip
       markers: []
   - type: country
     data: japan
@@ -58,9 +64,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/この醜くも美しい世界
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: この醜くも美しい世界_BDRip
       markers: []
   - type: country
     data: japan
@@ -75,9 +83,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/最遊記
       collectioned:
       - press_format: R2Jraw
         press_group: '----'
+        press_path: 最遊記 Reload Gunlock_R2Jraw
       markers: []
   - type: country
     data: japan
@@ -92,9 +102,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/頭文字D
       collectioned:
       - press_format: BDRip
         press_group: ANKA
+        press_path: 頭文字D Fourth Stage_BDRip
       markers: []
   - type: country
     data: japan
@@ -109,11 +121,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Samurai Champloo
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: Samurai Champloo_720p
       - press_format: BDRip
         press_group: ''
+        press_path: Samurai Champloo_BDRip
       markers: []
   - type: country
     data: japan
@@ -128,9 +143,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Girls ブラボー
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Girls ブラボー_480p
       markers: []
   - type: country
     data: japan
@@ -145,9 +162,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 盗まれたルパン 〜コピーキャットは真夏の蝶〜_BDRip
       markers: []
   - type: country
     data: japan
@@ -162,9 +181,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/風人物語
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 風人物語_480p
       markers: []
   - type: country
     data: japan
@@ -180,9 +201,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/陰陽大戦記
       collectioned:
       - press_format: 524p
         press_group: ''
+        press_path: 陰陽大戦記_524p
       markers: []
   - type: country
     data: japan
@@ -197,9 +220,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/舞-Hime
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 舞-Hime_BDRip
       markers: []
   - type: country
     data: japan
@@ -214,9 +239,11 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/魔法少女リリカルなのは
       collectioned:
       - press_format: BDRip
-        press_group: ''
+        press_group: FL
+        press_path: 魔法少女リリカルなのは_BDRip
       markers: []
   - type: country
     data: japan
@@ -231,9 +258,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/To Heart
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: To Heart ~Remember My Memories~_720p
       markers: []
   - type: country
     data: japan
@@ -249,9 +278,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Fanastic Children
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: Fanastic Children_720p
       markers: []
   - type: country
     data: japan
@@ -266,13 +297,17 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/School Rumble
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: School Rumble_BDRip
       - press_format: DVDRip
         press_group: '----'
+        press_path: School Rumble_DVDRip
       - press_format: 720p
         press_group: '----'
+        press_path: School Rumble_720p
       markers: []
   - type: country
     data: japan
@@ -287,9 +322,14 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Bleach
       collectioned:
       - press_format: DVDRip
         press_group: ''
+        press_path: Bleach_DVDRip
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Bleach_BDRip
       markers: []
   - type: country
     data: japan
@@ -304,9 +344,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Rozen Maiden
       collectioned:
       - press_format: BDRip
-        press_group: ''
+        press_group: CASO
+        press_path: Rozen Maiden_BDRip
       markers: []
   - type: country
     data: japan
@@ -321,9 +363,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/W〜ウィッシュ〜
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: W〜ウィッシュ〜_480p
       markers: []
   - type: country
     data: japan
@@ -353,11 +397,28 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/げんしけん
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: げんしけん_720p
       markers: []
   - type: country
     data: japan
   - type: name
     data: げんしけん
+- attributes:
+  - type: date
+    data:
+      start: '20041113'
+      end: '20050521'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      collectioned: []
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Major 1

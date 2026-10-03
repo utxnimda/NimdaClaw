@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ロミオの青い空
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ロミオの青い空_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/天地無用!
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: 天地無用!_DVDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 ハリマオの財宝を追え!!_BDRip
       markers: []
   - type: country
     data: japan

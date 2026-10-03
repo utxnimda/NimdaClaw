@@ -321,3 +321,22 @@
     data: korea
   - type: name
     data: 照明商店
+- attributes:
+  - type: date
+    data:
+      start: '20240920'
+      end: '20251026'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/恩秀的好日子
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 恩秀的好日子_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 恩秀的好日子

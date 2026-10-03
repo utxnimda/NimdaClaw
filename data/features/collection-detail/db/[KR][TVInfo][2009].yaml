@@ -64,3 +64,22 @@
     data: korea
   - type: name
     data: 穿透屋顶的High Kick！
+- attributes:
+  - type: date
+    data:
+      start: '20090425'
+      end: '20090726'
+  - type: collection-type
+    data:
+      domain: television
+      release_type: tv
+      path: G:/Video/电视剧/韩剧/灿烂的遗产
+      collectioned:
+      - press_format: 720p
+        press_group: ''
+        press_path: 灿烂的遗产_720p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 灿烂的遗产

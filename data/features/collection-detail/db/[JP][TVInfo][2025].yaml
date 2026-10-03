@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/もめんたりー・リリィ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: もめんたりー・リリィ_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/沖縄で好きになった子が方言すぎてツラすぎる
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 沖縄で好きになった子が方言すぎてツラすぎる_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/俺だけレベルアップな件
       collectioned:
       - press_format: 2160p
         press_group: '----'
+        press_path: 俺だけレベルアップな件 2_2160p
       markers: []
   - type: country
     data: japan
@@ -58,9 +64,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Unnamed Memory
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Unnamed Memory 2_BDRip
       markers: []
   - type: country
     data: japan
@@ -75,9 +83,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/悪役令嬢転生おじさん
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 悪役令嬢転生おじさん_BDRip
       markers: []
   - type: country
     data: japan
@@ -92,9 +102,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/日本へようこそエルフさん。
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 日本へようこそエルフさん。_BDRip
       markers: []
   - type: country
     data: japan
@@ -109,9 +121,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ロックは淑女の嗜みでして
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ロックは淑女の嗜みでして_BDRip
       markers: []
   - type: country
     data: japan
@@ -126,9 +140,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/前橋ウィッチーズ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 前橋ウィッチーズ_BDRip
       markers: []
   - type: country
     data: japan
@@ -143,9 +159,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/クレバテス-魔獣の王と赤子と屍の勇者-
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: クレバテス-魔獣の王と赤子と屍の勇者-_BDRip
       markers: []
   - type: country
     data: japan
@@ -160,11 +178,32 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/フードコートで、また明日。
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: フードコートで、また明日。_BDRip
       markers: []
   - type: country
     data: japan
   - type: name
     data: フードコートで、また明日。
+- attributes:
+  - type: date
+    data:
+      start: '20250110'
+      end: '20250328'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/ギルドの受付嬢ですが、残業は嫌なのでボスをソロ討伐しようと思います
+      collectioned:
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: ギルドの受付嬢ですが、残業は嫌なのでボスをソロ討伐しようと思います_BDRip
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: ギルドの受付嬢ですが、残業は嫌なのでボスをソロ討伐しようと思います

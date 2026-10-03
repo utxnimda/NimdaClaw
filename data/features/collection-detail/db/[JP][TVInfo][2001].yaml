@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Sister Princess
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Sister Princess_480p
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Noir
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: Noir_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/逮捕しちゃうぞ
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 逮捕しちゃうぞ Second Season_480p
       markers: []
   - type: country
     data: japan
@@ -58,9 +64,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/シャーマンキング
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: シャーマンキング_720p
       markers: []
   - type: country
     data: japan
@@ -75,9 +83,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ルパン三世
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ルパン三世 Alcatraz Connection_BDRip
       markers: []
   - type: country
     data: japan
@@ -92,9 +102,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/まほろまてぃっく
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: まほろまてぃっく_BDRip
       markers: []
   - type: country
     data: japan
@@ -109,11 +121,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/ヒカルの碁
       collectioned:
       - press_format: DVDRip
         press_group: DMHY
+        press_path: ヒカルの碁_DVDRip
       - press_format: BDRip
         press_group: JSUM
+        press_path: ヒカルの碁_BDRip
       markers: []
   - type: country
     data: japan
@@ -128,9 +143,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/テニスの王子様
       collectioned:
       - press_format: 1080p
         press_group: '----'
+        press_path: テニスの王子様_1080p
       markers: []
   - type: country
     data: japan

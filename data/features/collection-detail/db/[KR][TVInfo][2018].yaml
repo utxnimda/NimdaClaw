@@ -251,3 +251,22 @@
     data: korea
   - type: name
     data: 阿尔罕布拉宫的回忆
+- attributes:
+  - type: date
+    data:
+      start: '20180627'
+      end: ''
+  - type: collection-type
+    data:
+      domain: television
+      release_type: movie
+      path: G:/Video/电视剧/韩剧/魔女 2018
+      collectioned:
+      - press_format: 1080p
+        press_group: ''
+        press_path: 魔女 2018_1080p
+      markers: []
+  - type: country
+    data: korea
+  - type: name
+    data: 魔女 2018

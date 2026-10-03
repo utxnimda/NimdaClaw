@@ -124,6 +124,7 @@
         press_path: 咲 -Saki- 全国編_720p
       - press_format: BDRip
         press_group: VCBD
+        press_path: 咲 -Saki- 全国編_BDRip(VCB)
       - press_format: BDRip
         press_group: ANKK
         press_path: 咲 -Saki- 全国編_BDRip
@@ -1520,6 +1521,7 @@
       collectioned:
       - press_format: 1080p
         press_group: KAMI
+        press_path: Re：␣ ハマトラ_1080p
       - press_format: BDRip
         press_group: PHI
         press_path: Re：␣ ハマトラ_BDRip
@@ -2436,11 +2438,14 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Tales Of Zestiria
       collectioned:
       - press_format: 720p
         press_group: CASO
+        press_path: Tales Of Zestiria 〜導師の夜明け〜_720p
       - press_format: BDRip
         press_group: '----'
+        press_path: Tales Of Zestiria 〜導師の夜明け〜_BDRip
       markers: []
   - type: country
     data: japan
@@ -2471,8 +2476,8 @@
 - attributes:
   - type: date
     data:
-      start: '2014-07-09'
-      end: '2014-09-10'
+      start: '20140709'
+      end: '20140910'
   - type: collection-type
     data:
       domain: animation

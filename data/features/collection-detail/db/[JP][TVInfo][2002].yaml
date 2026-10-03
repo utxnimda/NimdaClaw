@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/おねがい☆ティーチャー
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: おねがい☆ティーチャー_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Full Metal Panic
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: Full Metal Panic!_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/Kanon
       collectioned:
       - press_format: DVDRip
         press_group: VCB
+        press_path: Kanon 2002_DVDRip(VCB)
       markers: []
   - type: country
     data: japan
@@ -59,9 +65,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Happy★Lesson
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Happy★Lesson_480p
       markers: []
   - type: country
     data: japan
@@ -76,9 +84,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Chobits
       collectioned:
       - press_format: 720p
         press_group: ''
+        press_path: Chobits_720p
       markers: []
   - type: country
     data: japan
@@ -93,9 +103,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/天地無用!
       collectioned:
       - press_format: DVDRip
         press_group: '----'
+        press_path: 天地無用! GXP_DVDRip
       markers: []
   - type: country
     data: japan
@@ -110,9 +122,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/アベノ橋魔法☆商店街
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: アベノ橋魔法☆商店街_BDRip
       markers: []
   - type: country
     data: japan
@@ -127,9 +141,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/あずまんが大王
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: あずまんが大王_BDRip
       markers: []
   - type: country
     data: japan
@@ -144,9 +160,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/藍より青し
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: 藍より青し_BDRip
       markers: []
   - type: country
     data: japan
@@ -162,9 +180,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/朝霧の巫女
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: 朝霧の巫女_480p
       markers: []
   - type: country
     data: japan
@@ -196,9 +216,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/プリンセスチュチュ
       collectioned:
       - press_format: BDRip
         press_group: ''
+        press_path: プリンセスチュチュ_BDRip
       markers: []
   - type: country
     data: japan
@@ -248,9 +270,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/攻殻機動隊
       collectioned:
       - press_format: BDRip
         press_group: VCBP
+        press_path: 攻殻機動隊 Stand Alone Complex_BDRip
       markers: []
   - type: country
     data: japan
@@ -265,9 +289,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Sister Princess
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Sister Princess RePure_480p
       markers: []
   - type: country
     data: japan
@@ -297,9 +323,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/Piano
       collectioned:
       - press_format: 480p
         press_group: ''
+        press_path: Piano_480p
       markers: []
   - type: country
     data: japan

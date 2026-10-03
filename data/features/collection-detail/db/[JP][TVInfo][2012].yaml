@@ -441,11 +441,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/これはゾンビですか？
       collectioned:
       - press_format: 720p
         press_group: SK
+        press_path: これはゾンビですか？Of The Dead_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: これはゾンビですか？Of The Dead_BDRip
       markers: []
   - type: country
     data: japan

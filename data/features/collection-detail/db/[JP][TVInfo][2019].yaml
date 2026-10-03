@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/バーチャルさんはみている
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: バーチャルさんはみている_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,11 +26,14 @@
     data:
       domain: animation
       release_type: tv
+      path: V:/Japan/Date A Live
       collectioned:
       - press_format: 720p
         press_group: CKCS
+        press_path: Date A Live III_720p
       - press_format: BDRip
         press_group: VCBT
+        press_path: Date A Live III_BDRip
       markers: []
   - type: country
     data: japan
@@ -43,9 +48,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ドメスティックな彼女
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: ドメスティックな彼女_BDRip
       markers: []
   - type: country
     data: japan
@@ -60,11 +67,14 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/神撃のバハムート
       collectioned:
       - press_format: 1080p
         press_group: NKLL
+        press_path: Manaria Friends_1080p
       - press_format: BDRip
         press_group: MZ
+        press_path: Manaria Friends_BDRip
       markers: []
   - type: country
     data: japan
@@ -79,11 +89,14 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/なんでここに先生が!？
       collectioned:
       - press_format: 720p
         press_group: JY
+        press_path: なんでここに先生が!？_720p
       - press_format: BDRip
         press_group: VCB
+        press_path: なんでここに先生が!？_BDRip
       markers: []
   - type: country
     data: japan
@@ -115,9 +128,11 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/彼方のアストラ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 彼方のアストラ_BDRip
       markers: []
   - type: country
     data: japan
@@ -132,9 +147,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/からかい上手の高木さん
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: からかい上手の高木さん②_BDRip
       markers: []
   - type: country
     data: japan
@@ -149,11 +166,14 @@
     data:
       domain: animation
       release_type: tv
+      path: Z:/ダンジョンに出会いを求めるのは間違っているだろうか
       collectioned:
       - press_format: 1080p
         press_group: DML
+        press_path: ダンジョンに出会いを求めるのは間違っているだろうかII_1080p
       - press_format: BDRip
         press_group: VCDM
+        press_path: ダンジョンに出会いを求めるのは間違っているだろうかII_BDRip
       markers: []
   - type: country
     data: japan
@@ -168,9 +188,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/私、能力は平均値でって言ったよね！
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 私、能力は平均値でって言ったよね！_BDRip
       markers: []
   - type: country
     data: japan
@@ -185,9 +207,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/七つの大罪
       collectioned:
       - press_format: 1080p
         press_group: BNLL
+        press_path: 七つの大罪 神々の逆鱗_1080p
       markers: []
   - type: country
     data: japan
@@ -202,11 +226,14 @@
     data:
       domain: animation
       release_type: tv
+      path: S:/無限の住人
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 無限の住人 -Immortal-_BDRip
       - press_format: 1080p
         press_group: FL
+        press_path: 無限の住人 -Immortal-_1080p
       markers: []
   - type: country
     data: japan
@@ -221,13 +248,17 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/食戟のソーマ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 食戟のソーマ 神ノ皿_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: 食戟のソーマ 神ノ皿_BDRip(VCB)
       - press_format: 720p
         press_group: CKCF
+        press_path: 食戟のソーマ 神ノ皿_720p
       markers: []
   - type: country
     data: japan
@@ -259,9 +290,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/Rifle Is Beautiful
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Rifle Is Beautiful_BDRip
       markers: []
   - type: country
     data: japan

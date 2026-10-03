@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/俺だけレベルアップな件
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 俺だけレベルアップな件_BDRip
       markers: []
   - type: country
     data: japan
@@ -24,9 +26,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/望まぬ不死の冒険者
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: 望まぬ不死の冒険者_BDRip
       markers: []
   - type: country
     data: japan
@@ -41,9 +45,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Unnamed Memory
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Unnamed Memory_BDRip
       markers: []
   - type: country
     data: japan
@@ -58,9 +64,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/るろうに剣心 -明治剣客浪漫譚-
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: るろうに剣心 -明治剣客浪漫譚- 2023 京都動乱 _BDRip
       markers: []
   - type: country
     data: japan
@@ -75,9 +83,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/アオのハコ
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: アオのハコ_BDRip
       markers: []
   - type: country
     data: japan
@@ -92,9 +102,11 @@
     data:
       domain: animation
       release_type: tv
+      path: Y:/チ。 ―地球の運動について―
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: チ。 ―地球の運動について―_BDRip
       markers: []
   - type: country
     data: japan
@@ -109,9 +121,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Love Live!
       collectioned:
       - press_format: BDRip
         press_group: JSUM
+        press_path: Love Live! Super Star!! 3_BDRip
       markers: []
   - type: country
     data: japan
@@ -120,7 +134,7 @@
 - attributes:
   - type: date
     data:
-      start: '2024-09-20'
+      start: '20240920'
       end: ''
   - type: collection-type
     data:
@@ -136,3 +150,25 @@
     data: japan
   - type: name
     data: Overlord 聖王国編
+- attributes:
+  - type: date
+    data:
+      start: '20241005'
+      end: '20241228'
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: tv
+      path: U:/Bleach
+      collectioned:
+      - press_format: 1080p
+        press_group: BFL
+        press_path: Bleach 千年血戦篇-相剋譚-_1080p
+      - press_format: BDRip
+        press_group: JSUM
+        press_path: Bleach 千年血戦篇-相剋譚-_BDRip
+      markers: []
+  - type: country
+    data: japan
+  - type: name
+    data: Bleach 千年血戦篇-相剋譚-

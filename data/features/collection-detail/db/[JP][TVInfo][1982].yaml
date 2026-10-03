@@ -7,9 +7,11 @@
     data:
       domain: animation
       release_type: tv
+      path: U:/Macross
       collectioned:
       - press_format: BDRip
         press_group: VCB
+        press_path: 超時空要塞 Macross_BDRip
       markers: []
   - type: country
     data: japan

@@ -883,9 +883,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/ぬらりひょんの孫
       collectioned:
       - press_format: BDRip
         press_group: DMG
+        press_path: ぬらりひょんの孫 千年魔京_BDRip
       markers: []
   - type: country
     data: japan
@@ -1375,6 +1377,7 @@
         press_path: たまゆら ～Hitotose～_BDRip
       - press_format: BDRip
         press_group: VCB
+        press_path: たまゆら ～Hitotose～_BDRip(VCB)
       markers: []
   - type: country
     data: japan

@@ -24,9 +24,11 @@
     data:
       domain: animation
       release_type: tv
+      path: T:/機動戦士ガンダム
       collectioned:
       - press_format: BDRip
         press_group: '----'
+        press_path: 機動戦士ガンダム_BDRip
       markers: []
   - type: country
     data: japan
