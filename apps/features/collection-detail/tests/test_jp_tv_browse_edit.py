@@ -12,7 +12,9 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
+from collection_detail import save as catalog_save
 from work_catalog_yaml import persistence
+from work_catalog_yaml.paths import normalize_copied_path
 
 from work_catalog_yaml.jp_tv.browse_save import (
     CatalogRollbackConflictError,
@@ -26,7 +28,7 @@ from work_catalog_yaml.jp_tv.browse_settings import (
     JpTvBrowseSettings,
     load_jp_tv_browse_settings,
 )
-from work_catalog_yaml.yaml_io import load_yaml_string
+from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml_string
 
 
 def _settings(db: Path, *paths: Path) -> JpTvBrowseSettings:
@@ -70,6 +72,209 @@ def _catalog_yaml(*names: str, press_format: str = "A") -> str:
 
 
 class JpTvBrowseEditTest(unittest.TestCase):
+    def test_save_empty_press_group_preserves_record_fields_and_exact_history(self) -> None:
+        for empty_group in ("", "----"):
+            with self.subTest(press_group=empty_group), tempfile.TemporaryDirectory() as td:
+                db = Path(td) / "DB"
+                db.mkdir()
+                source = db / "works.yaml"
+                fixture = load_yaml_string(_catalog_yaml("Fixture", press_format="BDRip"))
+                fixture[0]["note"] = "Unrelated work metadata"
+                coll_attr = fixture[0]["attributes"][1]
+                coll_attr["description"] = "Collection description"
+                coll = coll_attr["data"]
+                coll["path"] = "Fixture"
+                coll["markers"] = ["subs"]
+                coll["collectioned"][0]["press_path"] = "Fixture_BDRip"
+                coll["continuations"] = [{
+                    "title": "Bonus",
+                    "collectioned": [{
+                        "press_format": "1080p", "press_group": "G2", "press_path": "Bonus_1080p",
+                    }],
+                }]
+                source.write_text(dump_yaml_string(fixture), encoding="utf-8")
+                original = source.read_bytes()
+
+                writes = browse_save_yaml_from_ui_body({"rows": [{
+                    "yaml_source_rel": source.name,
+                    "index_in_file": 0,
+                    "domain": "animation", "release_type": "tv",
+                    "path": "Fixture", "markers": ["subs"],
+                    "collectioned_ordered": [
+                        {
+                            "press_format": "BDRip", "press_group": empty_group,
+                            "press_path": "Fixture_BDRip", "segment": "main",
+                        },
+                        {
+                            "press_format": "1080p", "press_group": "G2", "press_path": "Bonus_1080p",
+                            "segment": "continuation", "continuation_index": 0, "continuation_title": "Bonus",
+                        },
+                    ],
+                }]}, settings=_settings(db, source))
+
+                coll["collectioned"][0]["press_group"] = empty_group
+                self.assertEqual(load_yaml_string(source.read_text(encoding="utf-8")), fixture)
+                self.assertEqual(len(writes), 1)
+                self.assertEqual(writes[0][0], source.resolve())
+                self.assertEqual((db.parent / "History" / writes[0][1]).read_bytes(), original)
+
+    def test_save_date_edits_use_compact_storage_and_keep_exact_history(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            source.write_text(_catalog_yaml("Fixture"), encoding="utf-8")
+            original = source.read_bytes()
+            writes = browse_save_yaml_from_ui_body({"rows": [{
+                "yaml_source_rel": source.name,
+                "index_in_file": 0,
+                "date": {"start": "2024-02-29", "end": "2024/3/9"},
+            }]}, settings=_settings(db, source))
+            dates = load_yaml_string(source.read_text(encoding="utf-8"))[0]["attributes"][0]["data"]
+            self.assertEqual(dates, {"start": "20240229", "end": "20240309"})
+            self.assertEqual((db.parent / "History" / writes[0][1]).read_bytes(), original)
+
+    def test_invalid_calendar_date_never_reaches_catalog_or_history(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            source.write_text(_catalog_yaml("Fixture"), encoding="utf-8")
+            original = source.read_bytes()
+            for invalid in ("2023-02-29", "2024-04-31", "20241301", "2024-01-32"):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    browse_save_yaml_from_ui_body({"rows": [{
+                        "yaml_source_rel": source.name,
+                        "index_in_file": 0,
+                        "date": {"start": invalid, "end": ""},
+                    }]}, settings=_settings(db, source))
+                self.assertEqual(source.read_bytes(), original)
+            self.assertFalse((db.parent / "History").exists())
+
+    def test_unchanged_legacy_calendar_error_does_not_block_full_table_save(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            source.write_text(
+                _catalog_yaml("Legacy", "Other").replace("20990101", "20074020"),
+                encoding="utf-8",
+            )
+            browse_save_yaml_from_ui_body({"rows": [
+                {
+                    "yaml_source_rel": source.name, "index_in_file": 0,
+                    "name": "Legacy renamed",
+                    "date": {"start": "2007-40-20", "end": "2099-01-28"},
+                },
+                {
+                    "yaml_source_rel": source.name, "index_in_file": 1,
+                    "name": "Other renamed",
+                    "date": {"start": "2099-02-01", "end": "2099-02-28"},
+                },
+            ]}, settings=_settings(db, source))
+            raw = load_yaml_string(source.read_text(encoding="utf-8"))
+            self.assertEqual(raw[0]["attributes"][0]["data"]["start"], "20074020")
+            self.assertEqual(raw[0]["attributes"][3]["data"], "Legacy renamed")
+            self.assertEqual(raw[1]["attributes"][0]["data"]["start"], "20990201")
+            self.assertEqual(raw[1]["attributes"][3]["data"], "Other renamed")
+
+    def test_new_work_dates_preserve_unknown_components_without_guessing(self) -> None:
+        for start, end, expected_start, expected_end in (
+            ("2020-00-00", "", "20200000", ""),
+            ("2020-XX-XX", "20200000", "2020XXXX", "20200000"),
+            ("20240229", "2024-03-01", "20240229", "20240301"),
+        ):
+            with self.subTest(start=start):
+                work = catalog_save._new_work_from_row_patch({
+                    "domain": "animation", "release_type": "tv", "country": "japan",
+                    "name": "Fixture", "date": {"start": start, "end": end},
+                })
+                self.assertEqual(work["attributes"][0]["data"], {
+                    "start": expected_start, "end": expected_end,
+                })
+
+    def test_landing_append_keeps_iso_draft_but_writes_compact_dates(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "DB"
+            db.mkdir()
+            draft = {
+                "name": "Fixture", "domain": "animation", "release_type": "tv", "country": "japan",
+                "date": {"start": "2024-02-29", "end": "2024-03-31"},
+                "path": str(root / "Media"),
+                "collectioned_ordered": [{
+                    "press_format": "BDRip", "press_group": "VCB", "press_path": "Fixture_BDRip",
+                }],
+            }
+            with patch.object(catalog_save, "media_group_code_known", return_value=True):
+                preview = catalog_save.preview_catalog_work_append(draft, settings=_settings(db))
+                self.assertEqual(preview["patch"]["date"], draft["date"])
+                self.assertFalse(Path(preview["target"]).exists())
+                _, receipt = catalog_save.append_catalog_work_from_preview(
+                    draft, settings=_settings(db), expected_before_sha256=preview["before_sha256"],
+                )
+            self.assertIsNotNone(receipt)
+            raw = load_yaml_string(Path(preview["target"]).read_text(encoding="utf-8"))
+            self.assertEqual(raw[0]["attributes"][0]["data"], {
+                "start": "20240229", "end": "20240331",
+            })
+
+    def test_landing_append_rejects_impossible_iso_date_before_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            with self.assertRaisesRegex(ValueError, "日历日期"):
+                catalog_save.preview_catalog_work_append({
+                    "name": "Fixture", "date": {"start": "2024-02-30", "end": ""},
+                }, settings=_settings(db))
+            self.assertEqual(list(db.iterdir()), [])
+
+    def test_invalid_row_index_cannot_edit_or_delete_a_different_work(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            source.write_text(_catalog_yaml("First", "Second"), encoding="utf-8")
+            original = source.read_bytes()
+            for action in ("rows", "deleted_rows"):
+                for index in (True, False, 0.5, 1.9, "1.0"):
+                    with self.subTest(action=action, index=index), self.assertRaisesRegex(ValueError, "index_in_file 非法"):
+                        browse_save_yaml_from_ui_body({action: [{
+                            "yaml_source_rel": source.name, "index_in_file": index, "name": "Wrong",
+                        }]}, settings=_settings(db, source))
+                    self.assertEqual(source.read_bytes(), original)
+            self.assertFalse((db.parent / "History").exists())
+
+    def test_existing_work_preview_hash_uses_the_parsed_snapshot_once(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            draft = {
+                "name": "Fixture", "domain": "animation", "release_type": "tv", "country": "japan",
+                "date": {"start": "2020-01-01", "end": ""}, "path": str(root / "Media"),
+                "collectioned_ordered": [{"press_format": "BDRip", "press_group": "VCB", "press_path": "Fixture_BDRip"}],
+            }
+            source.write_text(dump_yaml_string([catalog_save._new_work_from_row_patch(draft)]), encoding="utf-8")
+            original = source.read_bytes()
+            original_read = Path.read_bytes
+            reads = []
+
+            def replace_after_read(path: Path) -> bytes:
+                content = original_read(path)
+                if path == source:
+                    reads.append(path)
+                    source.write_bytes(original.replace(b"Fixture", b"Changed"))
+                return content
+
+            with patch.object(Path, "read_bytes", new=replace_after_read), patch.object(catalog_save, "media_group_code_known", return_value=True):
+                preview = catalog_save.preview_catalog_work_append(draft, settings=_settings(db, source))
+            self.assertEqual(preview["action"], "already_exists")
+            self.assertEqual(preview["before_sha256"], hashlib.sha256(original).hexdigest())
+            self.assertEqual(preview["before_sha256"], preview["after_sha256"])
+            self.assertEqual(len(reads), 1)
+
     def test_invalid_later_catalog_does_not_partially_save_earlier_rows(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             db = Path(td) / "DB"
@@ -242,12 +447,12 @@ class JpTvBrowseEditTest(unittest.TestCase):
             self.assertEqual(attrs[3]["data"], "第二行")
             self.assertTrue((root / "History").is_dir())
 
-    def test_save_body_appends_new_row_to_current_year_catalog(self) -> None:
+    def test_save_body_appends_new_row_to_broadcast_year_catalog(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "DB"
             db.mkdir()
-            current_catalog = db / "[JP][TVInfo][2026].yaml"
+            current_catalog = db / "[JP][TVInfo][2099].yaml"
 
             writes = browse_save_yaml_from_ui_body(
                 {
@@ -257,8 +462,8 @@ class JpTvBrowseEditTest(unittest.TestCase):
                             "release_type": "tv",
                             "country": "japan",
                             "name": "新增行",
-                            # 新增行内容日期不参与目标文件选择。
-                            "date": {"start": "20990401", "end": "20990630"},
+                            # 服务端根据开播年选择文件，而不是操作当天的年份。
+                            "date": {"start": "2099-04-01", "end": "2099/6/30"},
                             "markers": ["subs"],
                             "collectioned_ordered": [
                                 {"press_format": "BDRip", "press_group": "VCB"},
@@ -280,6 +485,109 @@ class JpTvBrowseEditTest(unittest.TestCase):
             self.assertEqual(attrs[1]["data"]["collectioned"][0]["press_format"], "BDRip")
             self.assertEqual(attrs[1]["data"]["markers"], ["subs"])
             self.assertEqual(attrs[3]["data"], "新增行")
+
+    def test_new_rows_route_by_country_and_ignore_forged_client_file_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            original = db / "[JP][TVInfo][2026].yaml"
+            original.write_text(_catalog_yaml("已有作品"), encoding="utf-8")
+            previous = original.read_bytes()
+            rows = [
+                {
+                    "domain": "animation" if country == "japan" else "tv-drama",
+                    "release_type": "tv", "country": country, "name": country,
+                    "date": {"start": "20200102", "end": "2020-03-04"},
+                    "yaml_source_rel": "../../outside.yaml", "collectioned_ordered": [],
+                }
+                for country in ("japan", "korea", "china", "usa", "uk")
+            ]
+            writes = browse_save_yaml_from_ui_body(
+                {"path": str(original), "new_rows": rows}, settings=_settings(db, original),
+                now=datetime(2026, 9, 21),
+            )
+            self.assertEqual({target.name for target, _history in writes}, {
+                f"[{code}][TVInfo][2020].yaml" for code in ("JP", "KR", "CN", "US", "UK")
+            })
+            self.assertEqual(original.read_bytes(), previous)
+            self.assertFalse((Path(td) / "outside.yaml").exists())
+            korean = load_yaml_string((db / "[KR][TVInfo][2020].yaml").read_text(encoding="utf-8"))[0]
+            self.assertEqual(korean["attributes"][2]["data"], "korea")
+            self.assertEqual(korean["attributes"][0]["data"], {"start": "20200102", "end": "20200304"})
+
+    def test_new_work_routing_uses_known_year_and_current_year_only_when_unknown(self) -> None:
+        for start, expected_year in (
+            ("20200102", "2020"), ("2020-00-00", "2020"), ("2020-XX-XX", "2020"),
+            ("", "2026"), (None, "2026"), ("00000000", "2026"), ("20XX-01-01", "2026"),
+        ):
+            with self.subTest(start=start):
+                self.assertEqual(
+                    catalog_save.catalog_relpath_for_new_work("korea", start, now=datetime(2026, 9, 21)),
+                    f"[KR][TVInfo][{expected_year}].yaml",
+                )
+        for start in ("20230229", "2020-13-01", "2020", "2020-01-50"):
+            with self.subTest(start=start), self.assertRaises(ValueError):
+                catalog_save.catalog_relpath_for_new_work("korea", start)
+        with self.assertRaisesRegex(ValueError, "国家代码"):
+            catalog_save.catalog_relpath_for_new_work("../../outside", "20200102")
+
+    def test_invalid_new_work_date_or_country_never_writes_part_of_batch(self) -> None:
+        for invalid in ({"country": "unsupported"}, {"date": {"start": "20230229", "end": ""}}):
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as td:
+                db = Path(td) / "DB"
+                db.mkdir()
+                valid = {"name": "有效", "country": "korea", "domain": "tv-drama", "release_type": "tv",
+                         "date": {"start": "20200102", "end": ""}, "collectioned_ordered": []}
+                with self.assertRaises(ValueError):
+                    browse_save_yaml_from_ui_body({"new_rows": [valid, {**valid, **invalid}]}, settings=_settings(db))
+                self.assertEqual(list(db.glob("*.yaml")), [])
+                self.assertFalse((Path(td) / "History").exists())
+
+    def test_copied_paths_remove_directional_wrappers_but_preserve_contents(self) -> None:
+        copied = ' \u202a"G:\\Video\\电视剧\\拥抱  太阳"\u202c '
+        self.assertEqual(normalize_copied_path(copied), "G:\\Video\\电视剧\\拥抱  太阳")
+        self.assertEqual(normalize_copied_path('"\u2066G:\\Video\\A B\u2069"'), "G:\\Video\\A B")
+        self.assertEqual(normalize_copied_path("\ufeff\u200e\\\\server\\share\\A B\u200f"), "\\\\server\\share\\A B")
+        # Do not rewrite a real interior Unicode filename character.
+        self.assertEqual(normalize_copied_path("G:\\A\u202a B"), "G:\\A\u202a B")
+        self.assertEqual(normalize_copied_path(None), "")
+
+    def test_new_and_existing_catalog_paths_are_cleaned_when_saved(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            catalog = db / "[KR][TVInfo][2020].yaml"
+            row = {
+                "domain": "tv-drama", "release_type": "tv", "country": "korea", "name": "韩剧",
+                "date": {"start": "2020-01-02", "end": ""},
+                "path": '\u202a"G:\\Video\\电视剧\\拥抱  太阳"',
+                "collectioned_ordered": [{"press_format": "1080p", "press_group": "",
+                                          "press_path": '"\u2066拥抱  太阳_1080p\u2069"'}],
+            }
+            browse_save_yaml_from_ui_body({"new_rows": [row]}, settings=_settings(db))
+            data = load_yaml_string(catalog.read_text(encoding="utf-8"))[0]["attributes"][1]["data"]
+            self.assertEqual(data["path"], "G:/Video/电视剧/拥抱  太阳")
+            self.assertEqual(data["collectioned"][0]["press_path"], "拥抱  太阳_1080p")
+            row.update({"yaml_source_rel": catalog.name, "index_in_file": 0,
+                        "path": '"\u202a\\\\server\\share\\拥抱  太阳\u202c"'})
+            browse_save_yaml_from_ui_body({"rows": [row]}, settings=_settings(db, catalog))
+            data = load_yaml_string(catalog.read_text(encoding="utf-8"))[0]["attributes"][1]["data"]
+            self.assertEqual(data["path"], "//server/share/拥抱  太阳")
+
+    def test_catalog_save_reports_validation_and_commit_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            row = {"name": "新作品", "country": "korea", "domain": "tv-drama", "release_type": "tv",
+                   "date": {"start": "", "end": ""}, "collectioned_ordered": []}
+            with patch.object(catalog_save, "report_progress") as report:
+                browse_save_yaml_from_ui_body({"new_rows": [row]}, settings=_settings(db), now=datetime(2026, 9, 21))
+            messages = [call.args[0] for call in report.call_args_list]
+            self.assertEqual(messages[0], "等待数据库写入锁")
+            self.assertIn("校验并准备数据库文件", messages)
+            self.assertIn("备份并原子写入数据库", messages)
+            self.assertEqual(messages[-1], "数据库写入完成")
+            self.assertEqual(report.call_args.kwargs, {"completed": 1, "total": 1, "unit": "文件"})
 
     def test_enum_rename_updates_config_and_catalog_rows(self) -> None:
         with tempfile.TemporaryDirectory() as td:

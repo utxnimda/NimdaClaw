@@ -54,6 +54,31 @@ configured in the shared YAML files.
 Because source mode and desktop mode now edit the same files, do not save from
 both applications at the same time.
 
+## Artifact verification
+
+`build-desktop.ps1` runs `scripts/verify-desktop.py` after creating the ZIP and
+fails the build if verification fails. This is a read-only check: it does not
+launch the EXE, read the shared database or update configuration.
+
+It compares packaged Python code objects with the current backend source,
+checks the exact frontend file set and file hashes, checks the bundled default
+configuration template, rejects bundled workspace `config`/`data` directories,
+verifies the selected shared workspace, and compares every ZIP entry with the
+package directory. Successful output includes EXE and ZIP SHA-256 hashes.
+
+Use the same Python environment/version as the build (it supplies PyInstaller
+and the matching Python bytecode format):
+
+```powershell
+.\build\desktop-venv\Scripts\python.exe .\scripts\verify-desktop.py `
+  --workspace "E:\Project\nimda"
+```
+
+`--package` and `--archive` can select alternative artifact paths. Verification
+detects stale artifacts; it does not rebuild them. Source edits do not update an
+existing desktop application automatically. This check is not a replacement for
+functional tests or a GUI launch/shutdown smoke test.
+
 ## Lifecycle
 
 - The desktop app binds only to `127.0.0.1`.
@@ -66,8 +91,10 @@ both applications at the same time.
   delay final process exit; it is not forcibly interrupted partway through a save
   or move. Forced process termination and power loss are outside this guarantee.
 - Disk APIs run serially in an owned worker; provider suggestions have a separate
-  queue. `/api/health` remains responsive during work and reports running/queued
-  counts. The desktop server and workers remain within the same process.
+  queue. Each queue admits at most 64 unfinished operations, including running
+  ones; saturation returns HTTP 503 (`api-queue-full`). `/api/health` remains
+  responsive during work and reports running/queued counts. The desktop server
+  and workers remain within the same process.
 - Runtime state is written to
   `<workspace_root>/data/framework/runtime/desktop.json` while the app is open
   and removed during normal shutdown.

@@ -38,9 +38,17 @@ from work_catalog_yaml.jp_tv.validate import (
 )
 from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.persistence import FileWrite, atomic_write_bytes, commit_file_writes
+from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.paths import normalize_copied_path
+from work_catalog_yaml.media_groups import normalize_press_group
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml, load_yaml_string
 
 from collection_detail.payload import build_collectioned_ordered
+from collection_detail.catalog_bindings import (
+    catalog_work_matches_target_name,
+    plan_catalog_bindings,
+    split_explicit_title_year,
+)
 from collection_detail.resource_cache import (
     generation_directory,
     node_cache_path,
@@ -51,6 +59,7 @@ from collection_detail.resource_cache import (
 )
 from collection_detail.resource_tree import (
     RESOURCE_SCAN_METRICS_VERSION as _RESOURCE_SCAN_METRICS_VERSION,
+    resource_node_cache_payload,
     resource_search_entries_from_main_cache as _resource_search_entries_from_main_cache,
     resource_search_tree_from_entries as _resource_search_tree_from_entries,
 )
@@ -451,6 +460,8 @@ def _load_resource_scan_cache() -> dict[str, Any]:
     raw.setdefault("roots", [])
     raw.setdefault("items", [])
     raw.setdefault("tree", _empty_resource_tree())
+    if isinstance(raw["tree"], dict):
+        raw["tree"] = resource_node_cache_payload(raw["tree"])["node"]
     raw.setdefault("scanned_at", "")
     return raw
 
@@ -495,7 +506,9 @@ def resource_libraries_node_payload(relpath: str) -> dict[str, Any]:
             write_node_cache(_resource_scan_node_dir(), generation, live_node)
             return {"ok": True, "cached": False, "relpath": rel, "node": live_node}
         raise ValueError("resource library node cache is stale; please rescan")
-    node = raw["node"]
+    # Re-project legacy summaries as well; old file-only nodes were marked
+    # non-expandable even though their retained direct counts are nonzero.
+    node = resource_node_cache_payload(raw["node"])["node"]
     if str(node.get("relpath") or "") != rel:
         raise ValueError("资源库目录缓存索引不一致，请重新扫描。")
     if node.get("children_loaded") is False and node.get("path"):
@@ -629,6 +642,8 @@ def _resource_dir_metric_summary(
     first = True
     while stack:
         cur = stack.pop()
+        if first or dir_count % 100 == 0:
+            report_progress("统计资源子目录", completed=dir_count, unit="目录", detail=str(cur))
         try:
             with os.scandir(cur) as iterator:
                 entries = list(iterator)
@@ -765,6 +780,8 @@ def _resource_dir_node(
                 counters["truncated"] = True
                 continue
             counters["dirs"] += 1
+            if counters["dirs"] == 1 or counters["dirs"] % 100 == 0:
+                report_progress("扫描资源目录", completed=counters["dirs"], unit="目录", detail=str(entry))
             try:
                 root_rel = relpath.split("/", 1)[0] if relpath.startswith("root:") else relpath
                 child_rel = f"{root_rel}/{entry.relative_to(root).as_posix()}" if root_rel else entry.relative_to(root).as_posix()
@@ -798,6 +815,8 @@ def _resource_dir_node(
             file_item = _resource_file_entry(root, entry, scan_entry=scan_entry)
             node["files"].append(file_item)
             counters["files"] += 1
+            if counters["files"] % 100 == 0:
+                report_progress("读取资源文件信息", completed=counters["files"], unit="文件", detail=str(entry))
             node["file_count"] += 1
             node["size"] += int(file_item.get("size") or 0)
             node["direct_child_count"] += 1
@@ -994,7 +1013,10 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
     flat_items: list[dict[str, Any]] = []
     tree = _empty_resource_tree()
     truncated = False
-    for root_idx, root in enumerate(resource_roots()):
+    roots = resource_roots()
+    report_progress("开始扫描资源库", completed=0, total=len(roots), unit="资源根目录")
+    for root_idx, root in enumerate(roots):
+        report_progress("扫描资源根目录", completed=root_idx, total=len(roots), unit="资源根目录", detail=str(root))
         root_excludes = resource_excludes_for_root(root)
         root_rel = f"root:{root_idx}"
         try:
@@ -1113,6 +1135,7 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
             )
             root_item["item_count"] += len(children)
         total_seen += counters["dirs"]
+        report_progress("资源根目录扫描完成", completed=root_idx + 1, total=len(roots), unit="资源根目录", detail=f"{root}；{root_item['dir_count']} 个目录，{root_item['file_count']} 个文件")
         if counters.get("truncated"):
             truncated = True
             root_item["error"] = (root_item.get("error") or "") + ("；" if root_item.get("error") else "") + "扫描数量达到上限"
@@ -1149,7 +1172,9 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
         "scanned_at": datetime.now().isoformat(timespec="seconds"),
         "cache_path": str(_resource_scan_cache_path()),
     }
+    report_progress("写入资源库扫描缓存", detail=str(_resource_scan_cache_path()))
     _save_resource_scan_cache(payload)
+    report_progress("资源库扫描缓存已保存", detail=f"共 {tree['dir_count']} 个目录，{tree['file_count']} 个文件")
     return _load_resource_scan_cache()
 
 
@@ -1277,13 +1302,21 @@ def _clean_work_path(raw: Any, *, label: str = "path") -> str:
     return _clean_rel_path(raw_s, label=label)
 
 
-def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
+def _load_catalog_works(
+    settings: JpTvBrowseSettings,
+    *,
+    catalog_overrides: dict[Path, bytes] | None = None,
+) -> list[dict[str, Any]]:
     works_out: list[dict[str, Any]] = []
-    for fp in _catalog_yaml_paths(settings):
+    catalog_paths = _catalog_yaml_paths(settings)
+    for file_index, fp in enumerate(catalog_paths):
+        report_progress("读取作品数据库", completed=file_index, total=len(catalog_paths), unit="数据文件", detail=str(fp))
         if not fp.is_file():
             continue
         yaml_rel = _catalog_relpath(settings, fp)
-        raw_text = fp.read_text(encoding="utf-8")
+        raw_text = (catalog_overrides[fp].decode("utf-8")
+                    if catalog_overrides is not None and fp in catalog_overrides
+                    else fp.read_text(encoding="utf-8"))
         entries = load_jp_tv_entries_from_yaml(load_yaml_string(raw_text))
         for idx, entry in enumerate(entries):
             name = entry_display_name(entry)
@@ -1293,7 +1326,7 @@ def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
             year = _year_from_entry(entry, yaml_rel)
             begin_date, end_date = _air_date_parts(entry)
             coll = entry_collection_type_data(entry)
-            work_path = _str_or_blank(coll.get("path")).replace("\\", "/")
+            work_path = normalize_copied_path(coll.get("path")).replace("\\", "/")
             press_rows: list[dict[str, Any]] = []
             for pos, row in enumerate(build_collectioned_ordered(coll)):
                 fm = _str_or_blank(row.get(TV_JP_PRESS_FORMAT_KEY))
@@ -1305,7 +1338,7 @@ def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
                         "press_key": _press_key(pos, row),
                         "press_format": fm,
                         "press_group": gp,
-                        "press_path": _str_or_blank(row.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/"),
+                        "press_path": normalize_copied_path(row.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/"),
                         "label": _press_label(row),
                         "segment": row.get("segment") or "main",
                         "continuation_index": row.get("continuation_index"),
@@ -1333,6 +1366,7 @@ def _load_catalog_works(settings: JpTvBrowseSettings) -> list[dict[str, Any]]:
                     "press": press_rows,
                 },
             )
+    report_progress("作品数据库读取完成", completed=len(catalog_paths), total=len(catalog_paths), unit="数据文件", detail=f"共 {len(works_out)} 条作品记录")
     return works_out
 
 
@@ -1430,7 +1464,8 @@ def _plan_context(work: dict[str, Any], press: dict[str, Any]) -> dict[str, str]
     ctx.update({k: str(v or "") for k, v in press.items() if not isinstance(v, list)})
     ctx["press_label"] = str(press.get("label") or "")
     group = _str_or_blank(press.get(TV_JP_PRESS_GROUP_KEY))
-    ctx["press_group_suffix"] = "" if not group or group == "----" else f"({group})"
+    display_group = normalize_press_group(group)
+    ctx["press_group_suffix"] = f"({display_group})" if display_group else ""
     return ctx
 
 
@@ -1494,8 +1529,8 @@ def _index_relpath_for(work: dict[str, Any], press: dict[str, Any]) -> tuple[str
 
 
 def _catalog_target_for_work_press(work: dict[str, Any], press: dict[str, Any]) -> tuple[str, bool, str]:
-    work_path_s = _str_or_blank(work.get("path"))
-    press_path_s = _str_or_blank(press.get(TV_JP_PRESS_PATH_KEY))
+    work_path_s = normalize_copied_path(work.get("path"))
+    press_path_s = normalize_copied_path(press.get(TV_JP_PRESS_PATH_KEY))
     if not work_path_s or not press_path_s:
         return "", False, ""
     try:
@@ -1540,6 +1575,10 @@ def _resource_candidate_for_work_press(
                 resource_pool.append(resource)
     else:
         resource_pool = resource_items
+    verified_pool: list[tuple[dict[str, Any], Path, bool]] = []
+    work_name_key = _strict_name_key(work.get("name"))
+    begin_year = str(work.get("begin_date") or "")[:4]
+    work_year = begin_year if len(begin_year) == 4 and begin_year.isdigit() and begin_year != "0000" else ""
     for resource in resource_pool:
         if not isinstance(resource, dict):
             continue
@@ -1556,11 +1595,34 @@ def _resource_candidate_for_work_press(
             exists = False
         if not exists:
             continue
+        titles = _resource_work_titles(resource)
+        exact_title = any(_strict_name_key(title) == work_name_key for title in titles)
+        physical_title, _ = _split_resource_leaf_name(path.name)
+        physical_base, physical_year = split_explicit_title_year(physical_title)
+        literal_physical_title = _strict_name_key(physical_title) == work_name_key
+        physical_name_matches = catalog_work_matches_target_name(work, path, str(press_probe["press_format"]))
+        # A stale cache may omit a suffix from work_name. It must never erase
+        # the release year explicitly present in the actual directory name.
+        if physical_year and not literal_physical_title and not physical_name_matches:
+            continue
+        if not exact_title and not physical_name_matches:
+            continue
+        qualified = bool(
+            physical_year and physical_year == work_year and not literal_physical_title
+            and _strict_name_key(physical_base) == work_name_key
+        )
+        verified_pool.append((resource, path, qualified))
+    has_qualified_version = any(qualified for _, _, qualified in verified_pool)
+    for resource, path, qualified in verified_pool:
+        # Once this broadcast year's explicit directory is present, an older
+        # unqualified namesake cannot win merely through a better group label.
+        if has_qualified_version and not qualified:
+            continue
         target_key = _path_compare_key(path)
         if target_key in seen:
             continue
         resource_press_raw = resource.get("press_info") or resource.get("name") or ""
-        resource_press_keys = {_press_component_key(resource_press_raw)} | _press_alias_match_keys(resource_press_raw)
+        resource_press_keys = _resource_press_match_keys(resource_press_raw)
         resource_press_keys = {key for key in resource_press_keys if key}
         base = {
             "target_path": str(path),
@@ -1612,7 +1674,10 @@ def _index_entry_from_work_press(
     previous: dict[str, Any] | None = None,
     resource_index: dict[str, list[dict[str, Any]]] | None = None,
     prefer_previous_target: bool = False,
+    prefer_catalog_target: bool = False,
 ) -> dict[str, Any]:
+    if previous is not None and not _previous_index_identity_matches(previous, work, press):
+        previous = None
     relpath, parts = _index_relpath_for(work, press)
     work_shortcut_root = _shortcut_root_for_work(work)
     try:
@@ -1622,11 +1687,19 @@ def _index_entry_from_work_press(
     catalog_target, catalog_exists, catalog_error = _catalog_target_for_work_press(work, press)
     resource_candidate = _resource_candidate_for_work_press(work, press, resource_items, resource_index)
     previous_target = _str_or_blank((previous or {}).get("target_path"))
+    previous_source = _str_or_blank((previous or {}).get("target_source"))
+    if not previous_source or previous_source == "catalog":
+        previous_source = "index_db_previous"
     target_path = ""
     target_source = ""
-    if prefer_previous_target and previous_target:
+    if catalog_target and catalog_exists:
+        # The index is derived data: an existing complete catalog binding always
+        # wins over stale resource candidates or historical index-only fixes.
+        target_path = catalog_target
+        target_source = "catalog"
+    elif prefer_previous_target and previous_target:
         target_path = previous_target
-        target_source = _str_or_blank((previous or {}).get("target_source")) or "index_db_previous"
+        target_source = previous_source
     elif resource_candidate:
         target_path = _str_or_blank(resource_candidate.get("target_path"))
         target_source = str(resource_candidate.get("match_source") or "resource")
@@ -1635,7 +1708,7 @@ def _index_entry_from_work_press(
         target_source = "catalog"
     elif previous_target:
         target_path = previous_target
-        target_source = "index_db_previous"
+        target_source = previous_source
     target_exists = False
     if target_path:
         try:
@@ -1691,49 +1764,105 @@ def _index_entry_from_work_press(
     return entry
 
 
+def _previous_index_identity_matches(
+    item: dict[str, Any], work: dict[str, Any], press: dict[str, Any],
+) -> bool:
+    work_fields = ("yaml_source_rel", "work_key", "name", "country", "domain", "release_type", "begin_date", "end_date")
+    press_fields = ("press_key", "press_format", "press_group")
+    index = item.get("index_in_file")
+    return bool(
+        isinstance(index, int) and not isinstance(index, bool) and index >= 0
+        and index == work.get("index_in_file")
+        and item.get("entry_key") == _index_entry_key(work, press)
+        and all(isinstance(item.get(field), str) and isinstance(work.get(field), str)
+                and item[field] == work[field] for field in work_fields)
+        and all(isinstance(item.get(field), str) and isinstance(press.get(field), str)
+                and item[field] == press[field] for field in press_fields)
+    )
+
+
+def _validated_previous_index_items(
+    works: list[dict[str, Any]], raw_items: list[Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reject duplicate keys and mismatched identities before merging any target."""
+    current: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]] = {}
+    for work in works:
+        for press in work.get("press") or []:
+            if isinstance(press, dict):
+                current.setdefault(_index_entry_key(work, press), []).append((work, press))
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for item in raw_items:
+        if isinstance(item, dict) and isinstance(item.get("entry_key"), str) and item["entry_key"]:
+            grouped.setdefault(item["entry_key"], []).append(item)
+    accepted = []
+    issues = []
+    for key, rows in grouped.items():
+        candidates = current.get(key, [])
+        if not candidates:
+            continue  # An entry removed from the current catalog is not evidence.
+        work, press = candidates[0]
+        duplicate = len(rows) != 1 or len(candidates) != 1
+        if duplicate or not _previous_index_identity_matches(rows[0], work, press):
+            message = ("旧索引 entry_key 重复，整组拒绝复用目标目录" if duplicate else
+                       "旧索引作品文件、记录位置或压制身份与当前数据库不一致，拒绝复用目标目录")
+            issues.append({"code": "history-index-duplicate" if duplicate else "history-index-identity-conflict",
+                           "message": message, "error": message, "blocking": True, "entry_key": key,
+                           "work_key": work.get("work_key"), "yaml_source_rel": work.get("yaml_source_rel"),
+                           "index_in_file": work.get("index_in_file"), "name": work.get("name"),
+                           "press_key": press.get("press_key")})
+        else:
+            accepted.append(rows[0])
+    return accepted, issues
+
+
 def _index_entries_from_works(
     works: list[dict[str, Any]],
     *,
     previous_items: list[dict[str, Any]] | None = None,
     use_resource_index: bool = False,
     prefer_previous_target: bool = False,
+    preserve_manual_targets: bool = False,
+    prefer_catalog_target: bool = False,
 ) -> list[dict[str, Any]]:
     resource_items = _resource_fix_items_from_cache() if use_resource_index and _resource_roots_explicitly_configured() else []
     resource_index = _resource_items_by_work_key(resource_items) if resource_items else None
-    previous_by_key = {
-        str(item.get("entry_key") or ""): item
-        for item in previous_items or []
-        if isinstance(item, dict) and item.get("entry_key")
-    }
+    validated_previous, _ = _validated_previous_index_items(works, previous_items or [])
+    previous_by_key = {item["entry_key"]: item for item in validated_previous}
     entries: list[dict[str, Any]] = []
-    for work in works:
+    for work_index, work in enumerate(works):
+        if work_index % 100 == 0:
+            report_progress("生成压制索引条目", completed=work_index, total=len(works), unit="作品", detail=str(work.get("name") or ""))
         for press in work.get("press", []) or []:
             if not isinstance(press, dict):
                 continue
             key = _index_entry_key(work, press)
+            previous = previous_by_key.get(key)
+            same_paths = bool(previous
+                and normalize_copied_path(previous.get("work_path")).replace("\\", "/").casefold()
+                == normalize_copied_path(work.get("path")).replace("\\", "/").casefold()
+                and normalize_copied_path(previous.get("press_path")).replace("\\", "/").casefold()
+                == normalize_copied_path(press.get("press_path")).replace("\\", "/").casefold()
+            )
+            if preserve_manual_targets and not same_paths:
+                previous = None
+            keep_manual = bool(preserve_manual_targets and previous and previous.get("target_source") == "manual_fix")
             entries.append(
                 _index_entry_from_work_press(
                     work,
                     press,
                     resource_items,
-                    previous=previous_by_key.get(key),
+                    previous=previous,
                     resource_index=resource_index,
-                    prefer_previous_target=prefer_previous_target,
+                    prefer_previous_target=prefer_previous_target or keep_manual,
+                    prefer_catalog_target=prefer_catalog_target,
                 )
             )
+    report_progress("压制索引条目生成完成", completed=len(works), total=len(works), unit="作品", detail=f"共 {len(entries)} 条索引")
     return entries
 
 
-def _save_index_entries_from_works(works: list[dict[str, Any]], *, catalog_root: str = "") -> dict[str, Any]:
-    previous = _load_link_index_db()
-    entries = _index_entries_from_works(
-        works,
-        previous_items=[item for item in previous.get("items", []) if isinstance(item, dict)]
-        if isinstance(previous.get("items"), list)
-        else [],
-        use_resource_index=True,
-    )
-    payload = {
+def _index_payload(entries: list[dict[str, Any]], *, catalog_root: str) -> dict[str, Any]:
+    return {
         "version": 1,
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "source": "collection-detail catalog yaml",
@@ -1742,6 +1871,21 @@ def _save_index_entries_from_works(works: list[dict[str, Any]], *, catalog_root:
         "shortcut_name": _shortcut_name_template(),
         "items": entries,
     }
+
+
+def _matching_previous_index_items(
+    works: list[dict[str, Any]], previous: dict[str, Any], *, catalog_root: str,
+) -> list[dict[str, Any]]:
+    if _str_or_blank(previous.get("catalog_root")) != catalog_root:
+        return []
+    raw_items = previous.get("items")
+    validated, _ = _validated_previous_index_items(works, raw_items if isinstance(raw_items, list) else [])
+    return validated
+
+
+def _save_index_entries(entries: list[dict[str, Any]], *, catalog_root: str) -> dict[str, Any]:
+    payload = _index_payload(entries, catalog_root=catalog_root)
+    report_progress("保存索引数据库", detail=str(_link_index_db_path()))
     _save_link_index_db(payload)
     _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
     _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
@@ -2028,7 +2172,9 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
     signature_parts: list[tuple[str, int, int]] = []
     seen_dirs = 0
     scanned_roots: list[str] = []
-    for root_index, root in enumerate(shortcut_roots()):
+    roots = shortcut_roots()
+    for root_index, root in enumerate(roots):
+        report_progress("扫描快捷方式目录", completed=root_index, total=len(roots), unit="根目录", detail=str(root))
         try:
             if not root.is_dir():
                 continue
@@ -2040,6 +2186,8 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
         while stack and seen_dirs < max_dirs:
             cur, depth = stack.pop()
             seen_dirs += 1
+            if seen_dirs == 1 or seen_dirs % 100 == 0:
+                report_progress("查找已有快捷方式", completed=seen_dirs, unit="目录", detail=str(cur))
             try:
                 children = sorted(cur.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
             except OSError:
@@ -2084,7 +2232,9 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
             _SHORTCUT_SCAN_CACHE["signature"] = signature
             _SHORTCUT_SCAN_CACHE["leaves"] = _copy_shortcut_leaves(cached_leaves)
             return cached_leaves
+    report_progress("解析快捷方式实际目标", completed=0, total=len(shortcut_paths), unit="快捷方式")
     target_infos = _windows_shortcut_targets(shortcut_paths)
+    report_progress("快捷方式目标解析完成", completed=len(shortcut_paths), total=len(shortcut_paths), unit="快捷方式")
     for item in leaves:
         shortcut_s = str(item.get("shortcut_path") or "")
         info = target_infos.get(shortcut_s) or {}
@@ -2402,19 +2552,27 @@ def _candidate_press_resource_match_keys(candidate: dict[str, Any] | None) -> se
     group = _str_or_blank(candidate.get("press_group"))
     if not fmt:
         return set()
-    keys = _press_alias_match_keys(fmt) | _press_alias_match_keys(group)
+    keys: set[str] = set()
     group_key = _press_group_match_key(group)
     if not group_key:
         keys.add(_press_component_key(fmt))
         return {key for key in keys if key}
-    variants = [
-        f"{fmt}({group})",
-        f"{fmt}-{group}",
-        f"{fmt}_{group}",
-        f"{fmt} {group}",
-        f"{fmt}/{group}",
-    ]
+    groups = {group} | _press_alias_match_keys(group)
+    variants = [value for group_name in groups for value in (
+        f"{fmt}({group_name})", f"{fmt}-{group_name}", f"{fmt}_{group_name}",
+        f"{fmt} {group_name}", f"{fmt}/{group_name}",
+    )]
     keys.update(_press_component_key(value) for value in variants if _press_component_key(value))
+    return {key for key in keys if key}
+
+
+def _resource_press_match_keys(raw: Any) -> set[str]:
+    """Group aliases never discard the format half of the release identity."""
+    normalized = unicodedata.normalize("NFKC", str(raw or "")).strip()
+    keys = {_press_component_key(normalized)}
+    paired = re.fullmatch(r"(.+?)\s*\(([^()]*)\)", normalized)
+    if paired:
+        keys.update(_candidate_press_resource_match_keys({"press_format": paired.group(1).strip(), "press_group": paired.group(2).strip()}))
     return {key for key in keys if key}
 
 
@@ -2431,11 +2589,16 @@ def _resource_name_without_press_suffix(resource_name: Any, press_info: Any) -> 
     return ""
 
 
-def _resource_work_match_keys(resource: dict[str, Any]) -> set[str]:
-    values = [
+def _resource_work_titles(resource: dict[str, Any]) -> list[str]:
+    return [
         resource.get("work_name") or "",
         _resource_name_without_press_suffix(resource.get("name"), resource.get("press_info")),
     ]
+
+
+def _resource_work_match_keys(resource: dict[str, Any]) -> set[str]:
+    values = _resource_work_titles(resource)
+    values.extend(base for base, year in (split_explicit_title_year(value) for value in list(values)) if year)
     return {key for key in (_strict_name_key(value) for value in values) if key}
 
 
@@ -2472,6 +2635,7 @@ def _cache_link_index_lite_payload(settings: JpTvBrowseSettings, payload: dict[s
 
 
 def validate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
+    report_progress("校验数据库、资源目录和快捷方式的一致性")
     resource_payload: dict[str, Any] | None = None
     if body.get("refresh_resources", True) is not False:
         resource_payload = scan_resource_libraries_payload()
@@ -2524,38 +2688,56 @@ def _apply_link_index_db_target_fixes(
     items = db.get("items")
     if not isinstance(items, list) or not items:
         raise ValueError("索引 DB 为空，请先重新生成索引。")
+    if _str_or_blank(db.get("catalog_root")) != _settings_catalog_root_key(settings):
+        raise ValueError("索引 DB 不属于当前作品数据库，请先重新生成索引。")
+    works = _load_catalog_works(settings)
+    current_by_key = {item["entry_key"]: item for item in _index_entries_from_works(works, use_resource_index=False)}
+    validated_items, _ = _validated_previous_index_items(works, items)
     by_rel: dict[str, dict[str, Any]] = {}
     by_key: dict[str, dict[str, Any]] = {}
-    for item in items:
+    ambiguous_relpaths: set[str] = set()
+    for item in validated_items:
         if not isinstance(item, dict):
             continue
         rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")).replace("\\", "/").lower()
         key = _str_or_blank(item.get("entry_key"))
         if rel:
+            if rel in by_rel:
+                ambiguous_relpaths.add(rel)
             by_rel[rel] = item
         if key:
             by_key[key] = item
     fixes: list[dict[str, Any]] = []
+    replacements: dict[str, dict[str, Any]] = {}
     for idx, raw in enumerate(raw_items):
+        if idx % 100 == 0:
+            report_progress("校验索引目标修复项", completed=idx, total=len(raw_items), unit="条目")
         if not isinstance(raw, dict):
             raise ValueError(f"items[{idx}] 必须为对象")
         rel = _str_or_blank(raw.get("shortcut_relpath") or raw.get("relpath")).replace("\\", "/").lower()
         key = _str_or_blank(raw.get("entry_key"))
-        target_s = _str_or_blank(raw.get("target_path") or raw.get("fix_target_path"))
+        target_s = normalize_copied_path(raw.get("target_path") or raw.get("fix_target_path"))
         if not target_s:
             raise ValueError(f"items[{idx}] 缺少 target_path")
         target = Path(target_s).expanduser()
-        try:
-            target = target.resolve()
-        except OSError:
-            pass
-        if not target.is_dir():
+        if not target.is_absolute() or not _ordinary_catalog_target(str(target)):
             raise ValueError(f"items[{idx}].target_path 不是存在的资源目录")
         item = by_key.get(key) if key else None
         if item is None and rel:
+            if rel in ambiguous_relpaths:
+                raise ValueError(f"items[{idx}] 相对快捷方式路径对应多个索引项，请使用唯一 entry_key")
             item = by_rel.get(rel)
         if item is None:
             raise ValueError(f"items[{idx}] 没有找到对应的索引 DB 项")
+        current = current_by_key.get(str(item.get("entry_key") or ""))
+        identity_fields = ("name", "country", "domain", "release_type", "begin_date", "end_date", "press_format", "press_group")
+        if current is None or any(item.get(field) != current.get(field) for field in identity_fields):
+            raise ValueError(f"items[{idx}] 索引身份已变化，请重新生成索引后再修复")
+        if current.get("target_exists") and _path_compare_key(current.get("target_path")) != _path_compare_key(target):
+            raise ValueError("所选目标与已有有效数据库 path/press_path 冲突；请先通过目录映射明确修改作品目录，不能只修改索引目标")
+        entry_key = str(item.get("entry_key") or "")
+        if entry_key in replacements and _path_compare_key(replacements[entry_key].get("target_path")) != _path_compare_key(target):
+            raise ValueError(f"items[{idx}] 同一索引项包含不同修复目标")
         item["target_path"] = str(target)
         item["shortcut_target_path"] = str(target)
         item["target_exists"] = True
@@ -2565,21 +2747,31 @@ def _apply_link_index_db_target_fixes(
         item["target_source"] = "manual_fix"
         item["status"] = "ready"
         item.pop("target_fix", None)
+        replacements[entry_key] = item
         fixes.append(
             {
                 "shortcut_relpath": _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")),
                 "target_path": str(target),
             }
         )
-    db["items"] = items
-    db["updated_at"] = datetime.now().isoformat(timespec="seconds")
-    _save_link_index_db(db)
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
+    candidates, _ = _link_index_file_generation_plan(settings)
+    candidates = [replacements.get(str(item.get("entry_key") or ""), item) for item in candidates]
+    scoped_work_keys = {str(item.get("work_key") or "") for item in replacements.values()}
+    bindings = _plan_missing_catalog_bindings([work for work in works if str(work.get("work_key") or "") in scoped_work_keys], candidates)
+    _assert_catalog_binding_plan_safe(bindings)
+    projected = _merge_ui_mappings(works, _ui_mapping_items({"works": bindings["mappings"]}))
+    verified = {item["entry_key"]: item for item in _index_entries_from_works(projected, use_resource_index=False)}
+    for key, selected in replacements.items():
+        if not verified.get(key, {}).get("target_exists") or _path_compare_key(verified[key].get("target_path")) != _path_compare_key(selected.get("target_path")):
+            raise ValueError("所选目标尚不能安全落地为数据库 path/press_path，请先补齐作品目录映射")
+    report_progress("同步作品目录绑定与索引目标", completed=len(fixes), total=len(raw_items), unit="条目")
+    _, _, writes = _commit_catalog_mappings_and_index(bindings["mappings"], settings=settings)
     if not refresh_payload:
-        return {"fixes": fixes}
+        return {"fixes": fixes, "writes": writes, "catalog_bindings": bindings}
     payload = collection_link_index_payload(settings, refresh_links=True)
     payload["fixes"] = fixes
+    payload["writes"] = writes
+    payload["catalog_bindings"] = bindings
     return payload
 
 
@@ -2593,11 +2785,12 @@ def apply_link_index_target_fixes_from_ui_body(
         raise ValueError("items must be a non-empty list")
     if not _is_index_db_fix_request(raw_items):
         raise ValueError("link index target fixes only support index DB items")
-    return _apply_link_index_db_target_fixes(
-        raw_items,
-        settings=settings,
-        refresh_payload=body.get("refresh_payload") is not False,
-    )
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能修复目录绑定")
+    with catalog_write_transaction(settings.filesystem_root):
+        return _apply_link_index_db_target_fixes(
+            raw_items, settings=settings, refresh_payload=body.get("refresh_payload") is not False,
+        )
 
 
 def _raw_collection_data(work: Any) -> dict[str, Any]:
@@ -2674,11 +2867,11 @@ def _set_mapping_on_raw_work(work: Any, mapping: dict[str, Any]) -> bool:
     return changed
 
 
-def _save_ui_mappings_to_catalog_unlocked(
+def _stage_ui_mappings_to_catalog_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
-) -> list[dict[str, Any]]:
+) -> tuple[list[FileWrite], list[dict[str, Any]]]:
     mappings = _ui_mapping_items(body)
     if not mappings:
         raise ValueError("没有可保存的索引关联")
@@ -2716,8 +2909,48 @@ def _save_ui_mappings_to_catalog_unlocked(
         hist_name = history_snapshot_name(target)
         staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name))
         writes.append({"path": str(target), "history_file": hist_name, "changes": changed})
+    return staged, writes
+
+
+def _save_ui_mappings_to_catalog_unlocked(
+    body: dict[str, Any], *, settings: JpTvBrowseSettings,
+) -> list[dict[str, Any]]:
+    staged, writes = _stage_ui_mappings_to_catalog_unlocked(body, settings=settings)
     commit_file_writes(staged)
     return writes
+
+
+def _commit_catalog_mappings_and_index(
+    mappings: list[dict[str, Any]], *, settings: JpTvBrowseSettings,
+) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
+    """Commit catalog bindings and their derived index as one rollback-capable batch.
+
+    The caller owns the catalog lock. Parse staged YAML with the normal catalog
+    reader before deriving canonical targets; never persist an index-only target.
+    """
+    staged: list[FileWrite] = []
+    writes: list[dict[str, Any]] = []
+    if mappings:
+        staged, writes = _stage_ui_mappings_to_catalog_unlocked({"works": mappings}, settings=settings)
+    works = _load_catalog_works(settings, catalog_overrides={write.target: write.content for write in staged})
+    index_path = _link_index_db_path()
+    previous = index_path.read_bytes() if index_path.is_file() else None
+    try:
+        previous_index = load_yaml_string(previous.decode("utf-8")) if previous else {}
+    except (UnicodeError, YAMLError):
+        previous_index = {}  # Preserve unreadable bytes in history before rebuilding.
+    catalog_root = _settings_catalog_root_key(settings)
+    entries = _index_entries_from_works(
+        works, use_resource_index=False, prefer_previous_target=True,
+        previous_items=_matching_previous_index_items(works, previous_index if isinstance(previous_index, dict) else {}, catalog_root=catalog_root),
+    )
+    index = _index_payload(entries, catalog_root=catalog_root)
+    index_history = history_catalog_root(settings) / history_snapshot_name(index_path) if previous is not None else None
+    staged.append(FileWrite(index_path, dump_yaml_string(index).encode("utf-8"), previous, index_history))
+    commit_file_writes(staged)
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
+    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
+    return _load_catalog_works(settings), index, writes
 
 
 def _save_ui_mappings_to_catalog(
@@ -2875,12 +3108,15 @@ def preview_scoped_shortcuts_for_work(
         if not isinstance(raw_press, dict):
             raise ValueError(f"scoped shortcut press {index + 1} must be an object")
         press_format = _str_or_blank(raw_press.get(TV_JP_PRESS_FORMAT_KEY))
-        press_group = _str_or_blank(raw_press.get(TV_JP_PRESS_GROUP_KEY))
+        raw_group = raw_press.get(TV_JP_PRESS_GROUP_KEY)
+        if TV_JP_PRESS_GROUP_KEY not in raw_press or not isinstance(raw_group, str):
+            raise ValueError(f"scoped shortcut press {index + 1} requires a group choice (empty is allowed)")
+        press_group = normalize_press_group(raw_group)
         press_path = _str_or_blank(raw_press.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/")
         target_s = _str_or_blank(raw_press.get("target_path"))
-        if not press_format or not press_group or not press_path or not target_s:
+        if not press_format or not press_path or not target_s:
             raise ValueError(
-                f"scoped shortcut press {index + 1} requires format, group, press_path and target_path"
+                f"scoped shortcut press {index + 1} requires format, press_path and target_path"
             )
         target = Path(target_s).expanduser().resolve()
         if not _path_under_any_root(target, resource_roots()):
@@ -2951,11 +3187,12 @@ def refresh_link_index_db_from_catalog(settings: JpTvBrowseSettings) -> dict[str
 
     works = _load_catalog_works(settings)
     previous = _load_link_index_db()
-    previous_items = previous.get("items") if isinstance(previous.get("items"), list) else []
+    catalog_root = _settings_catalog_root_key(settings)
     entries = _index_entries_from_works(
         works,
-        previous_items=[item for item in previous_items if isinstance(item, dict)],
         use_resource_index=False,
+        prefer_previous_target=True,
+        previous_items=_matching_previous_index_items(works, previous, catalog_root=catalog_root),
     )
     payload = {
         "version": 1,
@@ -2987,6 +3224,8 @@ def _apply_scoped_shortcuts_for_work_process_locked(
         already_exists = 0
         duplicate_count = 0
         for index, item in enumerate(items):
+            if index % 100 == 0:
+                report_progress("复核待创建快捷方式", completed=index, total=len(items), unit="快捷方式")
             if not isinstance(item, dict):
                 raise ValueError(f"scoped shortcut item {index + 1} must be an object")
             item_root = Path(_str_or_blank(item.get("shortcut_root"))).expanduser().resolve()
@@ -3017,11 +3256,14 @@ def _apply_scoped_shortcuts_for_work_process_locked(
         index_path = _link_index_db_path()
         previous_index = index_path.read_bytes() if index_path.is_file() else None
         try:
-            for shortcut_path, target, _item in prepared:
+            for shortcut_index, (shortcut_path, target, _item) in enumerate(prepared):
+                report_progress("创建作品快捷方式", completed=shortcut_index, total=len(prepared), unit="快捷方式", detail=str(shortcut_path))
                 _create_windows_shortcut(shortcut_path, target)
                 created.append(shortcut_path)
+            report_progress("作品快捷方式创建完成", completed=len(created), total=len(prepared), unit="快捷方式")
             index_result = refresh_link_index_db_from_catalog(settings)
         except BaseException:
+            report_progress("快捷方式处理失败，回滚本次创建和索引", completed=0, total=len(created), unit="快捷方式")
             for shortcut_path in reversed(created):
                 shortcut_path.unlink(missing_ok=True)
             if previous_index is None:
@@ -3153,19 +3395,36 @@ def preview_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrows
 
 
 def save_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
-    writes = _save_ui_mappings_to_catalog(body, settings=settings)
-    payload = collection_link_index_payload(settings)
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能写回索引关联")
+    with catalog_write_transaction(settings.filesystem_root):
+        mappings = _ui_mapping_items(body)
+        if not mappings:
+            raise ValueError("没有可保存的索引关联")
+        _, saved_index, writes = _commit_catalog_mappings_and_index(mappings, settings=settings)
+        payload = collection_link_index_payload(settings)
     payload["writes"] = writes
+    payload["index_db"] = {"path": str(_link_index_db_path()), "generated_at": saved_index["generated_at"],
+                           "item_count": len(saved_index["items"])}
     return payload
 
 
 def generate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
-    works = _load_catalog_works(settings)
-    if body.get("refresh_resources") is True:
+    if body.get("refresh_resources") is True and body.get("preview") is not True:
         scan_resource_libraries_payload()
-    saved = _save_index_entries_from_works(works, catalog_root=_settings_catalog_root_key(settings))
-    payload = _payload_from_works(works, refresh_links=True, catalog_root=_settings_catalog_root_key(settings))
+    if body.get("preview") is True:
+        _, items, _, bindings = _catalog_binding_generation_context(settings)
+        return {"generated": items, "catalog_bindings": bindings, "preview": True}
+    if settings.filesystem_root is None:
+        raise ValueError("未配置 filesystem_root，不能同步索引与作品目录绑定")
+    with catalog_write_transaction(settings.filesystem_root):
+        _, _, _, bindings = _catalog_binding_generation_context(settings)
+        _assert_catalog_binding_plan_safe(bindings)
+        works, saved, writes = _commit_catalog_mappings_and_index(bindings["mappings"], settings=settings)
+        payload = _payload_from_works(works, refresh_links=True, catalog_root=_settings_catalog_root_key(settings))
     payload["generated"] = saved.get("items", [])
+    payload["catalog_bindings"] = bindings
+    payload["writes"] = writes
     payload["index_db"] = {
         "path": str(_link_index_db_path()),
         "generated_at": saved.get("generated_at") or "",
@@ -3237,7 +3496,117 @@ def _backup_shortcut_root(root: Path, backup_dir_raw: Any) -> str:
 
 def _link_index_file_generation_plan(settings: JpTvBrowseSettings) -> tuple[list[dict[str, Any]], bool]:
     works = _load_catalog_works(settings)
-    return _index_db_items_for_payload(works, catalog_root=_settings_catalog_root_key(settings))
+    previous = _load_link_index_db()
+    same_catalog = _str_or_blank(previous.get("catalog_root")) == _settings_catalog_root_key(settings)
+    # Cached index rows are not an authoritative work list. Reconcile additions,
+    # edits and removals from the current catalog before preview AND execution.
+    old_items = _matching_previous_index_items(works, previous, catalog_root=_settings_catalog_root_key(settings))
+    report_progress("按最新作品数据库重建快捷方式计划", detail="重新核对新增、修改和删除记录，不直接复用旧索引列表")
+    return _index_entries_from_works(
+        works, previous_items=old_items if same_catalog else [], use_resource_index=True,
+        preserve_manual_targets=True, prefer_catalog_target=True,
+    ), bool(same_catalog and previous.get("items"))
+
+
+def _plan_missing_catalog_bindings(
+    works: list[dict[str, Any]], items: list[dict[str, Any]],
+) -> dict[str, Any]:
+    # Existing complete bindings need no inference or resource-root migration.
+    # This also keeps historically valid absolute/legacy-relative paths usable.
+    pending = []
+    unchanged = 0
+    directory_checks: dict[Path, bool] = {}
+    for work in works:
+        presses = work.get("press") or []
+        existing_targets = [_catalog_target_for_work_press(work, press) for press in presses]
+        raw_root = Path(normalize_copied_path(work.get("path")))
+        if not raw_root.is_absolute():
+            raw_root = _legacy_media_root() / raw_root
+        if presses and all(exists and _ordinary_catalog_target(str(raw_root / normalize_copied_path(press.get("press_path"))), cache=directory_checks)
+                           for press, (_, exists, _) in zip(presses, existing_targets)):
+            unchanged += len(presses)
+            continue
+        adapted = dict(work)
+        raw_path = normalize_copied_path(work.get("path"))
+        if raw_path and not Path(raw_path).is_absolute():
+            try:
+                # Keep path components unresolved so the planner can reject
+                # junctions/symlinks instead of validating their resolved target.
+                adapted["path"] = str(_legacy_media_root() / _clean_rel_path(raw_path, label="path"))
+            except (OSError, ValueError):
+                pass  # The planner will report the unsafe existing field.
+        pending.append(adapted)
+    if pending:
+        plan = plan_catalog_bindings(pending, items, resource_roots=resource_roots())
+    else:
+        plan = {"mappings": [], "issues": [], "summary": {"mapped_work_count": 0, "mapped_press_count": 0,
+                "unchanged_press_count": 0, "issue_count": 0, "blocking_issue_count": 0}}
+    original_paths = {(work.get("yaml_source_rel"), work.get("index_in_file")): work.get("path") for work in works}
+    for mapping in plan["mappings"]:
+        original = original_paths.get((mapping.get("yaml_source_rel"), mapping.get("index_in_file")))
+        if original:
+            mapping["path"] = original
+    plan["summary"].update({"work_count": len(works), "press_count": sum(len(work.get("press") or []) for work in works)})
+    plan["summary"]["unchanged_press_count"] = int(plan["summary"].get("unchanged_press_count") or 0) + unchanged
+    return plan
+
+
+def _ordinary_catalog_target(raw: str, *, cache: dict[Path, bool] | None = None) -> bool:
+    path = Path(raw)
+    if not path.is_absolute() or ".." in path.parts:
+        return False
+    try:
+        for current in (path, *path.parents):
+            ordinary = cache.get(current) if cache is not None else None
+            if ordinary is None:
+                metadata = current.lstat()
+                ordinary = bool(stat.S_ISDIR(metadata.st_mode) and not stat.S_ISLNK(metadata.st_mode) and not (
+                    getattr(metadata, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+                ))
+                if cache is not None:
+                    cache[current] = ordinary
+            if not ordinary:
+                return False
+    except OSError:
+        return False
+    return True
+
+
+def _assert_catalog_binding_plan_safe(plan: dict[str, Any]) -> None:
+    blocking = [issue for issue in plan.get("issues", []) if issue.get("blocking")]
+    if blocking:
+        raise ValueError("目录绑定存在冲突，数据库、索引与快捷方式均未更改：" + "; ".join(
+            str(issue.get("message") or issue.get("error") or issue.get("code")) for issue in blocking[:5]
+        ))
+
+
+def _catalog_binding_generation_context(
+    settings: JpTvBrowseSettings,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool, dict[str, Any]]:
+    candidates, cached = _link_index_file_generation_plan(settings)
+    works = _load_catalog_works(settings)
+    bindings = _plan_missing_catalog_bindings(works, candidates)
+    previous = _load_link_index_db()
+    if _str_or_blank(previous.get("catalog_root")) == _settings_catalog_root_key(settings):
+        raw_previous = previous.get("items")
+        _, rejected = _validated_previous_index_items(works, raw_previous if isinstance(raw_previous, list) else [])
+        complete_work_keys = {work.get("work_key") for work in works if work.get("press")
+                              and all(_catalog_target_for_work_press(work, press)[1] for press in work["press"])}
+        # A complete current catalog can supersede obsolete derived metadata.
+        # For unbound works, do not disguise contradictory old evidence by
+        # manufacturing a fresh identity around its target or a resource match.
+        bindings["issues"].extend(issue for issue in rejected if issue.get("work_key") not in complete_work_keys)
+        bindings["summary"]["issue_count"] = len(bindings["issues"])
+        bindings["summary"]["blocking_issue_count"] = sum(bool(issue.get("blocking")) for issue in bindings["issues"])
+    projected = _merge_ui_mappings(works, _ui_mapping_items({"works": bindings["mappings"]}))
+    # Only catalog-backed targets (including this exact safe preview mapping)
+    # can become shortcuts. Unconfirmed format-only matches stay unbound.
+    canonical = _index_entries_from_works(projected, use_resource_index=False)
+    by_key = {item["entry_key"]: item for item in canonical}
+    unbound = sum(bool(item.get("target_exists")) and not bool(by_key.get(item.get("entry_key"), {}).get("target_exists"))
+                  for item in candidates)
+    bindings["summary"]["unbound_candidate_count"] = unbound
+    return works, canonical, cached, bindings
 
 
 def _shortcut_root_for_index_item(item: dict[str, Any]) -> Path:
@@ -3337,9 +3706,23 @@ def _generate_link_index_files_from_ui_body_unlocked(
     *,
     settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
-    items, index_db_exists = _link_index_file_generation_plan(settings)
+    report_progress("读取并校验快捷方式生成计划")
+    _, items, index_db_exists, bindings = _catalog_binding_generation_context(settings)
     preview = _link_index_file_generation_preview(items)
+    binding_conflicts = [issue for issue in bindings.get("issues", []) if issue.get("blocking")]
+    preview["conflicts"].extend(binding_conflicts)
+    preview["conflict_count"] = len(preview["conflicts"])
+    preview["catalog_bindings"] = bindings
+    preview["unbound_count"] = int(bindings.get("summary", {}).get("unbound_candidate_count") or 0)
+    preview["blocked_count"] = len(binding_conflicts)
     preview["index_db_exists"] = index_db_exists
+    preview["catalog_refreshed"] = True
+    preview["plan_id"] = hashlib.sha256(json.dumps({"items": [
+        {"root": str(_shortcut_root_for_index_item(item)),
+         "relpath": _str_or_blank(item.get("shortcut_relpath") or item.get("relpath")),
+         "target": _str_or_blank(item.get("target_path"))}
+        for item in items
+    ], "bindings": bindings}, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
     if body.get("preview") is True:
         return {
             "config": collection_link_index_config_json(),
@@ -3349,28 +3732,42 @@ def _generate_link_index_files_from_ui_body_unlocked(
         raise ValueError("快捷方式计划存在冲突，尚未清空或创建文件：" + "; ".join(
             conflict["error"] for conflict in preview["conflicts"][:5]
         ))
-    roots = [Path(value).expanduser().resolve() for value in preview["output_roots"]]
-    for root in roots:
-        root.mkdir(parents=True, exist_ok=True)
+    if body.get("plan_id") and body["plan_id"] != preview["plan_id"]:
+        raise ValueError("数据库或输出计划已变化，请重新预检并确认；尚未清空或创建快捷方式")
     if preview["root_non_empty"] and (
         body.get("confirm_clear") is not True or body.get("confirm_clear_twice") is not True
     ):
         raise ValueError("索引输出目录非空，生成前必须完成两次确认")
+    roots = [Path(value).expanduser().resolve() for value in preview["output_roots"]]
+    for root in roots:
+        root.mkdir(parents=True, exist_ok=True)
     backup_paths: list[str] = []
     removed_count = 0
+    # Finish every requested backup before changing the index or clearing any
+    # output root. A later category's backup failure must leave earlier roots intact.
     for root in roots:
         entries = _shortcut_root_direct_entries(root)
         if entries and _str_or_blank(body.get("backup_dir")):
+            report_progress("备份已有快捷方式目录", detail=str(root))
             backup_paths.append(_backup_shortcut_root(root, body.get("backup_dir")))
-        if entries:
+    report_progress("同步最新快捷方式索引", completed=len(items), total=len(items), unit="条")
+    saved_works, _, binding_writes = _commit_catalog_mappings_and_index(bindings["mappings"], settings=settings)
+    # The persisted index may retain unconfirmed evidence for later repair.
+    # Actual shortcut creation must use only the just-saved canonical bindings.
+    items = _index_entries_from_works(saved_works, use_resource_index=False)
+    for root in roots:
+        if _shortcut_root_direct_entries(root):
+            report_progress("清理已确认的快捷方式输出目录", detail=str(root))
             removed_count += _clear_directory_contents(root)
     created = 0
     skipped_empty_target = 0
     skipped_missing_target = 0
     failed: list[dict[str, Any]] = []
     created_paths: set[str] = set()
-    for item in items:
+    for item_index, item in enumerate(items):
         rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath"))
+        if item_index % 20 == 0:
+            report_progress("生成目录快捷方式", completed=item_index, total=len(items), unit="条目", detail=rel)
         target_s = _str_or_blank(item.get("target_path"))
         if not target_s:
             skipped_empty_target += 1
@@ -3399,6 +3796,7 @@ def _generate_link_index_files_from_ui_body_unlocked(
                     "error": str(exc),
                 }
             )
+    report_progress("快捷方式生成阶段结束", completed=len(items), total=len(items), unit="条目", detail=f"创建 {created}，失败 {len(failed)}，跳过 {skipped_empty_target + skipped_missing_target}")
     payload = collection_link_index_payload(settings)
     payload["file_generation"] = {
         **preview,
@@ -3412,6 +3810,7 @@ def _generate_link_index_files_from_ui_body_unlocked(
         "skipped_missing_target": skipped_missing_target,
         "failed_count": len(failed),
         "failed": failed[:50],
+        "catalog_writes": binding_writes,
     }
     return payload
 

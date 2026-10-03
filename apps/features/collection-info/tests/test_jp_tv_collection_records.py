@@ -31,6 +31,13 @@ def _settings(db: Path) -> JpTvBrowseSettings:
 
 
 class JpTvCollectionRecordsTest(unittest.TestCase):
+    def test_year_names_require_paired_brackets(self) -> None:
+        for raw in ("[2024", "2024]", "[[2024]]", "2024\nextra"):
+            with self.subTest(raw=raw):
+                self.assertIsNone(service.collection_year_key_from_dirname(raw))
+        self.assertEqual(service.collection_year_key_from_dirname("[199x]"), "199X")
+        self.assertEqual(service.collection_year_key_from_dirname(" 2024 "), "2024")
+
     def test_quick_successive_saves_keep_distinct_recovery_snapshots(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -118,10 +125,42 @@ class JpTvCollectionRecordsTest(unittest.TestCase):
                 target = data_root / "CollectionInfo" / "collection-info.yaml"
                 self.assertEqual(Path(result["path"]), target.resolve())
                 raw = load_yaml_string(target.read_text(encoding="utf-8"))
-                self.assertEqual(raw["records"][0]["completed_years"], ["2024", "2025"])
+                self.assertEqual(raw["records"][0]["completed_years"], ["2023", "2024", "2025"])
 
                 payload = collection_records_payload(_settings(db))
-                self.assertEqual(payload["records"][0]["completed_years"], ["2024", "2025"])
+                self.assertEqual(payload["records"][0]["completed_years"], ["2023", "2024", "2025"])
+
+    def test_saved_years_survive_partial_and_offline_finish_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db, finish = root / "DB", root / "Finish"
+            db.mkdir()
+            (finish / "[2024]").mkdir(parents=True)
+            with patch.dict(os.environ, {"JP_TV_COLLECTION_FINISH_DIR": str(finish)}):
+                result = save_collection_records_from_ui_body(
+                    {"record": {"completed_years": ["2023", "2024", "invalid", "2023"]}},
+                    settings=_settings(db),
+                )
+                self.assertEqual(result["records"][0]["completed_years"], ["2023", "2024"])
+                for failure in (None, OSError("disk offline")):
+                    with self.subTest(failure=failure), patch.object(
+                        service, "scan_finish_years", side_effect=failure,
+                        return_value=[{"key": "2024", "label": "[2024]", "path_name": "[2024]"}],
+                    ):
+                        loaded = collection_records_payload(_settings(db))
+                        self.assertEqual(loaded["records"][0]["completed_years"], ["2023", "2024"])
+                        saved = save_collection_records_from_ui_body({"records": loaded["records"]}, settings=_settings(db))
+                        self.assertEqual(saved["records"], loaded["records"])
+
+    def test_save_does_not_scan_finish_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            with patch.object(service, "scan_finish_years", side_effect=AssertionError("unnecessary disk scan")):
+                result = save_collection_records_from_ui_body(
+                    {"record": {"completed_years": ["2020"]}}, settings=_settings(db),
+                )
+            self.assertEqual(result["records"][0]["completed_years"], ["2020"])
 
 
 if __name__ == "__main__":

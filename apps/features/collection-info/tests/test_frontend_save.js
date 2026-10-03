@@ -9,11 +9,12 @@ const vm = require("node:vm");
 const FRONTEND = path.resolve(__dirname, "../frontend/index.js");
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function setup() {
+function setup(options = {}) {
   const requests = [];
   const statuses = [];
   const records = [{ domain: "animation", country: "japan", release_type: "tv", completed_years: ["2020"] }];
   const buttons = [{ disabled: false }, { disabled: false }];
+  const inputs = [{ disabled: false }, { disabled: false }];
   let onClick;
   let html = "";
   let renders = 0;
@@ -34,6 +35,7 @@ function setup() {
         },
       }));
       if (selector.includes('data-collection-action="save"')) return buttons;
+      if (selector.includes('.collection-select')) return inputs;
       return [];
     },
   };
@@ -50,13 +52,14 @@ function setup() {
         reject,
       }));
     },
+    ...options.context,
   };
   vm.runInNewContext(fs.readFileSync(FRONTEND, "utf8"), { window, document, console }, { filename: FRONTEND });
   const feature = window.JpTvBrowseFeatureRegistry.features[0];
   feature.init(context);
   feature.activate(context);
   return {
-    requests, statuses, records, buttons, view,
+    requests, statuses, records, buttons, inputs, view, feature, context,
     renders: () => renders,
     click(action) {
       const target = { closest() { return this; }, getAttribute() { return action; } };
@@ -119,4 +122,132 @@ test("collection rendering escapes source values without requiring a shell escap
   await flush();
   assert.doesNotMatch(app.view.innerHTML, /<img src=x/);
   assert.match(app.view.innerHTML, /&lt;img src=x onerror=&quot;bad\(\)&quot;&gt;/);
+});
+
+test("switching pages and refreshing enum configuration preserve unsaved collection edits", async () => {
+  const app = await loadedApp();
+  app.records[0].country = "korea";
+  app.feature.deactivate();
+  app.feature.activate(app.context);
+  assert.equal(app.requests.length, 1, "returning to a loaded form must not reload and erase its draft");
+  app.feature.refreshAfterConfig(app.context);
+  assert.match(app.view.innerHTML, /value="korea" selected/);
+  app.click("save");
+  assert.equal(app.requests[1].body.records[0].country, "korea");
+});
+
+test("a previous page's read cannot replace current data or clear its loading state", async () => {
+  const app = setup();
+  app.feature.activate(app.context);
+  assert.equal(app.requests.length, 1, "concurrent activation should share the current read");
+  app.feature.deactivate();
+  app.feature.activate(app.context);
+  assert.equal(app.requests.length, 2);
+  app.requests[0].respond({ ok: true, path: "stale.yaml", records: app.records });
+  await flush();
+  assert.doesNotMatch(app.view.innerHTML, /stale\.yaml/);
+  assert.equal(app.buttons.every((button) => button.disabled), true);
+  app.requests[1].respond({ ok: true, path: "current.yaml", records: app.records });
+  await flush();
+  assert.match(app.view.innerHTML, /current\.yaml/);
+  assert.equal(app.buttons.some((button) => button.disabled), false);
+});
+
+test("late reads do not post errors after leaving the collection page", async () => {
+  const app = setup();
+  app.feature.deactivate();
+  const statusesBefore = app.statuses.length;
+  app.requests[0].reject(new Error("stale-read-failure"));
+  await flush();
+  assert.equal(app.statuses.length, statusesBefore);
+});
+
+test("reload failures preserve the previous form and safely enable retry", async () => {
+  const app = await loadedApp();
+  const before = app.view.innerHTML;
+  app.click("reload");
+  assert.equal(app.inputs.every((input) => input.disabled), true);
+  app.click("save");
+  app.click("reload");
+  assert.equal(app.requests.length, 2);
+  app.requests[1].reject(new Error("offline"));
+  await flush();
+  assert.equal(app.view.innerHTML, before);
+  assert.equal(app.buttons.some((button) => button.disabled), false);
+  assert.equal(app.inputs.some((input) => input.disabled), false);
+  app.click("reload");
+  assert.equal(app.requests.length, 3);
+});
+
+test("a disposed save cannot render into a replacement feature or unlock its active save", async () => {
+  const app = await loadedApp();
+  app.click("save");
+  app.feature.dispose();
+  app.feature.init(app.context);
+  app.feature.activate(app.context);
+  app.requests[2].respond({ ok: true, path: "replacement.yaml", records: app.records });
+  await flush();
+  app.click("save");
+  app.requests[1].respond({ ok: true, path: "disposed.yaml", records: app.records });
+  await flush();
+  assert.doesNotMatch(app.view.innerHTML, /disposed\.yaml/);
+  assert.equal(app.buttons.every((button) => button.disabled), true);
+  app.requests[3].respond({ ok: true, path: "replacement.yaml", records: app.records });
+  await flush();
+  assert.equal(app.buttons.some((button) => button.disabled), false);
+});
+
+test("leaving during configuration loading prevents a stale follow-up collection request", async () => {
+  let completeConfig;
+  const app = setup({ context: { loadServerConfig() {
+    return new Promise((resolve) => { completeConfig = resolve; });
+  } } });
+  assert.equal(app.requests.length, 0);
+  app.feature.deactivate();
+  completeConfig();
+  await flush();
+  assert.equal(app.requests.length, 0);
+});
+
+test("saved completion years remain checked even when their directories were not scanned", async () => {
+  const app = setup();
+  app.requests[0].respond({ ok: true, records: app.records, years: [], warning: "drive offline" });
+  await flush();
+  assert.match(app.view.innerHTML, /data-year-key="2020"[^>]+checked/);
+  assert.match(app.view.innerHTML, /2020（已记录，目录未发现）/);
+  assert.match(app.view.innerHTML, /collection-year-chip-unavailable/);
+  app.feature.refreshAfterConfig(app.context);
+  assert.match(app.view.innerHTML, /data-year-key="2020"[^>]+checked/);
+  app.click("save");
+  assert.deepEqual(app.requests[1].body.records[0].completed_years, ["2020"]);
+});
+
+test("scanned and saved year choices are normalized without duplicate checkboxes", async () => {
+  const app = setup();
+  app.records[0].completed_years = ["2020", "199X"];
+  app.requests[0].respond({ ok: true, records: app.records,
+    years: [{ key: " 2020 " }, { key: "2020" }, { key: "199x", label: "九十年代" }] });
+  await flush();
+  assert.equal((app.view.innerHTML.match(/data-year-key="2020"/g) || []).length, 1);
+  assert.match(app.view.innerHTML, /data-year-key="199X"[^>]+checked/);
+  assert.doesNotMatch(app.view.innerHTML, /目录未发现/);
+});
+
+test("unchecked offline year options remain available across draft rerenders until an explicit reload", async () => {
+  const app = setup();
+  app.requests[0].respond({ ok: true, records: structuredClone(app.records), years: [] });
+  await flush();
+  app.records[0].completed_years = [];
+  app.feature.refreshAfterConfig(app.context);
+  assert.match(app.view.innerHTML, /data-year-key="2020"/);
+  assert.doesNotMatch(app.view.innerHTML, /data-year-key="2020"[^>]+checked/);
+  app.click("add-record");
+  assert.match(app.view.innerHTML, /data-year-key="2020"/);
+  app.records[0].completed_years = ["2020"];
+  app.feature.refreshAfterConfig(app.context);
+  assert.match(app.view.innerHTML, /data-year-key="2020"[^>]+checked/);
+  app.click("reload");
+  app.requests[1].respond({ ok: true, records: [{ ...app.records[0], completed_years: [] }], years: [] });
+  await flush();
+  assert.doesNotMatch(app.view.innerHTML, /data-year-key="2020"/);
 });

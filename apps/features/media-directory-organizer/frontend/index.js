@@ -74,6 +74,7 @@
   }
 
   var MULTIPLE_WORKS_VALUE = "__organizer_multiple_works__";
+  var AUTO_PRESS_GROUP_VALUE = "__organizer_press_group_auto__";
 
   var state = {
     config: null,
@@ -151,6 +152,35 @@
       if (value != null && String(value).trim()) return String(value).trim();
     }
     return "";
+  }
+
+  function normalizePressGroup(value) {
+    var group = String(value == null ? "" : value).trim();
+    return /^(?:---|----|—)$/.test(group) ? "" : group;
+  }
+
+  function pressGroupIsSelected(press) {
+    return !!press && Object.prototype.hasOwnProperty.call(press, "press_group") &&
+      press.press_group !== AUTO_PRESS_GROUP_VALUE &&
+      (normalizePressGroup(press.press_group) !== "" || press.press_group_confirmed !== false);
+  }
+
+  function pressGroupSelection(press) {
+    return pressGroupIsSelected(press) ? normalizePressGroup(press.press_group) : undefined;
+  }
+
+  function updatePressGroupSelection(press, value) {
+    if (value === AUTO_PRESS_GROUP_VALUE) {
+      delete press.press_group;
+      press.press_group_confirmed = false;
+    } else {
+      press.press_group = normalizePressGroup(value);
+      press.press_group_confirmed = true;
+    }
+  }
+
+  function pressGroupLabel(value) {
+    return normalizePressGroup(value) || "—";
   }
 
   function firstObject() {
@@ -341,12 +371,27 @@
 
   function configDefaultRoot(config) {
     var paths = config && config.paths && typeof config.paths === "object" ? config.paths : {};
-    return firstString(
+    return normalizeRootInput(firstString(
       paths.default_work_root,
       paths.work_root,
       config && config.default_work_root,
       config && config.root,
-    );
+    ));
+  }
+
+  function normalizeRootInput(value) {
+    // Explorer may wrap copied paths in quotes and invisible direction markers.
+    // Only trim the boundary; characters inside real directory names stay intact.
+    var result = String(value == null ? "" : value);
+    var previous;
+    do {
+      previous = result;
+      result = result.replace(/^[\s\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]+|[\s\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]+$/g, "");
+      if (result.length >= 2 && result.charAt(0) === '"' && result.charAt(result.length - 1) === '"') {
+        result = result.slice(1, -1);
+      }
+    } while (result !== previous);
+    return result;
   }
 
   function formatBytes(raw) {
@@ -631,12 +676,12 @@
       var override = state.sourcePressOverrides[source];
       if (!override || typeof override !== "object") return;
       var pressFormat = firstString(override.press_format).trim();
-      var pressGroup = firstString(override.press_group).trim();
       var sourceKey = firstString(source).trim();
-      if (!sourceKey || (!pressFormat && !pressGroup)) return;
+      var hasPressGroup = pressGroupIsSelected(override);
+      if (!sourceKey || (!pressFormat && !hasPressGroup)) return;
       var payload = Object.create(null);
       if (pressFormat) payload.press_format = pressFormat;
-      if (pressGroup) payload.press_group = pressGroup;
+      if (hasPressGroup) payload.press_group = normalizePressGroup(override.press_group);
       out[sourceKey] = payload;
     });
     return out;
@@ -1118,7 +1163,7 @@
         var details = [
           assignment.work_name,
           assignment.press_format,
-          assignment.press_group,
+          pressGroupLabel(assignment.press_group),
         ]
           .filter(function (value) {
             return value != null && String(value).trim();
@@ -1351,14 +1396,20 @@
       if (row.state === "unbound" && firstString(assignment && assignment.work_name)) {
         row.state = "catalog_bound";
       }
+      var previousInferredGroup = pressGroupSelection(row.inferredPress);
       row.inferredPress = Object.assign({}, row.inferredPress, {
         press_format: firstString(row.inferredPress.press_format, assignment && assignment.press_format),
-        press_group: firstString(row.inferredPress.press_group, assignment && assignment.press_group),
         press_path: firstString(
           row.inferredPress.press_path,
           assignment && assignment.target_relpath,
         ),
       });
+      if (previousInferredGroup !== undefined) {
+        row.inferredPress.press_group = previousInferredGroup;
+      } else if (pressGroupIsSelected(assignment)) {
+        row.inferredPress.press_group = normalizePressGroup(assignment.press_group);
+        row.inferredPress.press_group_confirmed = true;
+      }
       row.inferredPresses = [cloneJson(row.inferredPress)];
       addCandidate(row, firstString(assignment && assignment.work_name));
     });
@@ -1396,6 +1447,8 @@
       row.inferredPress = Object.assign({}, row.inferredPress, {
         press_format: firstString(source && source.suggested_press_format),
         press_group: firstString(source && source.suggested_press_group),
+        press_group_confirmed: !!firstString(source && source.suggested_press_group) ||
+          !!(source && source.press_group_confirmed),
         press_path: firstString(source && source.suggested_press_path),
       });
       row.inferredPresses = [cloneJson(row.inferredPress)];
@@ -1447,9 +1500,9 @@
   }
 
   function resetPlanScopedStateForRootChange(nextRoot, force) {
-    nextRoot = String(nextRoot == null ? "" : nextRoot);
+    nextRoot = normalizeRootInput(nextRoot);
     var changed = force === true ||
-      pathKey(String(state.root || "").trim()) !== pathKey(nextRoot.trim());
+      pathKey(normalizeRootInput(state.root)) !== pathKey(nextRoot);
     state.root = nextRoot;
     if (!changed) return false;
 
@@ -1509,23 +1562,24 @@
     if (!presses.length) presses = [{}];
     return presses.map(function (press) {
       press = press && typeof press === "object" ? press : {};
-      var matchedExisting = existingPresses.find(function (existing) {
+      var existingMatches = existingPresses.filter(function (existing) {
         if (
           firstString(press.press_format) &&
           firstString(existing && existing.press_format).toLocaleLowerCase() !==
             firstString(press.press_format).toLocaleLowerCase()
         ) return false;
         if (
-          firstString(press.press_group) &&
-          firstString(existing && existing.press_group).toLocaleLowerCase() !==
-            firstString(press.press_group).toLocaleLowerCase()
+          pressGroupIsSelected(press) &&
+          normalizePressGroup(existing && existing.press_group).toLocaleLowerCase() !==
+            normalizePressGroup(press.press_group).toLocaleLowerCase()
         ) return false;
         return true;
-      }) || {};
-      return {
+      });
+      var matchedExisting = existingMatches.length === 1 || pressGroupIsSelected(press)
+        ? existingMatches[0] || {} : {};
+      var result = {
         source_names: [row.sourceName],
         press_format: firstString(press.press_format, matchedExisting.press_format),
-        press_group: firstString(press.press_group, matchedExisting.press_group),
         press_path: firstString(
           press.press_path,
           press.suggested_press_path,
@@ -1533,6 +1587,13 @@
           row.sourceName,
         ),
       };
+      var selectedGroup = pressGroupSelection(press);
+      if (selectedGroup === undefined) selectedGroup = pressGroupSelection(matchedExisting);
+      if (selectedGroup !== undefined) {
+        result.press_group = selectedGroup;
+        result.press_group_confirmed = true;
+      }
+      return result;
     });
   }
 
@@ -1544,12 +1605,16 @@
       : [];
     return presses.map(function (press) {
       press = press && typeof press === "object" ? press : {};
-      return {
+      var result = {
         source_names: [row.sourceName],
         press_format: firstString(press.press_format),
-        press_group: firstString(press.press_group),
         press_path: firstString(press.press_path),
       };
+      if (pressGroupIsSelected(press)) {
+        result.press_group = normalizePressGroup(press.press_group);
+        result.press_group_confirmed = true;
+      }
+      return result;
     });
   }
 
@@ -1722,11 +1787,11 @@
       if (presses.length !== 1) return true;
       var press = presses[0] || {};
       return !firstString(press.press_format) ||
-        !firstString(press.press_group) ||
+        !pressGroupIsSelected(press) ||
         !firstString(press.press_path);
     });
     if (invalidPress.length) {
-      return "以下一级目录还需填写唯一的压制格式、压制组和 press_path：" +
+      return "以下一级目录还需填写唯一的压制格式、选择压制组（可选无压制组）和 press_path：" +
         invalidPress.map(function (row) { return row.sourceName; }).join("、");
     }
     return "";
@@ -1769,6 +1834,7 @@
           source_names: [row.sourceName],
           press_format: firstString(row.inferredPress.press_format),
           press_group: firstString(row.inferredPress.press_group),
+          press_group_confirmed: pressGroupIsSelected(row.inferredPress),
           press_path: firstString(row.inferredPress.press_path),
         },
       ];
@@ -1871,7 +1937,7 @@
           return (
             '<fieldset class="organizer-registration-press"><legend>当前来源压制</legend><p><code>' + esc(row.sourceName) + '</code></p><div class="organizer-registration-grid">' +
             '<label><span>压制格式</span><input type="text" data-source-draft-press="press_format" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '" value="' + esc(press.press_format || "") + '"' + disabled + " /></label>" +
-            '<label><span>压制组</span><select data-source-draft-press="press_group" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '"' + disabled + ">" + renderGroupOptions(press.press_group) + "</select></label>" +
+            '<label><span>压制组</span><select data-source-draft-press="press_group" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '"' + disabled + ">" + renderGroupOptions(pressGroupSelection(press)) + "</select></label>" +
             '<label class="organizer-registration-wide"><span>press_path / 整理目标</span><input type="text" data-source-draft-press="press_path" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '" value="' + esc(press.press_path || "") + '"' + disabled + " /></label></div></fieldset>"
           );
         })
@@ -1949,7 +2015,7 @@
               return (
                 '<div class="organizer-source-work-press-grid">' +
                 '<label><span>压制格式</span><input type="text" data-source-catalog-press="press_format" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '" value="' + esc(press.press_format || "") + '"' + rowDisabled + ' /></label>' +
-                '<label><span>压制组</span><select data-source-catalog-press="press_group" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '"' + rowDisabled + '>' + renderGroupOptions(press.press_group) + '</select></label>' +
+                '<label><span>压制组</span><select data-source-catalog-press="press_group" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '"' + rowDisabled + '>' + renderGroupOptions(pressGroupSelection(press)) + '</select></label>' +
                 '<label class="organizer-registration-wide"><span>press_path / 整理目标</span><input type="text" data-source-catalog-press="press_path" data-source-name="' + esc(row.sourceName) + '" data-press-index="' + esc(pressIndex) + '" value="' + esc(press.press_path || "") + '"' + rowDisabled + ' /></label>' +
                 '</div>'
               );
@@ -2092,9 +2158,8 @@
     var catalogRow = sourceBindingRowForCatalogRef(row, catalogRef);
     var presses = sourceBindingCatalogPresses(catalogRow, previous);
     if (!Number.isInteger(pressIndex) || !presses[pressIndex]) return false;
-    presses[pressIndex][field] = field === "press_group"
-      ? String(value || "").trim()
-      : value;
+    if (field === "press_group") updatePressGroupSelection(presses[pressIndex], value);
+    else presses[pressIndex][field] = value;
     edits[sourceName] = {
       mode: "catalog",
       catalog_ref: cloneJson(catalogRef),
@@ -2147,9 +2212,8 @@
     } else if (section === "press") {
       var presses = draftPresses(draft);
       if (!Number.isInteger(pressIndex) || !presses[pressIndex]) return false;
-      presses[pressIndex][field] = field === "press_group"
-        ? String(value || "").trim()
-        : value;
+      if (field === "press_group") updatePressGroupSelection(presses[pressIndex], value);
+      else presses[pressIndex][field] = value;
     } else {
       draft[field] = value;
     }
@@ -2408,19 +2472,17 @@
           var pressGroups = Array.isArray(issue.press_groups)
             ? issue.press_groups
                 .map(function (value) {
-                  return firstString(value).trim();
+                  return normalizePressGroup(value);
                 })
                 .filter(function (value, index, values) {
-                  return value && values.indexOf(value) === index;
+                  return values.indexOf(value) === index;
                 })
             : [];
           var selectedOverride = source && state.sourcePressOverrides[source];
           var selectedFormat = selectedOverride
             ? firstString(selectedOverride.press_format)
             : "";
-          var selectedGroup = selectedOverride
-            ? firstString(selectedOverride.press_group)
-            : "";
+          var selectedGroup = pressGroupSelection(selectedOverride);
           var formatControl = "";
           if (issue.code === "format-ambiguous" && source && pressFormats.length) {
             var formatOptions = ['<option value="">请选择数据库压制格式</option>']
@@ -2453,25 +2515,13 @@
           }
           var groupControl = "";
           if (
-            (issue.code === "group-unresolved" || issue.code === "group-ambiguous") &&
-            source &&
-            pressGroups.length
+            (issue.code === "group-unresolved" || issue.code === "group-ambiguous" ||
+              issue.code === "format-ambiguous") && source
           ) {
-            var options = ['<option value="">请选择数据库压制组</option>']
-              .concat(
-                pressGroups.map(function (pressGroup) {
-                  return (
-                    '<option value="' +
-                    esc(pressGroup) +
-                    '"' +
-                    (pressGroup === selectedGroup ? " selected" : "") +
-                    ">" +
-                    esc(pressGroup) +
-                    "</option>"
-                  );
-                }),
-              )
-              .join("");
+            var options = renderPressGroupOptions(
+              selectedGroup, pressGroups.length ? pressGroups : groupRegistryOptions(),
+              "自动识别压制组",
+            );
             groupControl =
               '<label class="organizer-issue-resolution"><span>人工选择数据库压制组' +
               (pressFormat ? "（" + esc(pressFormat) + "）" : "") +
@@ -2481,7 +2531,7 @@
               (state.busy ? " disabled" : "") +
               ">" +
               options +
-              "</select><small>仅列出该作品数据库中可用的候选组；选择后会自动重新预览，不会移动文件。</small></label>";
+              "</select><small>可指定候选组或无压制组；选择后会自动重新预览，不会移动文件。</small></label>";
           }
           return (
             '<li class="organizer-issue-item"><strong>[' +
@@ -2543,7 +2593,7 @@
   }
 
   function landingRecognitionPayload(query) {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     var draft = cloneJson(landingRecognitionDraft());
     if (draft && typeof draft === "object") draft.path = root;
     return {
@@ -2660,7 +2710,7 @@
           "<tr><td><code>" +
           esc(sourceNames.join(" / ") || "来源 " + (index + 1)) +
           "</code></td><td>" +
-          esc([press && press.press_format, press && press.press_group].filter(Boolean).join(" / ") || "-") +
+          esc([press && press.press_format, pressGroupLabel(press && press.press_group)].join(" / ")) +
           "</td><td><code>" +
           esc(currentPath || "（空）") +
           "</code></td><td" +
@@ -2914,26 +2964,39 @@
   }
 
   function renderGroupOptions(selected) {
-    var current = String(selected || "");
-    var options = ['<option value="">请选择组简称或组合简称</option>'];
+    return renderPressGroupOptions(selected, groupRegistryOptions(), "请选择组简称或组合简称");
+  }
+
+  function renderPressGroupOptions(selected, groups, prompt, historical) {
+    var current = selected === undefined || selected === AUTO_PRESS_GROUP_VALUE
+      ? AUTO_PRESS_GROUP_VALUE : normalizePressGroup(selected);
+    var options = [
+      '<option value="' + AUTO_PRESS_GROUP_VALUE + '"' +
+        (current === AUTO_PRESS_GROUP_VALUE ? " selected" : "") + ">" + esc(prompt) + "</option>",
+      '<option value=""' + (current === "" ? " selected" : "") + ">—（无压制组）</option>",
+    ];
     var currentFound = false;
-    groupRegistryOptions().forEach(function (item) {
-      var code = String((item && item.code) || "");
-      if (!code) return;
-      if (code === current) currentFound = true;
+    var seen = Object.create(null);
+    groups.forEach(function (item) {
+      var code = normalizePressGroup(typeof item === "string" ? item : item && item.code);
+      if (!code || seen[code.toLocaleLowerCase()]) return;
+      seen[code.toLocaleLowerCase()] = true;
+      var matches = code.toLocaleLowerCase() === current.toLocaleLowerCase();
+      if (matches) currentFound = true;
       options.push(
         '<option value="' +
           esc(code) +
           '"' +
-          (code === current ? " selected" : "") +
+          (matches ? " selected" : "") +
           ">" +
-          esc((item && item.label) || code) +
+          esc((item && typeof item === "object" && item.label) || code) +
           "</option>",
       );
     });
-    if (current && !currentFound) {
+    if (current && current !== AUTO_PRESS_GROUP_VALUE && !currentFound) {
       options.push(
-        '<option value="' + esc(current) + '" selected>' + esc(current) + "</option>",
+        '<option value="' + esc(current) + '" selected>' +
+          esc(current + (historical ? "（历史数据库值，仅可保留）" : "")) + "</option>",
       );
     }
     return options.join("");
@@ -3020,9 +3083,9 @@
         var catalogRef = nonEmptyObject(rawMember.catalog_ref) || candidateRef;
         var pressKey = firstString(rawMember.press_key);
         var pressFormat = firstString(rawMember.press_format);
-        var pressGroup = firstString(rawMember.press_group);
+        var pressGroup = normalizePressGroup(rawMember.press_group);
         var key = sharedTargetMemberKey(catalogRef, pressKey);
-        if (!catalogRef || !key || !pressFormat || !pressGroup) return null;
+        if (!catalogRef || !key || !pressFormat || !pressGroupIsSelected(rawMember)) return null;
         return {
           key: key,
           workKey: catalogRefKey(catalogRef),
@@ -3162,7 +3225,7 @@
       if (Object.keys(workKeys).length < 2) {
         return {
           bindings: [],
-          error: members[0].pressFormat + " / " + members[0].pressGroup + " 必须选择至少两个不同播出记录。",
+          error: members[0].pressFormat + " / " + pressGroupLabel(members[0].pressGroup) + " 必须选择至少两个不同播出记录。",
         };
       }
       var pressPath = firstString(
@@ -3172,7 +3235,7 @@
       if (!pressPath) {
         return {
           bindings: [],
-          error: "请填写 " + members[0].pressFormat + " / " + members[0].pressGroup + " 共用的 press_path。",
+          error: "请填写 " + members[0].pressFormat + " / " + pressGroupLabel(members[0].pressGroup) + " 共用的 press_path。",
         };
       }
       bindings.push({
@@ -3297,7 +3360,7 @@
               (checked ? " checked" : "") +
               memberDisabled +
               ' /><span><strong>' +
-              esc(member.pressFormat + " / " + member.pressGroup) +
+              esc(member.pressFormat + " / " + pressGroupLabel(member.pressGroup)) +
               "</strong><small>" +
               esc(member.pressPath || "press_path 尚未填写") +
               "</small></span></label>"
@@ -3334,7 +3397,7 @@
         ).length;
         return (
           '<fieldset class="organizer-shared-target-binding"><legend>' +
-          esc(members[0].pressFormat + " / " + members[0].pressGroup) +
+          esc(members[0].pressFormat + " / " + pressGroupLabel(members[0].pressGroup)) +
           " · " +
           esc(workCount) +
           ' 条数据库记录</legend><label><span>共同 press_path / 实体目录</span><input type="text" data-shared-target-path="' +
@@ -3382,7 +3445,7 @@
                       '"' +
                       (owner === member.key ? " selected" : "") +
                       ">" +
-                      esc(member.workName + " · " + member.pressFormat + " / " + member.pressGroup) +
+                      esc(member.workName + " · " + member.pressFormat + " / " + pressGroupLabel(member.pressGroup)) +
                       "</option>"
                     );
                   })
@@ -3406,7 +3469,7 @@
                     '"' +
                     (owner === member.key ? " selected" : "") +
                     ">" +
-                    esc(member.workName + " · " + member.pressFormat + " / " + member.pressGroup) +
+                    esc(member.workName + " · " + member.pressFormat + " / " + pressGroupLabel(member.pressGroup)) +
                     "</option>"
                   );
                 })
@@ -3468,7 +3531,7 @@
             '<label><span>压制格式</span><input type="text" data-landing-press="press_format" data-work-index="' + esc(workIndex) + '" data-press-index="' +
             esc(index) + '" value="' + esc(press.press_format || "") + '" autocomplete="off"' + disabled + " /></label>" +
             '<label><span>压制组 / 组合简称</span><select data-landing-press="press_group" data-work-index="' + esc(workIndex) + '" data-press-index="' + esc(index) + '"' + disabled + ">" +
-            renderGroupOptions(press.press_group) + "</select></label>" +
+            renderGroupOptions(pressGroupSelection(press)) + "</select></label>" +
             '<label class="organizer-registration-wide"><span>数据库 press_path / 整理目标</span><input type="text" data-landing-press="press_path" data-work-index="' + esc(workIndex) + '" data-press-index="' + esc(index) + '" value="' + esc(press.press_path || "") + '" autocomplete="off" spellcheck="false"' + disabled + " /></label>" +
             "</div></fieldset>"
           );
@@ -3707,49 +3770,9 @@
   }
 
   function renderRepairGroupOptions(selected) {
-    var current = firstString(selected);
-    var registry = groupRegistryOptions();
-    var selectedCode = "";
-    registry.forEach(function (item) {
-      var code = firstString(item && item.code);
-      if (code && code.toLowerCase() === current.toLowerCase()) selectedCode = code;
-    });
-    if (!registry.length && current) {
-      return (
-        '<option value="">请选择组简称或组合简称</option>' +
-        '<option value="' + esc(current) + '" selected>' + esc(current) + "</option>"
-      );
-    }
-    var options = [
-      '<option value=""' +
-        (!selectedCode ? " selected" : "") +
-        ">" +
-        esc(current ? "当前组不在数据库注册表中，请重新选择" : "请选择组简称或组合简称") +
-        "</option>",
-    ];
-    if (current && !selectedCode) {
-      options.push(
-        '<option value="' +
-          esc(current) +
-          '" selected>' +
-          esc(current + "（历史数据库值，仅可保留）") +
-          "</option>",
-      );
-    }
-    registry.forEach(function (item) {
-      var code = firstString(item && item.code);
-      if (!code) return;
-      options.push(
-        '<option value="' +
-          esc(code) +
-          '"' +
-          (code === selectedCode ? " selected" : "") +
-          ">" +
-          esc(firstString(item && item.label, code)) +
-          "</option>",
-      );
-    });
-    return options.join("");
+    return renderPressGroupOptions(
+      selected, groupRegistryOptions(), "请选择组简称或组合简称", true,
+    );
   }
 
   function renderShortcutRepairEditor(pending) {
@@ -3780,7 +3803,7 @@
           '"' +
           identityDisabled +
           ">" +
-          renderRepairGroupOptions(press.press_group) +
+          renderRepairGroupOptions(pressGroupSelection(press)) +
           "</select></label>" +
           '<label class="organizer-registration-wide"><span>' +
           (includeMediaMove
@@ -4395,6 +4418,7 @@
       noticeClass +
       '" aria-live="polite">' +
       esc(state.notice) +
+      (state.notice ? '<button type="button" class="operation-details-link" data-operation-details data-operation-prefix="/api/media-directory-organizer">查看处理详情</button>' : "") +
       "</p>" +
       renderRecovery() +
       renderExecution(state.execution) +
@@ -4676,7 +4700,7 @@
   }
 
   function selectResourcePickerPath(path) {
-    path = String(path || "").trim();
+    path = normalizeRootInput(path);
     if (!path || !pathAllowedByOrganizer(path)) {
       state.resourcePicker.error = "该目录不在当前整理器允许范围内，不能作为作品根目录。";
       render();
@@ -4761,7 +4785,8 @@
   }
 
   async function previewPlan() {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
+    state.root = root;
     if (!root) {
       setNotice("请先输入作品根目录。", true);
       return;
@@ -4826,7 +4851,7 @@
         state.draftWorks = [];
         state.recognition = createRecognitionState("");
       }
-      state.root = firstString(state.plan.root, root);
+      state.root = normalizeRootInput(firstString(state.plan.root, root));
       state.dirty = false;
       state.busy = "";
       var planIssues = visiblePlanIssues(state.plan);
@@ -4882,7 +4907,7 @@
   }
 
   async function runLandingRecognition() {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     var draft = landingRecognitionDraft();
     var query = String(recognitionState().query || "").trim();
     if (!root || !draft) {
@@ -5039,7 +5064,7 @@
   }
 
   async function previewLandingPlan() {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     var drafts = landingDrafts();
     var shared = sharedTargetState();
     var useSharedTargets = shared.confirmed === true;
@@ -5109,7 +5134,7 @@
       if (!out.res.ok || !out.data || out.data.ok === false || !out.data.organizer_plan) {
         throw new Error(responseError(out, "完整落地预览失败"));
       }
-      state.root = firstString(out.data.root, root);
+      state.root = normalizeRootInput(firstString(out.data.root, root));
       state.landing = out.data;
       state.plan = out.data.organizer_plan;
       state.draftWork = draft;
@@ -5427,12 +5452,12 @@
     var preview = firstObject(pending.preview);
     var previewScope = shortcutScopeValues(preview);
     var retryScope = shortcutScopeValues(retry);
-    var root = firstString(
+    var root = normalizeRootInput(firstString(
       previewScope.root,
       retryScope.root,
       pending.root,
       state.root,
-    );
+    ));
     var workRefs = previewScope.workRefs || retryScope.workRefs;
     if (!workRefs && Array.isArray(pending.work_refs)) workRefs = pending.work_refs;
     var payload = { root: root };
@@ -5445,7 +5470,7 @@
   }
 
   async function beginShortcutOnlyPreview() {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     if (!root) {
       setNotice("请先输入作品根目录。", true);
       return;
@@ -5660,7 +5685,7 @@
     if (reuseCurrent && pending && pending.repairRequest) {
       return withRepairMediaPlan(cloneJson(pending.repairRequest), pending);
     }
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     if (pending && pending.repairDraft) {
       var editedDraft = cloneJson(pending.repairDraft);
       editedDraft.path = root;
@@ -5689,9 +5714,10 @@
         if (!firstString(editedPress.press_format)) {
           throw new Error("压制记录 " + (editedIndex + 1) + " 缺少压制格式。");
         }
-        if (!firstString(editedPress.press_group)) {
-          throw new Error("压制记录 " + (editedIndex + 1) + " 缺少压制组。");
+        if (!pressGroupIsSelected(editedPress)) {
+          throw new Error("压制记录 " + (editedIndex + 1) + " 尚未选择压制组；可选择无压制组。");
         }
+        editedPress.press_group = normalizePressGroup(editedPress.press_group);
         var canonicalFormat = configuredFormats.find(function (value) {
           return value.toLowerCase() === firstString(editedPress.press_format).toLowerCase();
         });
@@ -5702,7 +5728,7 @@
         var canonicalGroup = configuredGroups.find(function (value) {
           return value.toLowerCase() === firstString(editedPress.press_group).toLowerCase();
         });
-        if (configuredGroups.length && !canonicalGroup && !pending.repairCatalogRef) {
+        if (editedPress.press_group && configuredGroups.length && !canonicalGroup && !pending.repairCatalogRef) {
           throw new Error("压制记录 " + (editedIndex + 1) + " 的压制组不在当前数据库注册表中。");
         }
         if (canonicalGroup) editedPress.press_group = canonicalGroup;
@@ -5824,7 +5850,7 @@
   }
 
   async function previewShortcutRepair(candidateIndex, reuseCurrent) {
-    var root = String(state.root || "").trim();
+    var root = normalizeRootInput(state.root);
     if (!root) {
       setNotice("请先输入作品根目录。", true);
       return;
@@ -6302,10 +6328,9 @@
         ) {
           return;
         }
-        repairPresses[repairPressIndex][repairPressField] =
-          repairPressField === "press_group"
-            ? String(input.value || "").trim()
-            : input.value;
+        if (repairPressField === "press_group") {
+          updatePressGroupSelection(repairPresses[repairPressIndex], input.value);
+        } else repairPresses[repairPressIndex][repairPressField] = input.value;
         state.shortcutPending.repairPreview = null;
         state.shortcutPending.repairRequest = null;
         return;
@@ -6385,7 +6410,13 @@
         return;
       }
       if (input.id === "organizer-root-input") {
-        if (resetPlanScopedStateForRootChange(input.value)) {
+        var rawRoot = String(input.value || "");
+        var cleanRoot = normalizeRootInput(rawRoot);
+        // Do not remove a space while the user is still typing a directory name.
+        if (event.type === "change" || event.inputType === "insertFromPaste" || cleanRoot !== rawRoot.trim()) {
+          input.value = cleanRoot;
+        }
+        if (resetPlanScopedStateForRootChange(cleanRoot)) {
           invalidatePreview("作品根目录已编辑，请重新预览。");
         }
         return;
@@ -6446,8 +6477,9 @@
         if (!pressField || !Number.isInteger(pressIndex) || !draftPresses[pressIndex]) return;
         var pressRecognition = recognitionState();
         var hadPressCandidates = recognitionHasTransientState(pressRecognition);
-        draftPresses[pressIndex][pressField] =
-          pressField === "press_group" ? String(input.value || "").toUpperCase() : input.value;
+        if (pressField === "press_group") {
+          updatePressGroupSelection(draftPresses[pressIndex], input.value);
+        } else draftPresses[pressIndex][pressField] = input.value;
         state.landing = null;
         if (state.draftWork) {
           invalidateLandingRecognition(
@@ -6482,12 +6514,14 @@
           sourcePressOverride = Object.assign(Object.create(null), sourcePressOverride);
         }
         var sourcePressValue = String(input.value || "").trim();
-        if (sourcePressValue) {
+        if (sourcePressField === "press_group") {
+          updatePressGroupSelection(sourcePressOverride, input.value);
+        } else if (sourcePressValue) {
           sourcePressOverride[sourcePressField] = sourcePressValue;
         } else {
           delete sourcePressOverride[sourcePressField];
         }
-        if (firstString(sourcePressOverride.press_format, sourcePressOverride.press_group)) {
+        if (firstString(sourcePressOverride.press_format) || pressGroupIsSelected(sourcePressOverride)) {
           state.sourcePressOverrides[sourcePressPath] = sourcePressOverride;
         } else {
           delete state.sourcePressOverrides[sourcePressPath];
@@ -6697,6 +6731,8 @@
       guideUnresolvedCatalog: guideUnresolvedCatalog,
       setSourceMultipleWorkMode: setSourceMultipleWorkMode,
       resetPlanScopedStateForRootChange: resetPlanScopedStateForRootChange,
+      normalizeRootInput: normalizeRootInput,
+      loadConfigAndPreview: loadConfigAndPreview,
       selectResourcePickerPath: selectResourcePickerPath,
       sourceWorkBindingRows: sourceWorkBindingRows,
       sourceWorkBindingsPayload: sourceWorkBindingsPayload,
@@ -6708,6 +6744,10 @@
       updateSourceCatalogPress: updateSourceCatalogPress,
       openSourceWorkEditor: openSourceWorkEditor,
       updateSourceWorkDraft: updateSourceWorkDraft,
+      sourcePressOverridesPayload: sourcePressOverridesPayload,
+      renderGroupOptions: renderGroupOptions,
+      renderRepairGroupOptions: renderRepairGroupOptions,
+      shortcutRepairRequest: shortcutRepairRequest,
     });
   }
 

@@ -8,13 +8,13 @@ from unittest.mock import patch
 
 from starlette.datastructures import UploadFile
 
-from work_catalog_yaml.api_runtime import ApiWorkQueue, WorkQueueClosed
+from work_catalog_yaml.api_runtime import ApiWorkQueue, WorkQueueBusy, WorkQueueClosed
 from work_catalog_yaml.jp_tv import browse_api
 from work_catalog_yaml.jp_tv.browse_app import build_jp_tv_browse_app
 from media_directory_organizer.service import MediaRollbackError
 
 
-async def request(app, path: str, *, body: bytes = b"", method: str = "GET", content_type: str = "application/json"):
+async def request(app, path: str, *, body: bytes = b"", method: str = "GET", content_type: str = "application/json", headers=()):
     messages = []
     sent = False
 
@@ -33,15 +33,53 @@ async def request(app, path: str, *, body: bytes = b"", method: str = "GET", con
         "method": method, "scheme": "http", "path": path, "raw_path": path.encode(),
         "root_path": "", "query_string": b"", "server": ("127.0.0.1", 8765),
         "client": ("127.0.0.1", 12345),
-        "headers": [(b"host", b"127.0.0.1:8765"), (b"content-type", content_type.encode())],
+        "headers": [(b"host", b"127.0.0.1:8765"), (b"content-type", content_type.encode()), *headers],
     }
     await app(scope, receive, send)
     status = next(item["status"] for item in messages if item["type"] == "http.response.start")
     data = b"".join(item.get("body", b"") for item in messages if item["type"] == "http.response.body")
-    return status, json.loads(data)
+    try:
+        payload = json.loads(data)
+    except json.JSONDecodeError:
+        payload = data.decode("utf-8")
+    return status, payload
 
 
 class ApiQueueTest(unittest.IsolatedAsyncioTestCase):
+    async def test_queue_capacity_is_bounded_and_cancelled_slots_can_be_reused(self) -> None:
+        queue = ApiWorkQueue(max_pending=2)
+        started, release = threading.Event(), threading.Event()
+        calls = []
+
+        def first():
+            started.set()
+            release.wait(3)
+
+        active = asyncio.create_task(queue.run(first))
+        queued = replacement = None
+        try:
+            self.assertTrue(await asyncio.to_thread(started.wait, 1))
+            queued = asyncio.create_task(queue.run(lambda: calls.append("cancelled")))
+            await asyncio.sleep(0)
+            with self.assertRaises(WorkQueueBusy):
+                await queue.run(lambda: calls.append("overflow"))
+            self.assertEqual(queue.snapshot()["queued"], 1)
+            queued.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await queued
+            replacement = asyncio.create_task(queue.run(lambda: calls.append("replacement")))
+            await asyncio.sleep(0)
+        finally:
+            release.set()
+            await asyncio.gather(*(task for task in (active, queued, replacement) if task), return_exceptions=True)
+            await queue.close()
+        self.assertEqual(calls, ["replacement"])
+
+    def test_invalid_capacity_is_rejected(self) -> None:
+        for capacity in (0, -1, True, 1.5):
+            with self.subTest(capacity=capacity), self.assertRaises(ValueError):
+                ApiWorkQueue(max_pending=capacity)
+
     async def test_cancelling_a_queued_request_never_starts_its_operation(self) -> None:
         queue = ApiWorkQueue()
         started, release = threading.Event(), threading.Event()
@@ -125,6 +163,54 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self) -> None:
         await self.lifespan.__aexit__(None, None, None)
+
+    async def test_scan_requires_post_and_rejects_cross_site_before_disk_work(self) -> None:
+        path = "/api/collection-detail/resource-libraries/scan"
+        with patch.object(browse_api, "scan_resource_libraries_payload", return_value={"ok": True}) as scan:
+            for method in ("GET", "HEAD"):
+                status, _payload = await request(self.app, path, method=method)
+                self.assertEqual(status, 405)
+            for headers in (
+                [(b"sec-fetch-site", b"cross-site")],
+                [(b"origin", b"https://untrusted.example")],
+            ):
+                status, _payload = await request(self.app, path, method="POST", body=b"{}", headers=headers)
+                self.assertEqual(status, 403)
+            scan.assert_not_called()
+            status, payload = await request(
+                self.app, path, method="POST", body=b"{}", headers=[(b"sec-fetch-site", b"same-origin")],
+            )
+            self.assertEqual(status, 200)
+            self.assertTrue(payload["ok"])
+            scan.assert_called_once_with()
+
+    async def test_saturated_queue_returns_503_without_running_rejected_operation(self) -> None:
+        await self.app.state.api_disk_queue.close()
+        self.app.state.api_disk_queue = ApiWorkQueue(max_pending=1)
+        started, release = threading.Event(), threading.Event()
+        calls = []
+
+        def execute(body):
+            calls.append(body["id"])
+            started.set()
+            release.wait(3)
+            return {"ok": True}
+
+        with patch.object(browse_api, "apply_organizer_from_ui_body", side_effect=execute):
+            active = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":1}'))
+            try:
+                self.assertTrue(await asyncio.to_thread(started.wait, 1))
+                status, payload = await request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":2}')
+                self.assertEqual(status, 503)
+                self.assertEqual(payload["code"], "api-queue-full")
+                self.assertEqual(calls, [1])
+                self.assertEqual((await request(self.app, "/api/health"))[0], 200)
+            finally:
+                release.set()
+                await active
+            status, _payload = await request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":3}')
+            self.assertEqual(status, 200)
+        self.assertEqual(calls, [1, 3])
 
     async def test_disk_requests_are_serial_but_health_responds_during_slow_work(self) -> None:
         started, release = threading.Event(), threading.Event()

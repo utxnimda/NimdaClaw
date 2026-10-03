@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, ParamSpec, TypeVar
 
 from work_catalog_yaml.persistence import atomic_write_bytes
+from work_catalog_yaml.operation_progress import report_progress
 from work_catalog_yaml.yaml_io import dump_yaml_string
 
 from collection_detail.resource_tree import RESOURCE_SCAN_METRICS_VERSION, resource_node_cache_payload
@@ -47,16 +48,21 @@ def node_cache_path(node_root: Path, relpath: str, generation: str) -> Path:
     return directory / digest[:2] / f"{digest[2:]}.yaml"
 
 
-def write_node_cache(node_root: Path, generation: str, node: dict[str, Any]) -> None:
+def write_node_cache(node_root: Path, generation: str, node: dict[str, Any], *, _progress: list[int] | None = None) -> None:
     if node.get("children_loaded") is False:
         return
     relpath = str(node.get("relpath") or "")
+    if _progress is None:
+        _progress = [0]
+    if _progress[0] % 100 == 0:
+        report_progress("写入资源目录索引缓存", completed=_progress[0], unit="缓存节点", detail=str(node.get("path") or relpath))
     payload = resource_node_cache_payload(node)
     payload["generation"] = generation
     atomic_write_bytes(node_cache_path(node_root, relpath, generation), dump_yaml_string(payload).encode("utf-8"))
+    _progress[0] += 1
     for child in node.get("children", []) or []:
         if isinstance(child, dict):
-            write_node_cache(node_root, generation, child)
+            write_node_cache(node_root, generation, child, _progress=_progress)
 
 
 def publish_resource_snapshot(
@@ -81,8 +87,10 @@ def publish_resource_snapshot(
     manifest_bytes = dump_yaml_string(manifest).encode("utf-8")
     try:
         write_node_cache(node_root, generation, tree)
+        report_progress("发布完整资源库缓存快照", detail=str(manifest_path))
         atomic_write_bytes(manifest_path, manifest_bytes)
     except BaseException:
+        report_progress("资源库缓存发布中断，检查并恢复上一快照")
         # An interruption can occur just after atomic replacement. Retain that
         # generation when the manifest already references it (or cannot be read).
         try:

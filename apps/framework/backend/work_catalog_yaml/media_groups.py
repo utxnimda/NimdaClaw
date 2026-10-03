@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -52,6 +53,19 @@ def default_collection_catalog_root() -> Path:
 
 def _clean_text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def normalize_press_group(value: str | None) -> str:
+    """Keep a real group code, treating legacy dash placeholders as no group."""
+
+    group = unicodedata.normalize("NFKC", value or "").strip()
+    return "" if group and set(group) == {"-"} else group
+
+
+def normalized_press_group(value: str | None) -> str:
+    """Comparison key for an exact group, including the legitimate empty group."""
+
+    return normalize_press_group(value).casefold()
 
 
 def _append_unique(values: list[str], value: Any) -> None:
@@ -469,6 +483,8 @@ def media_group_classifier_family(code: str, path: str | Path | None = None) -> 
 
 
 __all__ = [
+    "normalize_press_group",
+    "normalized_press_group",
     "build_media_group_registry",
     "default_collection_catalog_root",
     "default_media_group_note_path",

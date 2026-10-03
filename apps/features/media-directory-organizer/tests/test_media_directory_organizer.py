@@ -1408,6 +1408,7 @@ class MediaDirectoryOrganizerTest(unittest.TestCase):
                     {
                         "press_format": "BDRip",
                         "press_group": "VCB",
+                        "press_group_confirmed": True,
                         "suggested_press_path": "",
                     }
                 ],
@@ -2483,49 +2484,81 @@ class MediaDirectoryOrganizerTest(unittest.TestCase):
                     "Little Busters! EX_BDRip_01",
                 )
 
-    def test_resolution_only_disc_and_subtitles_flatten_to_press_root_and_settle(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            base = Path(temp)
-            root = base / "Overlord"
-            target = root / "Overlord IV_1080p"
-            episode = target / "Overlord IV_1080p_01"
-            catalog_root = base / "db"
-            root.mkdir()
-            catalog_root.mkdir()
-            names = (
-                "[Sakurato] Overlord IV [01][HEVC-10bit 1080P@60FPS AAC][CHS&CHT].mkv",
-                "[Sakurato] Overlord IV [01][HEVC-10bit 1080P AAC][CHS&CHT]_Subtitles03.ass",
-                "[Sakurato] Overlord IV [01][HEVC-10bit 1080P AAC][CHS&CHT]_Subtitles04.ass",
-            )
-            source_files = tuple(
-                _write_file(episode / name, name.encode("utf-8"))
-                for name in names
-            )
-            catalog = MediaCatalog(
-                works=(
-                    CatalogWork(
-                        name="Overlord IV",
-                        path=str(root),
-                        domain="animation",
-                        country="japan",
-                        release_type="tv",
-                        presses=(
-                            PressRecord("1080p", "ST", press_path=target.name),
-                        ),
-                        source_file=str(catalog_root / "[JP][TVInfo][2022].yaml"),
-                    ),
+    def _resolution_release_fixture(
+        self, temp: str, *, target_name: str = "Overlord IV_1080p"
+    ) -> tuple[Path, Path, MediaCatalog, OrganizerSettings]:
+        base = Path(temp)
+        root = base / "Overlord"
+        target = root / target_name
+        catalog_root = base / "db"
+        target.mkdir(parents=True)
+        catalog_root.mkdir()
+        catalog = MediaCatalog(
+            works=(
+                CatalogWork(
+                    name="Overlord IV", path=str(root), domain="animation",
+                    country="japan", release_type="tv",
+                    presses=(PressRecord("1080p", "ST", press_path=target.name),),
+                    source_file=str(catalog_root / "[JP][TVInfo][2022].yaml"),
                 ),
-                catalog_root=catalog_root,
-            )
-            settings = replace(
-                _settings(catalog_root, base, root),
-                format_markers={"1080p": ("1080p",)},
-                group_markers={"ST": ("sakurato",)},
-                group_suffixes={"ST": "ST"},
-            )
+            ),
+            catalog_root=catalog_root,
+        )
+        settings = replace(
+            _settings(catalog_root, base, root),
+            format_markers={"1080p": ("1080p",)},
+            group_markers={"ST": ("sakurato",)},
+            group_suffixes={"ST": "ST"},
+        )
+        return root, target, catalog, settings
 
+    @staticmethod
+    def _resolution_episode_names(number: int = 1) -> tuple[str, ...]:
+        return (
+            f"[Sakurato] Overlord IV [{number:02d}][HEVC-10bit 1080P@60FPS AAC][CHS&CHT].mkv",
+            f"[Sakurato] Overlord IV [{number:02d}][HEVC-10bit 1080P AAC][CHS&CHT]_Subtitles03.ass",
+            f"[Sakurato] Overlord IV [{number:02d}][HEVC-10bit 1080P AAC][CHS&CHT]_Subtitles04.ass",
+        )
+
+    def _assert_resolution_settled(self, plan: dict) -> None:
+        self.assertFalse(plan["ready"], plan["issues"])
+        self.assertEqual(plan["issues"], [])
+        self.assertEqual(plan["assignments"], [])
+        self.assertEqual(plan["moves"], [])
+
+    def test_resolution_only_canonical_episode_directories_are_already_settled(self) -> None:
+        for target_name in ("Overlord IV_1080p", "IV_1080p"):
+            with self.subTest(target_name=target_name), tempfile.TemporaryDirectory() as temp:
+                root, target, catalog, settings = self._resolution_release_fixture(
+                    temp, target_name=target_name
+                )
+                files = [
+                    _write_file(target / f"{target.name}_{number:02d}" / name, name.encode("utf-8"))
+                    for number in range(1, 14)
+                    for name in self._resolution_episode_names(number)
+                ]
+                before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files}
+                self._assert_resolution_settled(build_plan(root, catalog=catalog, settings=settings))
+                self.assertEqual(len(files), 39)
+                self.assertEqual(before, {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files})
+                self.assertFalse((target / f"{target.name}_Disc").exists())
+
+    def test_resolution_only_root_video_and_different_named_subtitles_remain_flat(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root, target, catalog, settings = self._resolution_release_fixture(temp, target_name="IV_1080p")
+            names = (*self._resolution_episode_names(), "[字幕组] 不死者之王 第01集.zh-Hans.srt")
+            files = [_write_file(target / name, name.encode("utf-8")) for name in names]
+            self._assert_resolution_settled(build_plan(root, catalog=catalog, settings=settings))
+            self.assertTrue(all(path.is_file() for path in files))
+            self.assertTrue(all(path.parent == target for path in files))
+
+    def test_resolution_only_raw_packaging_flattens_to_press_root_and_settles(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root, target, catalog, settings = self._resolution_release_fixture(temp)
+            packaging = target / "download-package" / "Episode 01"
+            names = self._resolution_episode_names()
+            source_files = tuple(_write_file(packaging / name, name.encode("utf-8")) for name in names)
             plan = build_plan(root, catalog=catalog, settings=settings)
-
             self.assertTrue(plan["ready"], plan["issues"])
             self.assertEqual(len(plan["moves"]), 3)
             self.assertEqual(plan["summary"]["category_directory_count"], 1)
@@ -2537,17 +2570,88 @@ class MediaDirectoryOrganizerTest(unittest.TestCase):
                 self.assertEqual(move["layout_category"], "Disc")
                 self.assertEqual(move["disc_version_directory"], "")
                 self.assertEqual(Path(move["category_dir"]), target)
-
             applied = apply_plan(plan, confirmation=plan["plan_id"])
             self.assertEqual(applied["moved_file_count"], 3)
-            self.assertFalse(episode.exists())
+            self.assertFalse(packaging.exists())
             self.assertTrue(all((target / name).is_file() for name in names))
+            self._assert_resolution_settled(build_plan(root, catalog=catalog, settings=settings))
 
-            settled = build_plan(root, catalog=catalog, settings=settings)
-            self.assertFalse(settled["ready"])
-            self.assertEqual(settled["issues"], [])
-            self.assertEqual(settled["assignments"], [])
-            self.assertEqual(settled["moves"], [])
+    def test_resolution_only_multiple_video_versions_create_one_stable_episode_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root, target, catalog, settings = self._resolution_release_fixture(temp)
+            names = (
+                "Overlord IV [01][TV][1080p].mkv",
+                "Overlord IV [01][OA][720p].mkv",
+                "Overlord IV [01][TV][1080p].sc.ass",
+            )
+            for name in names:
+                _write_file(target / name, name.encode("utf-8"))
+            plan = build_plan(root, catalog=catalog, settings=settings)
+            self.assertTrue(plan["ready"], plan["issues"])
+            self.assertEqual(len(plan["moves"]), 3)
+            episode = target / f"{target.name}_01"
+            self.assertEqual({Path(move["target"]).parent for move in plan["moves"]}, {episode})
+            self.assertEqual(apply_plan(plan, confirmation=plan["plan_id"])["moved_file_count"], 3)
+            self.assertTrue(all((episode / name).is_file() for name in names))
+            self._assert_resolution_settled(build_plan(root, catalog=catalog, settings=settings))
+
+    def test_resolution_episode_skip_does_not_hide_wrong_number_extra_or_nested_packaging(self) -> None:
+        cases = ("wrong-number", "wrong-stem", "extra", "nested")
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temp:
+                root, target, catalog, settings = self._resolution_release_fixture(temp)
+                folder = target / (
+                    f"{target.name}_02" if case == "wrong-number"
+                    else "Unrelated_1080p_01" if case == "wrong-stem"
+                    else f"{target.name}_01"
+                )
+                if case == "nested":
+                    folder /= "raw-files"
+                files = [_write_file(folder / name, name.encode("utf-8")) for name in self._resolution_episode_names()]
+                if case == "extra":
+                    files.append(_write_file(folder / "Cover.jpg", b"image"))
+                before = {path: path.read_bytes() for path in files}
+                plan = build_plan(root, catalog=catalog, settings=settings)
+                self.assertTrue(plan["moves"] or plan["issues"], "noncanonical content must not be silently treated as settled")
+                self.assertEqual(before, {path: path.read_bytes() for path in files})
+
+    def test_resolution_partial_cleanup_preserves_valid_episode_and_flat_root_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root, target, catalog, settings = self._resolution_release_fixture(temp)
+            preserved = [
+                _write_file(target / f"{target.name}_01" / name, name.encode("utf-8"))
+                for name in self._resolution_episode_names(1)
+            ] + [
+                _write_file(target / name, name.encode("utf-8"))
+                for name in self._resolution_episode_names(2)
+            ]
+            incoming = [
+                _write_file(target / "download-package" / name, name.encode("utf-8"))
+                for name in self._resolution_episode_names(3)
+            ]
+            before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in preserved}
+            plan = build_plan(root, catalog=catalog, settings=settings)
+            self.assertTrue(plan["ready"], plan["issues"])
+            self.assertEqual({Path(move["source"]) for move in plan["moves"]}, set(incoming))
+            self.assertEqual({Path(move["target"]) for move in plan["moves"]}, {target / path.name for path in incoming})
+            self.assertEqual(apply_plan(plan, confirmation=plan["plan_id"])["moved_file_count"], 3)
+            self.assertEqual(before, {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in preserved})
+            self._assert_resolution_settled(build_plan(root, catalog=catalog, settings=settings))
+
+    def test_resolution_episode_reparse_point_is_not_skipped_as_settled(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root, target, catalog, settings = self._resolution_release_fixture(temp)
+            episode = target / f"{target.name}_01"
+            for name in self._resolution_episode_names():
+                _write_file(episode / name, name.encode("utf-8"))
+            with patch(
+                "media_directory_organizer.service.is_reparse_point",
+                side_effect=lambda path: Path(path) == episode,
+            ):
+                plan = build_plan(root, catalog=catalog, settings=settings)
+            self.assertFalse(plan["ready"])
+            self.assertIn("reparse-point", {issue["code"] for issue in plan["issues"]})
+            self.assertEqual(plan["moves"], [])
 
     def test_build_plan_groups_only_multi_version_disc_episodes_and_flattens_source_tree(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -2928,7 +3032,7 @@ class MediaDirectoryOrganizerTest(unittest.TestCase):
                         {
                             "root": str(root),
                             "source_press_overrides": {
-                                str(source): {"press_format": "BDRip", "press_group": ""}
+                                str(source): {"press_format": "BDRip", "press_group": None}
                             },
                         }
                     )

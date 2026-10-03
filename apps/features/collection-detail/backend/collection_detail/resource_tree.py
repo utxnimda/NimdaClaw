@@ -10,16 +10,23 @@ from typing import Any
 RESOURCE_SCAN_METRICS_VERSION = 2
 
 
-def resource_node_summary(node: dict[str, Any]) -> dict[str, Any]:
+def _resource_node_projection(node: dict[str, Any], *, include_children: bool) -> dict[str, Any]:
+    """Preserve metrics for unloaded nodes; arrays are not their full contents."""
     children = [child for child in node.get("children", []) or [] if isinstance(child, dict)]
     files = [item for item in node.get("files", []) or [] if isinstance(item, dict)]
     out = {k: v for k, v in node.items() if k not in {"children", "files"}}
-    out["children"] = []
-    out["files"] = []
-    out["children_loaded"] = False
-    out["has_children"] = bool(children)
-    out["child_count"] = len(children)
-    out["direct_file_count"] = len(files)
+    loaded = node.get("children_loaded") is not False
+    out["children"] = [resource_node_summary(child) for child in children] if include_children else []
+    out["files"] = files if include_children else []
+    out["children_loaded"] = include_children and loaded
+    if loaded:
+        out["has_children"] = bool(children or files)
+        out["child_count"] = len(children)
+        out["direct_file_count"] = len(files)
+    else:
+        out["has_children"] = bool(children or files or node.get("has_children") or node.get("direct_child_count"))
+        out.setdefault("child_count", len(children))
+        out.setdefault("direct_file_count", len(files))
     out.setdefault("direct_child_count", len(children) + len(files))
     out.setdefault(
         "total_child_count",
@@ -30,23 +37,12 @@ def resource_node_summary(node: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def resource_node_summary(node: dict[str, Any]) -> dict[str, Any]:
+    return _resource_node_projection(node, include_children=False)
+
+
 def resource_node_cache_payload(node: dict[str, Any]) -> dict[str, Any]:
-    children = [child for child in node.get("children", []) or [] if isinstance(child, dict)]
-    files = [item for item in node.get("files", []) or [] if isinstance(item, dict)]
-    out = {k: v for k, v in node.items() if k not in {"children", "files"}}
-    out["children"] = [resource_node_summary(child) for child in children]
-    out["files"] = files
-    out["children_loaded"] = True
-    out["has_children"] = bool(children)
-    out["child_count"] = len(children)
-    out["direct_file_count"] = len(files)
-    out.setdefault("direct_child_count", len(children) + len(files))
-    out.setdefault(
-        "total_child_count",
-        int(out.get("dir_count") or 0) + int(out.get("file_count") or 0),
-    )
-    out.setdefault("size", 0)
-    out.setdefault("mtime", 0)
+    out = _resource_node_projection(node, include_children=True)
     return {
         "ok": True,
         "metrics_version": RESOURCE_SCAN_METRICS_VERSION,

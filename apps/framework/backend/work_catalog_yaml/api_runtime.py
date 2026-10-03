@@ -17,6 +17,10 @@ from typing import Any, Callable, TypeVar
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from work_catalog_yaml.operation_progress import (
+    DuplicateOperationId, OperationRegistry, execute_operation, normalize_operation_id,
+)
+
 
 T = TypeVar("T")
 
@@ -25,9 +29,16 @@ class WorkQueueClosed(RuntimeError):
     pass
 
 
+class WorkQueueBusy(RuntimeError):
+    pass
+
+
 class ApiWorkQueue:
-    def __init__(self, *, workers: int = 1, name: str = "nimda-disk") -> None:
+    def __init__(self, *, workers: int = 1, name: str = "nimda-disk", max_pending: int = 64) -> None:
+        if isinstance(max_pending, bool) or not isinstance(max_pending, int) or max_pending < 1:
+            raise ValueError("max_pending must be a positive integer")
         self._executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix=name)
+        self._max_pending = max_pending
         self._lock = threading.RLock()
         self._futures: set[Future[Any]] = set()
         self._closing = False
@@ -44,14 +55,19 @@ class ApiWorkQueue:
         with self._lock:
             self._futures.discard(future)
 
-    async def run(self, function: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    async def run(self, function: Callable[..., T], *args: Any,
+                  _on_cancelled: Callable[[], None] | None = None, **kwargs: Any) -> T:
         with self._lock:
             if self._closing:
                 raise WorkQueueClosed("应用正在关闭，尚未开始的操作已取消")
+            if len(self._futures) >= self._max_pending:
+                raise WorkQueueBusy("待处理操作过多，请等待当前操作完成后重试")
             context = contextvars.copy_context()
             future = self._executor.submit(context.run, partial(function, *args, **kwargs))
             self._futures.add(future)
             future.add_done_callback(self._completed)
+            if _on_cancelled is not None:
+                future.add_done_callback(lambda result: _on_cancelled() if result.cancelled() else None)
         wrapped = asyncio.wrap_future(future)
         # A disconnected client cannot receive a later error, but the result
         # must still be observed to avoid unhandled-future warnings.
@@ -91,6 +107,8 @@ class ApiWorkQueue:
 def install_api_queues(app: Any) -> None:
     app.state.api_disk_queue = ApiWorkQueue()
     app.state.api_network_queue = ApiWorkQueue(workers=2, name="nimda-provider")
+    if not isinstance(getattr(app.state, "operation_registry", None), OperationRegistry):
+        app.state.operation_registry = OperationRegistry()
 
 
 def api_work_queues(app: Any) -> tuple[ApiWorkQueue, ...]:
@@ -124,10 +142,36 @@ async def api_health(request: Request) -> JSONResponse:
 
 async def _dispatch(request: Request, function: Callable[..., T], value: Any, *, network: bool = False) -> T | JSONResponse:
     queue = request.app.state.api_network_queue if network else request.app.state.api_disk_queue
+    registry = request.app.state.operation_registry
+    operation = None
+    raw_operation_id = request.headers.get("x-nimda-operation-id")
+    if raw_operation_id is not None:
+        try:
+            operation_id = normalize_operation_id(raw_operation_id)
+            operation = registry.register(operation_id, request.url.path)
+        except DuplicateOperationId as exc:
+            return JSONResponse({"ok": False, "error": str(exc), "code": "operation-id-exists"}, status_code=409)
+        except ValueError as exc:
+            return JSONResponse({"ok": False, "error": str(exc), "code": "invalid-operation-id"}, status_code=400)
     try:
+        if operation is not None:
+            return await queue.run(
+                execute_operation, registry, operation, function, value,
+                _on_cancelled=lambda: registry.finish(operation, "cancelled", "尚未开始的操作已取消"),
+            )
         return await queue.run(function, value)
     except WorkQueueClosed as exc:
+        if operation is not None:
+            registry.finish(operation, "cancelled", str(exc))
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=503)
+    except WorkQueueBusy as exc:
+        if operation is not None:
+            registry.finish(operation, "failed", str(exc))
+        return JSONResponse(
+            {"ok": False, "error": str(exc), "code": "api-queue-full"},
+            status_code=503,
+            headers={"Retry-After": "1"},
+        )
 
 
 def query_endpoint(function: Callable[..., T]) -> Callable[..., Any]:

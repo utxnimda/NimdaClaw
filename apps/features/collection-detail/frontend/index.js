@@ -698,7 +698,7 @@
   }
 
   function renderResourceTree(scan) {
-    if (resourceScanLoading) return '<p class="link-index-empty">扫描中...</p>';
+    if (resourceScanLoading) return '<p class="link-index-empty">扫描中... <button type="button" class="operation-details-link" data-operation-details data-operation-prefix="/api/collection-detail/resource-libraries">查看处理详情</button></p>';
     if (!scan || !scan.ok) return '<p class="link-index-empty">暂无缓存，请先扫描资源库。</p>';
     var roots = Array.isArray(scan.roots) ? scan.roots : [];
     var rootWarnings = roots
@@ -1341,6 +1341,7 @@
       (linkIndexOperationNotice.is_error ? " is-error" : "") +
       '">' +
       esc(linkIndexOperationNotice.message) +
+      '<button type="button" class="operation-details-link" data-operation-details data-operation-prefix="/api/collection-detail/link-index">查看处理详情</button>' +
       "</div>"
     );
   }
@@ -1612,7 +1613,11 @@
     renderLinkIndexPanel();
     setStatus("资源库扫描中...", false);
     try {
-      var out = await fetchJson("/api/collection-detail/resource-libraries/scan", { method: "GET" });
+      var out = await fetchJson("/api/collection-detail/resource-libraries/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({}),
+      });
       if (!resourceRequestCurrent(serial)) return;
       if (!out.res.ok || !out.data || !out.data.ok) {
         throw new Error((out.data && out.data.error) || "资源库扫描失败。");
@@ -1679,8 +1684,8 @@
       return;
     }
     var info = previewOut.data.file_generation || {};
-    var outputRoot = info.output_root || "";
-    var body = {};
+    var outputRoot = Array.isArray(info.output_roots) ? info.output_roots.join("\n") : (info.output_root || "");
+    var body = { plan_id: info.plan_id || "" };
     if (info.root_non_empty) {
       var sample = Array.isArray(info.existing_sample) && info.existing_sample.length
         ? "\n\n现有项目示例：\n" + info.existing_sample.slice(0, 8).join("\n")

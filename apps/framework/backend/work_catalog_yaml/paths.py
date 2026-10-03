@@ -4,6 +4,28 @@ from __future__ import annotations
 from pathlib import Path, PureWindowsPath
 
 
+_COPIED_PATH_MARKS = "\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\ufeff"
+
+
+def normalize_copied_path(value: object) -> str:
+    """Remove Explorer copy wrappers without changing the actual path contents.
+
+    Directional marks occasionally surround Windows copied paths; only strip
+    these at the boundaries, together with paired quotation marks. Interior
+    spaces, separators, and Unicode filename characters remain unchanged.
+    """
+    if not isinstance(value, str):
+        return ""
+    result = value
+    while True:
+        cleaned = result.strip().strip(_COPIED_PATH_MARKS).strip()
+        if len(cleaned) >= 2 and cleaned.startswith('"') and cleaned.endswith('"'):
+            cleaned = cleaned[1:-1]
+        if cleaned == result:
+            return cleaned
+        result = cleaned
+
+
 def resolve_output_path(base: str | Path, *relative_paths: str) -> Path:
     """Resolve a file under base, rejecting absolute paths and path escapes.
 

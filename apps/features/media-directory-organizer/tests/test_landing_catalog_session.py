@@ -41,6 +41,16 @@ def _fixture(base: Path, count: int = 12):
 
 
 class LandingCatalogSessionTest(unittest.TestCase):
+    def test_reference_index_rejects_float_and_boolean_coercion(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            database, _root, _source, reference = _fixture(Path(temp))
+            for value in (False, True, 0.0, 0.5, "0.5"):
+                with self.subTest(value=value), self.assertRaisesRegex(ValueError, "work_ref.index_in_file 非法"):
+                    catalog._record_from_work_ref({**reference, "index_in_file": value}, catalog_root=database)
+            self.assertEqual(catalog._record_from_work_ref(
+                {**reference, "index_in_file": "0"}, catalog_root=database,
+            )["work"]["name"], reference["work_name"])
+
     def test_cached_assignment_still_validates_every_name_and_hash(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             database, _root, _source, reference = _fixture(Path(temp))

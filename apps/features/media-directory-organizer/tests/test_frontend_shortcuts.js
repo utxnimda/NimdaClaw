@@ -921,7 +921,7 @@ test("missing database shortcut preview preserves edits, explains issues, and us
   assert.equal(hooks.state.shortcutPending.repairCatalogIntent, "");
   assert.match(view.innerHTML, /核对数据库补录信息/);
   assert.match(view.innerHTML, /数据库 press_path \/ 已整理目标/);
-  assert.match(view.innerHTML, /----（历史数据库值，仅可保留）/);
+  assert.match(view.innerHTML, /<option value="" selected>—（无压制组）<\/option>/);
   assert.match(view.innerHTML, /\[JP\]\[TVInfo\]\[2012\]\.yaml#1/);
   assert.equal(hooks.state.shortcutPending.repairDraft.presses[0].press_path, "");
   await hooks.previewShortcutRepair(-1);
@@ -954,7 +954,7 @@ test("missing database shortcut preview preserves edits, explains issues, and us
   assert.ok(repairPreview);
   assert.equal(repairPreview.body.root, root);
   assert.equal(repairPreview.body.draft_work.presses[0].press_path, "Fate／Zero_BDRip(Jsum)_13-25");
-  assert.equal(repairPreview.body.draft_work.presses[0].press_group, "----");
+  assert.equal(repairPreview.body.draft_work.presses[0].press_group, "");
   assert.equal(repairPreview.body.catalog_ref.yaml_source_rel, "[JP][TVInfo][2012].yaml");
   assert.equal(Object.hasOwn(repairPreview.body, "acknowledge_move"), false);
   assert.match(view.innerHTML, new RegExp(repairPlanId));

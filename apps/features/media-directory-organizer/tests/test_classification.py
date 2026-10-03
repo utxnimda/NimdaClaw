@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from media_directory_organizer.catalog import PressRecord
 from media_directory_organizer.classification import (
@@ -60,6 +61,20 @@ def _context(
 class ClassificationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.generic = GenericClassifier()
+
+    def test_no_group_uses_generic_filter_without_loading_group_registry(self) -> None:
+        with patch(
+            "media_directory_organizer.classification.media_group_classifier_family",
+            side_effect=AssertionError("无压制组不应查询压制组注册表"),
+        ):
+            for group in ("", "---", "----"):
+                with self.subTest(press_group=group):
+                    decision = DEFAULT_CLASSIFIER_REGISTRY.classify(
+                        _context("001 成为死神的这天.mkv", press_group=group)
+                    )
+                    self.assertEqual(decision.category, CATEGORY_DISC)
+                    self.assertEqual(decision.classifier_id, "fallback-layout")
+                    self.assertEqual(decision.relative_path.name, "001 成为死神的这天.mkv")
 
     def test_every_category_is_an_overridable_folder_filter(self) -> None:
         expected_methods = {

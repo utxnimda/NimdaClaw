@@ -16,9 +16,12 @@ from typing import Any
 from urllib.parse import quote
 
 from media_directory_organizer.bangumi import BangumiLookupError, search_bangumi_anime
+from media_directory_organizer.catalog import normalize_press_group
 from media_directory_organizer.inference import infer_source_press, suggest_press_paths
 from media_directory_organizer.settings import OrganizerSettings
 from work_catalog_yaml.media_groups import load_media_group_registry
+from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.paths import normalize_copied_path
 
 
 _BANGUMI_LIMIT = 6
@@ -46,9 +49,10 @@ def _path_under(path: Path, root: Path) -> bool:
 
 
 def _validated_root(raw: Any, settings: OrganizerSettings) -> Path:
-    if not isinstance(raw, str) or not raw.strip():
+    root_text = normalize_copied_path(raw)
+    if not root_text:
         raise ValueError("root 必须是非空字符串")
-    root = Path(raw.strip()).expanduser().resolve()
+    root = Path(root_text).expanduser().resolve()
     if not root.is_dir():
         raise FileNotFoundError(f"作品根目录不存在：{root}")
     if settings.allowed_resource_roots and not any(
@@ -103,6 +107,8 @@ def _draft_mapping(raw: Any, *, root: Path) -> dict[str, Any]:
     for index, raw_press in enumerate(raw_presses):
         if not isinstance(raw_press, Mapping):
             raise ValueError(f"压制记录 {index + 1} 必须是 JSON 对象")
+        if "press_group" in raw_press and not isinstance(raw_press["press_group"], str):
+            raise ValueError(f"压制记录 {index + 1} 的 press_group 必须是字符串（允许空字符串表示无组）")
         presses.append(
             {
                 **deepcopy(dict(raw_press)),
@@ -112,7 +118,11 @@ def _draft_mapping(raw: Any, *, root: Path) -> dict[str, Any]:
                     root=root,
                 ),
                 "press_format": str(raw_press.get("press_format") or "").strip(),
-                "press_group": str(raw_press.get("press_group") or "").strip().upper(),
+                "press_group": normalize_press_group(raw_press.get("press_group")).upper(),
+                "press_group_confirmed": (
+                    "press_group" in raw_press
+                    and raw_press.get("press_group_confirmed") is not False
+                ),
                 "press_path": str(raw_press.get("press_path") or "").strip(),
             }
         )
@@ -186,8 +196,9 @@ def _local_proposed_work(
         row = deepcopy(raw_press)
         if not row["press_format"] and inferred["suggested_press_format"]:
             row["press_format"] = inferred["suggested_press_format"]
-        if not row["press_group"] and inferred["suggested_press_group"]:
+        if not row["press_group"] and not row["press_group_confirmed"] and inferred["suggested_press_group"]:
             row["press_group"] = inferred["suggested_press_group"]
+            row["press_group_confirmed"] = True
         row.update(inferred)
         # The editable values are the proposal; suggested_* keeps the evidence
         # visible even when a user has already entered an override.
@@ -197,9 +208,9 @@ def _local_proposed_work(
         confidence_values.append(int(inferred["confidence"]))
         if not row["press_format"]:
             warnings.append(f"压制记录 {index + 1} 未能唯一识别格式，请手动确认")
-        if not row["press_group"]:
+        if not row["press_group"] and not row["press_group_confirmed"]:
             warnings.append(f"压制记录 {index + 1} 未能唯一识别压制/字幕组，请手动确认")
-        elif inferred["needs_confirmation"]:
+        elif row["press_group"] and inferred["needs_confirmation"]:
             warnings.append(f"压制记录 {index + 1} 的组别是中等置信建议，请核对")
 
     presses = suggest_press_paths(
@@ -299,6 +310,7 @@ def suggest_work_landing(
     """Build local and optional Bangumi candidates without mutating anything."""
 
     root = _validated_root(body.get("root"), settings)
+    report_progress("根据目录名称推导本地作品信息", detail=str(root))
     draft = _draft_mapping(body.get("draft_work"), root=root)
     query = _clean_query(body.get("query"), fallback=str(draft["name"] or root.name))
     include_bangumi = body.get("include_bangumi", True)
@@ -395,11 +407,14 @@ def suggest_work_landing(
                 )
         except BangumiLookupError as exc:
             provider_error = str(exc)
+            report_progress("Bangumi 搜索未完成，保留本地推导结果", detail=provider_error)
         except (OSError, TimeoutError):
             provider_error = "Bangumi 暂时不可用；本地推导仍可使用，也可以稍后重试"
+            report_progress("Bangumi 搜索未完成，保留本地推导结果", detail=provider_error)
     elif include_bangumi and not eligible:
         warnings.append("Bangumi 动画匹配仅在“动画 / 日本”作品下启用")
 
+    report_progress("作品信息推导完成，等待手动确认", completed=len(candidates), unit="候选作品")
     return {
         "ok": True,
         "version": 1,

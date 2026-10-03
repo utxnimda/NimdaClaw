@@ -56,6 +56,8 @@ enum:
   - 384p
   - 360p
   - BDRip
+  - DVDRip
+  - R2Jraw
 - name: press_group
   desc: 压制组
   values:

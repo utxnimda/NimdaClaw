@@ -34,6 +34,8 @@ from media_directory_organizer.catalog import (
     MediaCatalog,
     PressRecord,
     normalized_identity,
+    normalize_press_group,
+    normalized_press_group,
     normalized_value,
     path_key,
 )
@@ -59,6 +61,8 @@ from work_catalog_yaml.media_groups import (
     media_group_registry_api_payload,
 )
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml_string
+from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.paths import normalize_copied_path
 
 
 # Preserve the existing landing import surface while keeping data preparation separate.
@@ -169,9 +173,10 @@ def _path_under(path: Path, root: Path) -> bool:
 
 
 def _validated_root(raw: Any, settings: OrganizerSettings) -> Path:
-    if not isinstance(raw, str) or not raw.strip():
+    root_text = normalize_copied_path(raw)
+    if not root_text:
         raise ValueError("root 不能为空")
-    root = Path(raw.strip()).expanduser().resolve()
+    root = Path(root_text).expanduser().resolve()
     if not root.is_dir():
         raise FileNotFoundError(f"作品目录不存在：{root}")
     if settings.allowed_resource_roots and not any(
@@ -241,6 +246,7 @@ def discover_catalog_work_draft(
                 "source_names": [source["name"]],
                 "press_format": source["suggested_press_format"],
                 "press_group": source["suggested_press_group"],
+                "press_group_confirmed": bool(source["suggested_press_group"]),
                 "press_path": "",
                 "suggestion_confidence": source["suggestion_confidence"],
                 "suggestion_reasons": source["suggestion_reasons"],
@@ -343,7 +349,7 @@ def _shortcut_presses(
             continue
         key = (
             str(assignment.get("press_format") or "").casefold(),
-            str(assignment.get("press_group") or "").casefold(),
+            normalized_press_group(str(assignment.get("press_group") or "")),
         )
         target = str(assignment.get("target_dir") or "")
         if key in targets and targets[key].casefold() != target.casefold():
@@ -351,7 +357,7 @@ def _shortcut_presses(
         targets[key] = target
     result: list[dict[str, Any]] = []
     for index, row in enumerate(patch["collectioned_ordered"]):
-        key = (str(row["press_format"]).casefold(), str(row["press_group"]).casefold())
+        key = (str(row["press_format"]).casefold(), normalized_press_group(str(row["press_group"])))
         target = targets.get(key)
         if not target:
             raise ValueError(
@@ -703,12 +709,12 @@ def preview_organizer_plan_shortcuts(
             )
             continue
         press_format = normalized_value(str(assignment.get("press_format") or ""))
-        press_group = normalized_value(str(assignment.get("press_group") or ""))
+        press_group = normalized_press_group(str(assignment.get("press_group") or ""))
         candidates = [
             row
             for row in record["presses"]
             if normalized_value(str(row.get("press_format") or "")) == press_format
-            and normalized_value(str(row.get("press_group") or "")) == press_group
+            and normalized_press_group(str(row.get("press_group") or "")) == press_group
         ]
         if not candidates:
             add_issue(
@@ -917,13 +923,11 @@ def _catalog_root_shortcut_records(
             )
             continue
         for row in presses:
-            if not str(row.get("press_format") or "").strip() or not str(
-                row.get("press_group") or ""
-            ).strip():
+            if not str(row.get("press_format") or "").strip():
                 issues.append(
                     _shortcut_issue(
                         "shortcut-catalog-press-invalid",
-                        "数据库压制记录缺少格式或压制组，无法检查快捷方式",
+                        "数据库压制记录缺少格式，无法检查快捷方式",
                         record["source"],
                         work_name=record["work"]["name"],
                     )
@@ -1133,7 +1137,7 @@ def _merged_update_patch(
             "continuation_index": raw.get("continuation_index"),
             "continuation_title": str(raw.get("continuation_title") or ""),
         }
-        key = (normalized_value(row["press_format"]), normalized_value(row["press_group"]))
+        key = (normalized_value(row["press_format"]), normalized_press_group(row["press_group"]))
         existing_pairs.setdefault(key, []).append(row)
         existing_by_key[row["press_key"]] = row
     resolved: list[dict[str, Any]] = []
@@ -1143,7 +1147,7 @@ def _merged_update_patch(
     for requested_row in requested.get("collectioned_ordered") or []:
         key = (
             normalized_value(str(requested_row.get("press_format") or "")),
-            normalized_value(str(requested_row.get("press_group") or "")),
+            normalized_press_group(str(requested_row.get("press_group") or "")),
         )
         requested_key = str(requested_row.get("press_key") or "").strip()
         matching: list[dict[str, Any]] = []
@@ -1153,7 +1157,7 @@ def _merged_update_patch(
                 raise ValueError(f"数据库压制记录已经变化：{requested_key}")
             selected_pair = (
                 normalized_value(selected["press_format"]),
-                normalized_value(selected["press_group"]),
+                normalized_press_group(selected["press_group"]),
             )
             if selected_pair != key:
                 raise ValueError("选择已有数据库记录时只能修正 path/press_path，不能改格式或组简称")
@@ -1186,8 +1190,8 @@ def _merged_update_patch(
                 f"修复作品存在重复新增压制记录：{requested_row.get('press_format')}/"
                 f"{requested_row.get('press_group')}"
             )
-        press_group = str(requested_row.get("press_group") or "").strip()
-        if not media_group_code_known(press_group):
+        press_group = normalize_press_group(str(requested_row.get("press_group") or ""))
+        if normalize_press_group(press_group) and not media_group_code_known(press_group):
             raise ValueError(
                 "新增到已有作品的压制记录使用了未登记的组简称："
                 f"{press_group}；历史值仅可原样保留，不能作为新记录添加"
@@ -1582,7 +1586,7 @@ def _planned_repair_targets(
         planned.add(
             (
                 normalized_value(str(assignment.get("press_format") or "")),
-                normalized_value(str(assignment.get("press_group") or "")),
+                normalized_press_group(str(assignment.get("press_group") or "")),
                 path_key(target),
             )
         )
@@ -1674,7 +1678,7 @@ def preview_catalog_shortcut_repair(
         target_safe = target.is_dir() and not _is_reparse_point(target)
         target_key = (
             normalized_value(str(row.get("press_format") or "")),
-            normalized_value(str(row.get("press_group") or "")),
+            normalized_press_group(str(row.get("press_group") or "")),
             path_key(target),
         )
         draft_target_keys.add(target_key)
@@ -1693,7 +1697,7 @@ def preview_catalog_shortcut_repair(
             )
         pair = (
             normalized_value(str(row.get("press_format") or "")),
-            normalized_value(str(row.get("press_group") or "")),
+            normalized_press_group(str(row.get("press_group") or "")),
         )
         include_shortcut = not media_move_planned or target_will_be_created
         if include_shortcut and pair not in shortcut_press_pairs:
@@ -2038,6 +2042,7 @@ def apply_catalog_shortcut_repair(
     organizer_plan_factory: Callable[[], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Apply a standalone repair or one transactionally bound to media moves."""
+    report_progress("复核数据库、媒体与快捷方式串联修复确认")
 
     if body.get("acknowledge_catalog_write") is not True:
         raise ValueError("数据库修复前必须明确设置 acknowledge_catalog_write=true")
@@ -2090,6 +2095,7 @@ def apply_catalog_shortcut_repair(
                 )
             if not current["ready"]:
                 raise ValueError("数据库/快捷方式修复计划仍有未决问题，尚未写入")
+            report_progress("串联修复：写入已确认的数据库更改")
             catalog_result, receipt = _apply_catalog_repair_change(
                 current,
                 organizer_settings=organizer_settings,
@@ -2098,6 +2104,7 @@ def apply_catalog_shortcut_repair(
             media_result: dict[str, Any]
             if media_move_planned:
                 try:
+                    report_progress("串联修复：执行已确认的媒体整理")
                     media_result = apply_plan(
                         current["organizer_plan"],
                         confirmation=str(current["organizer_plan"]["plan_id"]),
@@ -2126,11 +2133,13 @@ def apply_catalog_shortcut_repair(
                 else None
             )
             try:
+                report_progress("串联修复：检查和补建快捷方式")
                 shortcut_result = apply_scoped_shortcuts_for_work(
                     current["shortcuts"],
                     settings=browse_settings,
                 )
             except BaseException as shortcut_exc:
+                report_progress("快捷方式阶段失败，检查恢复或重试状态", detail=str(shortcut_exc))
                 if media_move_planned:
                     if isinstance(shortcut_exc, Exception):
                         return {
@@ -2208,11 +2217,11 @@ def _preview_existing_catalog_shortcut_retry(
         for record in catalog_records:
             selected_rows: list[dict[str, Any]] = []
             for row in record["presses"]:
-                if not row.get("press_format") or not row.get("press_group"):
+                if not row.get("press_format"):
                     issues.append(
                         _shortcut_issue(
                             "shortcut-catalog-press-invalid",
-                            "数据库压制记录缺少格式或压制组，不能规划快捷方式",
+                            "数据库压制记录缺少格式，不能规划快捷方式",
                             record["source"],
                             work_name=record["work"]["name"],
                         )
@@ -2571,7 +2580,8 @@ def _apply_catalog_work_append_batch(
 
 
 def _rollback_catalog_receipts(receipts: list[CatalogMutationReceipt]) -> None:
-    for receipt in reversed(receipts):
+    for receipt_index, receipt in enumerate(reversed(receipts)):
+        report_progress("回滚本次数据库更改", completed=receipt_index, total=len(receipts), unit="数据文件", detail=str(receipt.target))
         rollback_catalog_yaml_mutation(receipt)
 
 
@@ -2673,10 +2683,14 @@ def _normalize_shared_target_bindings(
             raw_binding.get("press_path"),
             index=binding_index,
         )
-        if not press_format or not press_group:
+        if not press_format:
             raise ValueError(
-                f"shared_target_bindings[{binding_index}] 必须填写格式和组简称"
+                f"shared_target_bindings[{binding_index}] 必须填写格式"
             )
+        if "press_group" not in raw_binding or not isinstance(raw_binding["press_group"], str):
+            raise ValueError(f"shared_target_bindings[{binding_index}] 必须选择压制组（可以选择无组）")
+        if raw_binding.get("press_group_confirmed") is False:
+            raise ValueError(f"shared_target_bindings[{binding_index}] 尚未确认压制组（可以选择无组）")
         target = _target_from_press_path(root, press_path)
         target_key = path_key(target)
         if target_key in target_bindings:
@@ -2739,8 +2753,8 @@ def _normalize_shared_target_bindings(
             if (
                 normalized_value(str(selected_row.get("press_format") or ""))
                 != normalized_value(press_format)
-                or normalized_value(str(selected_row.get("press_group") or ""))
-                != normalized_value(press_group)
+                or normalized_press_group(str(selected_row.get("press_group") or ""))
+                != normalized_press_group(press_group)
             ):
                 raise ValueError(
                     "共享目标的格式/组必须与每个成员所选数据库压制记录完全一致"
@@ -3227,8 +3241,12 @@ def _mixed_binding_press(
     press_format = str(raw_press.get("press_format") or "").strip()
     press_group = str(raw_press.get("press_group") or "").strip()
     press_path = _repair_press_path(raw_press.get("press_path"), index=index)
-    if not press_format or not press_group:
-        raise ValueError(f"来源绑定 {source_name!r} 必须填写 press_format 和 press_group")
+    if not press_format:
+        raise ValueError(f"来源绑定 {source_name!r} 必须填写 press_format")
+    if "press_group" not in raw_press or not isinstance(raw_press["press_group"], str):
+        raise ValueError(f"来源绑定 {source_name!r} 必须选择 press_group（可以选择无组）")
+    if raw_press.get("press_group_confirmed") is False:
+        raise ValueError(f"来源绑定 {source_name!r} 尚未确认 press_group（可以选择无组）")
     result: dict[str, Any] = {
         "source_names": [source_name],
         "press_format": press_format,
@@ -3355,7 +3373,7 @@ def _normalize_mixed_source_bindings(
         target_owners[target_key] = group_key
         pair = (
             normalized_value(str(press["press_format"])),
-            normalized_value(str(press["press_group"])),
+            normalized_press_group(str(press["press_group"])),
         )
         duplicate = next(
             (
@@ -3363,7 +3381,7 @@ def _normalize_mixed_source_bindings(
                 for row in group["presses"]
                 if (
                     normalized_value(str(row["press_format"])),
-                    normalized_value(str(row["press_group"])),
+                    normalized_press_group(str(row["press_group"])),
                 )
                 == pair
             ),
@@ -3978,6 +3996,7 @@ def preview_work_landing(
     organizer_settings: OrganizerSettings,
     browse_settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    report_progress("预览数据库登记、媒体归类与快捷方式完整流程")
     detail_settings = _browse_settings_for_catalog(organizer_settings, browse_settings)
     root = _validated_root(body.get("root"), organizer_settings)
     if isinstance(body.get("source_work_bindings"), Mapping):
@@ -4060,6 +4079,7 @@ def _apply_multi_work_landing(
     reviewed: str,
     browse_settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    report_progress("完整落地：批量登记作品数据库")
     catalog_results, receipts = _apply_catalog_work_append_batch(
         [dict(patch) for patch in current.get("draft_works") or []],
         settings=browse_settings,
@@ -4122,6 +4142,7 @@ def _apply_shared_target_landing(
     organizer_settings: OrganizerSettings,
     browse_settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    report_progress("完整落地：校验并登记共享媒体目录")
     root = Path(str(current["root"])).expanduser().resolve()
     (
         _bindings,
@@ -4197,6 +4218,7 @@ def _apply_mixed_source_landing(
     organizer_settings: OrganizerSettings,
     browse_settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    report_progress("完整落地：校验已有作品与新增作品混合登记")
     root = Path(str(current["root"])).expanduser().resolve()
     normalized = _normalize_mixed_source_bindings(
         current["source_work_bindings"],
@@ -4287,6 +4309,7 @@ def apply_work_landing(
     organizer_settings: OrganizerSettings,
     browse_settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    report_progress("复核完整落地确认与最新计划")
     if body.get("acknowledge_catalog_write") is not True:
         raise ValueError("必须明确确认新增作品数据库记录")
     if body.get("acknowledge_move") is not True:
@@ -4380,6 +4403,7 @@ def apply_work_landing(
             )
         if not current["ready"]:
             raise ValueError("当前完整落地计划仍有未决问题，不能执行")
+        report_progress("完整落地：登记作品数据库")
         catalog_result, receipt = append_catalog_work_from_preview(
             current["draft_work"],
             settings=browse_settings,
@@ -4397,6 +4421,7 @@ def apply_work_landing(
             )
             raise
         except BaseException:
+            report_progress("媒体整理失败，回滚本次数据库登记")
             rollback_catalog_yaml_mutation(receipt)
             raise
         try:

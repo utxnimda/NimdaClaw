@@ -44,9 +44,9 @@ function setup(options = {}) {
     removeItem() {},
   };
   const context = {
-    fetchJson(url) {
+    fetchJson(url, options) {
       return new Promise((resolve, reject) => requests.push({
-        url,
+        url, options,
         respond(data) { resolve({ res: { ok: true, status: 200 }, data }); },
         reject,
       }));
@@ -111,6 +111,22 @@ test("collection detail initializes even when browser preference storage is unav
   assert.match(app.html(), /资源库目录/);
   app.tab("index");
   assert.equal(app.requests.length, 1);
+});
+
+test("resource scanning uses an explicit JSON POST because it writes the scan cache", async () => {
+  const app = setup();
+  app.tab("resource");
+  app.requests[0].respond(resourceData("cached-library"));
+  await flush();
+  app.action("scan");
+  const scan = app.requests[1];
+  assert.equal(scan.url, "/api/collection-detail/resource-libraries/scan");
+  assert.equal(scan.options.method, "POST");
+  assert.equal(scan.options.headers["Content-Type"], "application/json; charset=utf-8");
+  assert.deepEqual(JSON.parse(scan.options.body), {});
+  scan.respond(resourceData("fresh-library"));
+  await flush();
+  assert.match(app.html(), /fresh-library/);
 });
 
 test("collapsed resource trees omit hidden descendants and reveal one requested level", async () => {

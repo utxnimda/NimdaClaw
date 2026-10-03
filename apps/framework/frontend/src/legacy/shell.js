@@ -97,6 +97,7 @@
   /** 当前文件选择器中解析得到的 File[]（与 #yaml-pick-list 勾选项对齐） */
   var yamlPickFiles = [];
   const $status = document.getElementById("status-line");
+  if (window.NimdaOperationCenter) window.NimdaOperationCenter.attachStatus($status);
   const $view = document.getElementById("viewport");
   const $collectionView = document.getElementById("collection-info-view");
   const $btnDefault = document.getElementById("btn-load-default");
@@ -216,6 +217,7 @@
   /** 表格列排序：null 表示按数据文件 + 文件内 index_in_file；同一列再次点击切换升序/降序 */
   let sheetSortKey = null;
   let sheetSortDir = 1;
+  let newSheetRowSequence = 0;
   let sheetSortEventsBound = false;
   /** 筛选下拉：表格外点击关闭（仅绑定一次） */
   let sheetFilterPopoversBound = false;
@@ -246,6 +248,23 @@
   /** 筛选：不区分大小写的子串匹配 */
   function filterHaystackPiece(s) {
     return String(s == null ? "" : s).trim().toLowerCase();
+  }
+
+  /** Display-only conversion: preserve partial/unknown dates; validation belongs to the API. */
+  function compactCollectionDate(value) {
+    return String(value == null ? "" : value).trim().replace(
+      /^([0-9Xx?]{4})-([0-9Xx?]{2})-([0-9Xx?]{2})$/, "$1$2$3",
+    );
+  }
+
+  function displayCollectionDate(value) {
+    return compactCollectionDate(value).replace(
+      /^([0-9Xx?]{4})([0-9Xx?]{2})([0-9Xx?]{2})$/, "$1-$2-$3",
+    );
+  }
+
+  function collectionDateFilterHaystack(value) {
+    return filterHaystackPiece(displayCollectionDate(value) + " " + compactCollectionDate(value));
   }
 
   /** 配置里 enum[] 每项 → slug 字符串 */
@@ -336,9 +355,9 @@
           nzForSort(r.release_type)
         ).toLowerCase();
       case "date_start":
-        return nzForSort(d.start || "");
+        return nzForSort(compactCollectionDate(d.start));
       case "date_end":
-        return nzForSort(d.end || "");
+        return nzForSort(compactCollectionDate(d.end));
       case "country":
         return (
           nzForSort(browseEnumDisplay("country", r.country)) ||
@@ -374,8 +393,16 @@
     }
   }
 
-  /** 空缺排后：empty 视作小于非空时在 asc 中会沉底 — 需在比较里单独处理 */
+  function isUnsavedNewRow(row) {
+    return !!(row && row._isNew && !row._persistedPendingRefresh);
+  }
+
+  /** 草稿先按新增顺序置顶；普通行再使用当前列的排序规则。 */
   function compareFlatPack(a, b) {
+    var aDraft = isUnsavedNewRow(a.row);
+    var bDraft = isUnsavedNewRow(b.row);
+    if (aDraft !== bDraft) return aDraft ? -1 : 1;
+    if (aDraft) return (Number(b.row._newRowOrder) || 0) - (Number(a.row._newRowOrder) || 0);
     if (!sheetSortKey) {
       var rya = nzForSort(String(a.row.yaml_source_rel || "")).toLowerCase();
       var ryb = nzForSort(String(b.row.yaml_source_rel || "")).toLowerCase();
@@ -491,7 +518,7 @@
     if (key === SHEET_PRESS_AGG_SORT_KEY) return 118;
     if (key === "name") return 84;
     if (key === "markers") return 54;
-    if (key === "date_start" || key === "date_end") return 64;
+    if (key === "date_start" || key === "date_end") return 100;
     if (key === "domain" || key === "release_type" || key === "country") return 54;
     if (typeof key === "string" && key.indexOf(FMT_SORT_PREFIX) === 0) return 62;
     return 48;
@@ -499,7 +526,7 @@
 
   function sheetHeaderNeedCap(key) {
     if (key === "release_type" || key === "markers") return 92;
-    if (key === "date_start" || key === "date_end") return 78;
+    if (key === "date_start" || key === "date_end") return 108;
     if (key === "domain" || key === "country") return 70;
     if (key === "name") return 92;
     if (key === SHEET_PRESS_AGG_SORT_KEY) return 150;
@@ -1264,12 +1291,12 @@
       if (v == null || String(v).trim() === "") return "";
       return typeof v === "string" ? v.trim() : String(v).trim();
     }
-    return { fm: pick(FMT), gp: pick(GRP) };
+    return { fm: pick(FMT), gp: enumValueForUi(GRP, pick(GRP)) };
   }
 
   function setStatus(msg, isErr) {
     $status.textContent = msg || "";
-    $status.className = "status" + (isErr ? " err" : "");
+    $status.className = "status" + (isErr ? " err" : "") + (window.NimdaOperationCenter ? " operation-status-link" : "");
   }
 
   function esc(s) {
@@ -1281,9 +1308,12 @@
   }
 
   /** name / date / 作品名等在编辑模式下的输入框 */
-  function renderSheetScalarField(fieldKey, rawVal, rowIndexNum, yamlRelEsc) {
+  function renderSheetScalarField(fieldKey, rawVal, rowIndexNum, yamlRelEsc, displayLabel) {
     yamlRelEsc = yamlRelEsc == null ? "" : String(yamlRelEsc);
     var cur = rawVal == null ? "" : String(rawVal);
+    if (fieldKey === "date_start" || fieldKey === "date_end") {
+      cur = displayCollectionDate(cur);
+    }
     var sid = esc(String(Number(rowIndexNum)));
     if (!sheetEditMode) {
       return '<span class="sheet-plain-val sheet-plain-scalar">' + esc(cur) + "</span>";
@@ -1298,23 +1328,92 @@
       '" data-current-value="' +
       esc(cur) +
       '">' +
-      esc(cur) +
+      esc(displayLabel == null ? cur : displayLabel) +
       "</span>"
     );
-    var clsCombined = esc("sheet-field-input sheet-field-scalar sheet-inp-" + fieldKey);
-    return (
-      '<input type="text" class="' +
-      clsCombined +
-      '" autocomplete="off" spellcheck="false" data-sheet-iif="' +
-      sid +
-      '" data-yaml-rel="' +
-      yamlRelEsc +
-      '" data-field="' +
-      esc(fieldKey) +
-      '" value="' +
-      esc(cur) +
-      '" />'
-    );
+  }
+
+  function renderWorkNameField(row, yamlRelEsc) {
+    var title = String(row.name || "未命名作品");
+    var h = '<button type="button" class="sheet-work-name-link" data-action="work-details" data-sheet-iif="' +
+      esc(String(Number(row.index_in_file))) + '" data-yaml-rel="' + yamlRelEsc +
+      '" title="点击查看完整作品信息">' + esc(title) + '</button>';
+    if (sheetEditMode) {
+      h += '<span class="sheet-work-name-edit">' +
+        renderSheetScalarField("name", row.name || "", row.index_in_file, yamlRelEsc, "编辑") + '</span>';
+      h = '<span class="sheet-work-name-content">' + h + '</span>';
+    }
+    return h;
+  }
+
+  function workDetailDraftRecord(row) {
+    var collection = { domain: row.domain || "", release_type: row.release_type || "",
+      path: row.path || "", markers: (row.markers || []).slice(), collectioned: [] };
+    var continuations = new Map();
+    getOrderedTags(row).forEach(function (item) {
+      var press = JSON.parse(JSON.stringify(item));
+      delete press.segment;
+      delete press.continuation_index;
+      delete press.continuation_title;
+      if (item.segment !== "continuation") {
+        collection.collectioned.push(press);
+        return;
+      }
+      var key = item.continuation_index == null ? 0 : item.continuation_index;
+      if (!continuations.has(key)) {
+        var block = { collectioned: [] };
+        if (item.continuation_title) block.title = item.continuation_title;
+        continuations.set(key, block);
+      }
+      continuations.get(key).collectioned.push(press);
+    });
+    if (continuations.size) collection.continuations = Array.from(continuations.values());
+    return { attributes: [
+      { type: "date", data: { start: compactCollectionDate((row.date || {}).start), end: compactCollectionDate((row.date || {}).end) } },
+      { type: "collection-type", data: collection },
+      { type: "country", data: row.country || "" },
+      { type: "name", data: row.name || "" },
+    ] };
+  }
+
+  function openWorkDetails(yamlRel, indexInFile) {
+    var hit = findPayloadRow(yamlRel, indexInFile);
+    if (!hit || !Number.isInteger(Number(indexInFile))) return false;
+    if (!window.NimdaWorkDetailDialog) {
+      setStatus("作品信息页面尚未加载，请刷新应用后重试。", true);
+      return false;
+    }
+    var row = JSON.parse(JSON.stringify(hit.row));
+    var source = (lastBrowsePayload.sources_loaded || []).find(function (item) {
+      return normalizedCatalogRelKey(item.relpath || "") === normalizedCatalogRelKey(row.yaml_source_rel || "");
+    });
+    var sourceHash = source && source.sha256;
+    var uploaded = !row._isNew && row.source_record && typeof row.source_record === "object";
+    var sourceLabel = row._isNew ? "当前新增草稿 · 尚未写入数据库" :
+      (row.yaml_source_rel || "上传记录") + " · 第 " + (Number(row.index_in_file) + 1) + " 条";
+    var notice = row._isNew ? "这里展示当前新增草稿，不代表已保存的数据库记录。" :
+      uploaded ? "只读查看上传文件中的完整记录，不会写入数据库。" :
+        "只读查看数据库已保存的完整记录；列表中尚未保存的修改不会计入本页。";
+    window.NimdaWorkDetailDialog.open({
+      title: row.name || "未命名作品", sourceLabel: sourceLabel, notice: notice,
+      enumLabel: browseEnumDisplay,
+      loadRecord: async function () {
+        if (row._persistedPendingRefresh) throw new Error("作品已经保存，请先加载 DB 数据刷新列表后再查看完整记录。");
+        if (row._isNew) return { record: workDetailDraftRecord(row) };
+        if (uploaded) return { record: row.source_record };
+        if (!sourceHash) throw new Error("当前列表缺少来源版本信息，请重新加载 DB 数据后再查看作品详情。");
+        var out = await fetchJson("/api/collection-detail/work/detail", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ yaml_source_rel: row.yaml_source_rel,
+            index_in_file: Number(row.index_in_file), source_sha256: sourceHash }),
+        });
+        if (!out.res.ok || !out.data || out.data.ok !== true || !out.data.record) {
+          throw new Error((out.data && out.data.error) || "读取完整作品记录失败，请稍后重试。");
+        }
+        return { record: out.data.record, source: out.data.source };
+      },
+    });
+    return true;
   }
 
   /** GET /api/config 字段 ``enum_options``：配置文件 ``enum[].name`` → 允许取值 */
@@ -1351,7 +1450,7 @@
 
   /** 表格展示用可读文案（无映射时仍为 YAML 取值） */
   function browseEnumDisplay(enumKey, rawVal) {
-    var v = rawVal == null ? "" : String(rawVal).trim();
+    var v = enumValueForUi(enumKey, rawVal);
     if (!v) {
       return "—";
     }
@@ -1461,9 +1560,14 @@
     return fallback || "";
   }
 
-  function currentYearCatalogRelForNewRow() {
-    var y = new Date().getFullYear();
-    return "[JP][TVInfo][" + String(y) + "].yaml";
+  function currentYearCatalogRelForNewRow(patch) {
+    patch = patch || {};
+    var country = String(patch.country || defaultEnumValue("country", "japan")).trim().toLowerCase();
+    var codes = { japan: "JP", korea: "KR", china: "CN", usa: "US", uk: "UK" };
+    if (!codes[country]) throw new Error("新增作品暂不支持国家代码：" + country);
+    var start = compactCollectionDate((patch.date || {}).start || patch.start);
+    var year = /^\d{4}/.test(start) && start.slice(0, 4) !== "0000" ? start.slice(0, 4) : String(new Date().getFullYear());
+    return "[" + codes[country] + "][TVInfo][" + year + "].yaml";
   }
 
   function hasWritableDbConfigForNewRow() {
@@ -1514,7 +1618,7 @@
     return g;
   }
 
-  function ensurePayloadForNewRow() {
+  function ensurePayloadForNewRow(patch) {
     if (
       lastBrowsePayload &&
       lastBrowsePayload.ok &&
@@ -1524,7 +1628,7 @@
       return true;
     }
     if (!hasWritableDbConfigForNewRow()) return false;
-    var rel = currentYearCatalogRelForNewRow();
+    var rel = currentYearCatalogRelForNewRow(patch);
     lastBrowsePayload = {
       ok: true,
       filename: "新增行",
@@ -1538,7 +1642,7 @@
         target_path: rel,
         target_paths: [rel],
         history_hint: "",
-        help: "新增行会保存到当前日期所在年份的数据文件。",
+        help: "新增作品按国家和开播年份归档；开播年份未知时使用当前年份。",
       },
     };
     lastDbCatalogLoadedPaths = null;
@@ -1546,21 +1650,25 @@
     return true;
   }
 
-  function addPayloadRow() {
-    if (!ensurePayloadForNewRow()) return false;
-    var rel = currentYearCatalogRelForNewRow();
+  function addPayloadRow(patch) {
+    if (!patch || !String(patch.name || "").trim()) {
+      throw new Error("请填写作品名称，不能添加空白行。");
+    }
+    var rel = currentYearCatalogRelForNewRow(patch);
+    if (!ensurePayloadForNewRow(patch)) return false;
     var row = {
       _isNew: true,
+      _newRowOrder: ++newSheetRowSequence,
       index_in_file: nextSyntheticIndexForRel(rel),
       yaml_source_rel: rel,
-      domain: defaultEnumValue("domain", "animation"),
-      release_type: defaultEnumValue("release_type", "tv"),
-      country: defaultEnumValue("country", "japan"),
-      name: "",
-      path: "",
-      date: { start: "", end: "" },
-      markers: [],
-      collectioned_ordered: [],
+      domain: String(patch.domain || defaultEnumValue("domain", "animation")),
+      release_type: String(patch.release_type || defaultEnumValue("release_type", "tv")),
+      country: String(patch.country || defaultEnumValue("country", "japan")),
+      name: String(patch.name).trim(),
+      path: String(patch.path || "").trim(),
+      date: { start: compactCollectionDate((patch.date || {}).start), end: compactCollectionDate((patch.date || {}).end) },
+      markers: Array.isArray(patch.markers) ? patch.markers.slice() : [],
+      collectioned_ordered: JSON.parse(JSON.stringify(patch.collectioned_ordered || [])),
     };
     var group = findOrCreateProfileGroupForRow(row);
     if (!Array.isArray(group.rows)) group.rows = [];
@@ -1695,30 +1803,37 @@
       .replace(/^\/+|\/+$/g, "");
   }
 
+  /** Legacy empty-group placeholders and new empty strings share one UI value; source data stays unchanged. */
+  function enumValueForUi(enumKey, value) {
+    var next = value == null ? "" : String(value).trim();
+    return enumKey === GRP && next === "----" ? "" : next;
+  }
+
   function enumValueTuplesForEditor(enumKey, currentValue) {
     var opts = browseEnumOptions[enumKey];
-    var out = [];
+    // A group is optional; the placeholder is a UI choice, not a registered group.
+    var out = enumKey === GRP ? [{ value: "", label: browseEnumDisplay(GRP, "") }] : [];
     var seen = Object.create(null);
     var i;
     if (Array.isArray(opts)) {
       for (i = 0; i < opts.length; i++) {
-        var v = rawEnumOptSlug(opts[i]);
+        var v = enumValueForUi(enumKey, rawEnumOptSlug(opts[i]));
         if (!v || seen[v]) continue;
         seen[v] = true;
         out.push({ value: v, label: browseEnumDisplay(enumKey, v) });
       }
     }
-    var cur = currentValue == null ? "" : String(currentValue).trim();
+    var cur = enumValueForUi(enumKey, currentValue);
     if (cur && !seen[cur]) {
-      out.unshift({ value: cur, label: browseEnumDisplay(enumKey, cur) });
+      out.splice(enumKey === GRP ? 1 : 0, 0, { value: cur, label: browseEnumDisplay(enumKey, cur) });
     }
     return out;
   }
 
   function enumSelectForPressEditor(enumKey, currentValue, id, disabled) {
-    var cur = currentValue == null ? "" : String(currentValue).trim();
+    var cur = enumValueForUi(enumKey, currentValue);
     var vals = enumValueTuplesForEditor(enumKey, cur);
-    if (!cur && vals.length) cur = vals[0].value;
+    if (enumKey !== GRP && !cur && vals.length) cur = vals[0].value;
     var h =
       '<select id="' +
       esc(id) +
@@ -1764,7 +1879,7 @@
     if (!isAdd && (!Number.isFinite(ord) || ord < 0 || !ordered[ord])) return false;
     var item = isAdd ? {} : ordered[ord];
     var curFmt = lockedFmt || item[FMT] || defaultEnumValue(FMT, "");
-    var curGrp = item[GRP] || defaultEnumValue(GRP, "");
+    var curGrp = enumValueForUi(GRP, item[GRP]);
     var curWorkPath = typeof hit.row.path === "string" ? hit.row.path : "";
     var curPressPath = typeof item.press_path === "string" ? item.press_path : "";
 
@@ -1981,14 +2096,11 @@
 
   function enumEditSelectHtml(trigger) {
     var enumKey = trigger.getAttribute("data-enum-key") || "";
-    var cur = trigger.getAttribute("data-current-value") || "";
+    var cur = enumValueForUi(enumKey, trigger.getAttribute("data-current-value"));
     var opts = browseEnumOptions[enumKey];
-    if (!Array.isArray(opts) || !opts.length) return "";
-    var vals = opts.slice();
-    var seen = {};
+    if (enumKey !== GRP && (!Array.isArray(opts) || !opts.length)) return "";
+    var vals = enumValueTuplesForEditor(enumKey, cur);
     var i;
-    for (i = 0; i < vals.length; i++) seen[String(vals[i])] = true;
-    if (cur && !seen[cur]) vals.unshift(cur);
     var attrs = "";
     var attrNames = [
       "data-sheet-iif",
@@ -2015,14 +2127,14 @@
       attrs +
       ">";
     for (i = 0; i < vals.length; i++) {
-      var v = String(vals[i]);
+      var v = vals[i].value;
       h +=
         '<option value="' +
         esc(v) +
         '"' +
         (v === cur ? " selected" : "") +
         ">" +
-        esc(browseEnumDisplay(enumKey, v)) +
+        esc(vals[i].label) +
         "</option>";
     }
     h += "</select>";
@@ -2052,6 +2164,10 @@
     var sid = trigger.getAttribute("data-sheet-iif") || "";
     var yrel = trigger.getAttribute("data-yaml-rel") || "";
     var fieldKey = trigger.getAttribute("data-field") || "";
+    var dateAttrs = fieldKey === "date_start" || fieldKey === "date_end"
+      ? ' placeholder="YYYY-MM-DD" title="日期格式：YYYY-MM-DD；未知部分保留 0 或 X"'
+      : "";
+    if (dateAttrs) cur = displayCollectionDate(cur);
     trigger.setAttribute("data-inline-active", "1");
     trigger.innerHTML =
       '<input type="text" class="sheet-field-input sheet-field-scalar sheet-inline-input" autocomplete="off" spellcheck="false" data-sheet-iif="' +
@@ -2062,7 +2178,7 @@
       esc(fieldKey) +
       '" value="' +
       esc(cur) +
-      '" />';
+      '"' + dateAttrs + ' />';
     var inp = trigger.querySelector("input.sheet-inline-input");
     if (inp) {
       inp.focus();
@@ -2086,7 +2202,13 @@
     sheetInlineEditBound = true;
     $view.addEventListener("click", function (ev) {
       var t = ev.target;
-      if (!t || !t.closest || !sheetEditMode) return;
+      if (!t || !t.closest) return;
+      var workTrigger = t.closest('[data-action="work-details"]');
+      if (workTrigger && $view.contains(workTrigger)) {
+        openWorkDetails(workTrigger.getAttribute("data-yaml-rel") || "", Number(workTrigger.getAttribute("data-sheet-iif")));
+        return;
+      }
+      if (!sheetEditMode) return;
       if (t.closest("select, input, button")) return;
       var enumTrigger = t.closest('[data-action="inline-edit-enum"]');
       if (enumTrigger && $view.contains(enumTrigger)) {
@@ -2237,18 +2359,52 @@
   function bindSheetAddRowOnce() {
     if (sheetAddRowBound || !$btnAddRow) return;
     sheetAddRowBound = true;
-    $btnAddRow.addEventListener("click", function () {
-      if (!sheetEditMode) {
-        setStatus("请先勾选「编辑模式」。", true);
-        return;
-      }
-      var rel = addPayloadRow();
-      if (!rel) {
-        setStatus("当前数据不可新增行；请先通过「加载DB数据」载入可写 DB 数据。", true);
-        return;
-      }
-      renderPayload(lastBrowsePayload, true);
-      setStatus("已新增 1 行到 " + rel + "，保存后写入 YAML。", false);
+    $btnAddRow.addEventListener("click", openNewWorkDialog);
+  }
+
+  function canAddNewWork() {
+    if (browseSaving || browseLoading || activeAppTab !== "collection-detail") return false;
+    if (lastBrowsePayload && lastBrowsePayload.ok) {
+      return !!(lastBrowsePayload.save && lastBrowsePayload.save.enabled);
+    }
+    return hasWritableDbConfigForNewRow();
+  }
+
+  function openNewWorkDialog() {
+    if (!canAddNewWork()) {
+      setStatus("当前不可新增作品；请载入可写 DB 数据，或等待保存完成。", true);
+      return;
+    }
+    if (!window.NimdaNewWorkDialog) {
+      setStatus("新增作品表单尚未加载，请刷新页面后重试。", true);
+      return;
+    }
+    var openingPayload = lastBrowsePayload;
+    var enumOptions = {};
+    Object.keys(browseEnumOptions).forEach(function (key) {
+      enumOptions[key] = (browseEnumOptions[key] || []).map(rawEnumOptSlug).filter(Boolean);
+    });
+    window.NimdaNewWorkDialog.open({
+      enumOptions: enumOptions,
+      enumLabel: browseEnumDisplay,
+      defaults: {
+        domain: defaultEnumValue("domain", "animation"),
+        release_type: defaultEnumValue("release_type", "tv"),
+        country: defaultEnumValue("country", "japan"),
+      },
+      targetLabel: currentYearCatalogRelForNewRow(),
+      targetLabelForDraft: currentYearCatalogRelForNewRow,
+      onSubmit: function (patch) {
+        if (!canAddNewWork() || lastBrowsePayload !== openingPayload) {
+          throw new Error("列表数据已重新加载，请保留填写内容，关闭后重新打开新增表单。");
+        }
+        var rel = addPayloadRow(patch);
+        if (!rel) throw new Error("当前数据不可写，尚未添加作品。");
+        if ($chkEdit) $chkEdit.checked = true;
+        sheetEditMode = true;
+        renderPayload(lastBrowsePayload, true);
+        setStatus("已加入待保存列表：" + patch.name + " · 点击「保存到 YAML」写入 " + rel + "。", false);
+      },
     });
   }
 
@@ -2950,8 +3106,8 @@
       filterHaystackPiece(browseEnumDisplay("release_type", r.release_type)) +
       " " +
       filterHaystackPiece(r.release_type);
-    blob.date_start = filterHaystackPiece(d.start || "");
-    blob.date_end = filterHaystackPiece(d.end || "");
+    blob.date_start = collectionDateFilterHaystack(d.start);
+    blob.date_end = collectionDateFilterHaystack(d.end);
     blob.country =
       filterHaystackPiece(browseEnumDisplay("country", r.country)) +
       " " +
@@ -3045,11 +3201,18 @@
     var rows = arrSlice.call($view.querySelectorAll("tbody tr.sheet-row"));
     var total = rows.length;
     var vis = 0;
+    var pinned = 0;
     var fkList = Object.keys(active);
     var hasFilter = fkList.length > 0;
     var ri;
     for (ri = 0; ri < rows.length; ri++) {
       var tr = rows[ri];
+      if (tr.getAttribute("data-sheet-pinned-new") === "1") {
+        tr.style.display = "";
+        vis++;
+        pinned++;
+        continue;
+      }
       if (!hasFilter) {
         tr.style.display = "";
         vis++;
@@ -3161,8 +3324,9 @@
     var hint = document.getElementById("sheet-filter-hint");
     scheduleSheetColumnFit();
     if (!hint) return;
+    var pinnedHint = pinned ? "待保存新增 " + pinned + " 行已置顶（不受筛选影响）" : "";
     if (!hasFilter || !total) {
-      hint.textContent = "";
+      hint.textContent = pinnedHint;
       return;
     }
     hint.textContent =
@@ -3170,7 +3334,8 @@
       vis +
       " / " +
       total +
-      " 行（列标题右侧 ▼：枚举勾选任一；文本为包含；清空该列即取消条件）";
+      " 行（列标题右侧 ▼：枚举勾选任一；文本为包含；清空该列即取消条件）" +
+      (pinnedHint ? "；" + pinnedHint : "");
   }
 
   function syncFilterPersistedFromEnumKey(k) {
@@ -3623,6 +3788,7 @@
       h +=
         '<tr class="sheet-row' +
         (r._isNew ? " sheet-row-new" : "") +
+        '" data-sheet-pinned-new="' + (isUnsavedNewRow(r) ? "1" : "0") +
         '" data-sheet-iif="' +
         esc(iifStr) +
         '" data-yaml-rel="' +
@@ -3652,8 +3818,8 @@
         "</td>";
       if (!sheetEditMode) {
         h +=
-          '<td class="col-date" data-col-key="date_start">' + esc(d.start || "") + "</td>" +
-          '<td class="col-date" data-col-key="date_end">' + esc(d.end || "") + "</td>";
+          '<td class="col-date" data-col-key="date_start">' + esc(displayCollectionDate(d.start)) + "</td>" +
+          '<td class="col-date" data-col-key="date_end">' + esc(displayCollectionDate(d.end)) + "</td>";
       } else {
         h +=
           '<td class="col-date" data-col-key="date_start">' +
@@ -3683,7 +3849,9 @@
         '</td><td class="col-name" data-col-key="name" title="' +
         esc(String(r.name || "")) +
         '">' +
-        renderSheetScalarField("name", r.name || "", r.index_in_file, yrAttr) +
+        renderWorkNameField(r, yrAttr) +
+        (r._isNew ? '<span class="sheet-new-work-badge">' +
+          (r._persistedPendingRefresh ? "已保存，待刷新" : "待保存") + '</span>' : "") +
         rowDeleteInline +
         "</td>";
       h +=
@@ -3732,10 +3900,35 @@
 
   var arrSlice = Array.prototype.slice;
   var browseSaveBound = false;
+  var browseSaving = false;
+  var browseLoading = false;
+
+  function beginBrowseLoad() {
+    if (browseSaving || browseLoading) {
+      setStatus("正在保存或载入数据，请完成后再切换数据源。", true);
+      return false;
+    }
+    browseLoading = true;
+    syncSaveToolbar();
+    return true;
+  }
+
+  function finishBrowseLoad() {
+    browseLoading = false;
+    syncSaveToolbar();
+  }
 
   function syncSaveToolbar() {
     if (!$btnSaveYaml) return;
     sheetEditMode = $chkEdit ? !!$chkEdit.checked : false;
+    if ($chkEdit) $chkEdit.disabled = browseSaving || browseLoading;
+    if (browseSaving || browseLoading) {
+      $btnSaveYaml.disabled = true;
+      $btnSaveYaml.title = browseSaving ? "正在保存，请勿重复提交" : "正在载入数据";
+      if ($btnAddRow) $btnAddRow.disabled = true;
+      if ($btnEnumEditor) $btnEnumEditor.disabled = true;
+      return;
+    }
     if (activeAppTab !== "collection-detail") {
       $btnSaveYaml.disabled = true;
       $btnSaveYaml.title = "";
@@ -3755,9 +3948,9 @@
     }
     if ($btnAddRow) {
       var addAllowedWithoutPayload = hasWritableDbConfigForNewRow();
-      $btnAddRow.disabled = !sheetEditMode || !addAllowedWithoutPayload;
+      $btnAddRow.disabled = !addAllowedWithoutPayload;
       $btnAddRow.title = addAllowedWithoutPayload
-        ? "新增一行到当前日期所在年份的 DB 数据文件"
+        ? "打开新增作品表单，确认后加入待保存列表"
         : "请先读取包含 paths.filesystem_root 的配置";
     }
     if (!lastBrowsePayload || !lastBrowsePayload.ok) {
@@ -3769,9 +3962,9 @@
     var allow = !!(sg && sg.enabled);
     $btnSaveYaml.disabled = !sheetEditMode || !allow;
     if ($btnAddRow) {
-      $btnAddRow.disabled = !sheetEditMode || !allow;
+      $btnAddRow.disabled = !allow;
       $btnAddRow.title = allow
-        ? "新增一行到当前日期所在年份的 DB 数据文件"
+        ? "打开新增作品表单，确认后加入待保存列表"
         : ((sg && sg.reason) || "不可新增");
     }
     if (allow) {
@@ -3812,7 +4005,10 @@
             esc(ysr) +
             '"]',
         );
-        if (!tr) continue;
+        if (!tr && !r._isNew) continue;
+        // New drafts remain part of the save even if a view/filter did not
+        // materialize their row. The payload is their source of truth.
+        if (!tr) tr = { querySelector: function () { return null; }, querySelectorAll: function () { return []; } };
 
         var sd = tr.querySelector('input[data-field="date_start"]');
         var ed = tr.querySelector('input[data-field="date_end"]');
@@ -3892,6 +4088,7 @@
   }
 
   async function doSaveBrowseYaml() {
+    if (browseSaving || browseLoading) return;
     bindBrowseSaveOnce();
     if (!lastBrowsePayload || !lastBrowsePayload.save || !lastBrowsePayload.save.enabled) {
       var r0 =
@@ -3926,6 +4123,10 @@
     }
     /* path 不写进 body：始终以服务端配置的 resolved YAML 为准，避免 Windows 盘符大小写等与 JSON 比对失败 */
     var body = { rows: collected, new_rows: newRows, deleted_rows: deletedRows };
+    browseSaving = true;
+    syncSaveToolbar();
+    var previousInert = $view.inert;
+    $view.inert = true;
     setStatus("保存中…", false);
     try {
       var out = await fetchJson("/api/browse/save", {
@@ -3947,16 +4148,30 @@
         w.length === 1
           ? String(w[0].history_file || "新建文件")
           : w.length + " 个备份文件（History）";
-      setStatus(
-        "已保存 · " + msgHist + " · 已刷新列表。",
-        false,
-      );
+      // A confirmed save must never leave its old new_rows executable when
+      // the following reload fails; retrying them would append duplicates.
+      lastBrowsePayload.save.enabled = false;
+      lastBrowsePayload.save.reason = "本次数据已写入。请重新加载 DB 数据后再编辑，避免重复新增。";
+      (lastBrowsePayload.profile_groups || []).forEach(function (group) {
+        (group.rows || []).forEach(function (row) {
+          if (row._isNew) row._persistedPendingRefresh = true;
+        });
+      });
       if (newRows.length) {
         lastDbCatalogLoadedPaths = null;
       }
-      await reloadBrowseAfterSave().catch(function () {});
+      if (await reloadBrowseAfterSave()) {
+        setStatus("已保存 · " + msgHist + " · 已刷新列表。", false);
+      } else {
+        renderPayload(lastBrowsePayload, true);
+        setStatus("数据已经保存，但刷新列表失败。请使用「加载DB数据」重新载入，不要重复新增。", true);
+      }
     } catch (err2) {
       setStatus("保存请求异常：" + (err2.message || String(err2)), true);
+    } finally {
+      browseSaving = false;
+      $view.inert = previousInert;
+      syncSaveToolbar();
     }
   }
 
@@ -4181,6 +4396,7 @@
   }
 
   async function fetchJson(url, opts) {
+    if (window.NimdaOperationCenter) return window.NimdaOperationCenter.fetchJson(url, opts);
     const res = await fetch(url, opts || {});
     const data = await res.json().catch(function () {
       return {};
@@ -4263,33 +4479,38 @@
 
   async function uploadYamlFiles(fileArr) {
     if (!fileArr || !fileArr.length) return;
-    await loadServerConfig().catch(function () {});
-    var sumB = 0;
-    var ni;
-    for (ni = 0; ni < fileArr.length; ni++) sumB += fileArr[ni].size || 0;
-    $meta.textContent =
-      fileArr.length === 1
-        ? fileArr[0].name + "（" + fileArr[0].size + " B）"
-        : fileArr.length + " 个文件 · 共 " + sumB + " B";
-    setStatus("解析中…", false);
-    $view.innerHTML = "";
-    var fd = new FormData();
-    var fi;
-    for (fi = 0; fi < fileArr.length; fi++) {
-      fd.append("file", fileArr[fi], fileArr[fi].name);
-    }
-    const out = await fetchJson("/api/browse", { method: "POST", body: fd });
-    if (!out.res.ok && !out.data.error) {
-      setStatus("HTTP " + out.res.status, true);
-      return;
-    }
-    renderPayload(out.data);
-    if (out.data && out.data.ok) {
-      lastDbCatalogLoadedPaths = null;
-      clearRememberedDbCatalogLoad();
-      clearYamlPickUi();
-      if ($file) $file.value = "";
-      closeDbCatalogPopover();
+    if (!beginBrowseLoad()) return;
+    try {
+      await loadServerConfig().catch(function () {});
+      var sumB = 0;
+      var ni;
+      for (ni = 0; ni < fileArr.length; ni++) sumB += fileArr[ni].size || 0;
+      $meta.textContent =
+        fileArr.length === 1
+          ? fileArr[0].name + "（" + fileArr[0].size + " B）"
+          : fileArr.length + " 个文件 · 共 " + sumB + " B";
+      setStatus("解析中…", false);
+      $view.innerHTML = "";
+      var fd = new FormData();
+      var fi;
+      for (fi = 0; fi < fileArr.length; fi++) {
+        fd.append("file", fileArr[fi], fileArr[fi].name);
+      }
+      const out = await fetchJson("/api/browse", { method: "POST", body: fd });
+      if (!out.res.ok && !out.data.error) {
+        setStatus("HTTP " + out.res.status, true);
+        return;
+      }
+      renderPayload(out.data);
+      if (out.data && out.data.ok) {
+        lastDbCatalogLoadedPaths = null;
+        clearRememberedDbCatalogLoad();
+        clearYamlPickUi();
+        if ($file) $file.value = "";
+        closeDbCatalogPopover();
+      }
+    } finally {
+      finishBrowseLoad();
     }
   }
 
@@ -4532,6 +4753,7 @@
       if (opts.autoRestore) clearRememberedDbCatalogLoad();
       return;
     }
+    if (!beginBrowseLoad()) return;
     setStatus(opts.autoRestore ? "自动加载上次 DB 数据…" : "从 DB 读取所选数据…", false);
     $view.innerHTML = "";
     try {
@@ -4552,7 +4774,18 @@
       closeDbCatalogPopover();
     } catch (errCat) {
       setStatus("加载请求异常：" + (errCat.message || String(errCat)), true);
+    } finally {
+      finishBrowseLoad();
     }
+  }
+
+  function renderSavedBrowsePayload(data) {
+    // Keep the user's sort/filter choices, but never carry old record indexes
+    // in deletion or enum drafts across a successful catalog reload.
+    deletedSheetRows = Object.create(null);
+    enumEditorDraft = null;
+    if ($enumEditorPanel) $enumEditorPanel.hidden = true;
+    renderPayload(data, true);
   }
 
   /** 保存成功后刷新：与子集载入一致则用 POST catalog，否则退回整库 GET default */
@@ -4566,20 +4799,22 @@
         });
         if (!outSub.res.ok || !outSub.data.ok) {
           setStatus(outSub.data.error || browseHttpFailHint(outSub.res.status, "刷新"), true);
-          return;
+          return false;
         }
-        renderPayload(outSub.data);
-        return;
+        renderSavedBrowsePayload(outSub.data);
+        return true;
       }
       setStatus("从 DB 重新读取数据中…", false);
       var outAll = await fetchJson("/api/browse/default", { method: "GET" });
       if (!outAll.res.ok || !outAll.data.ok) {
         setStatus(outAll.data.error || browseHttpFailHint(outAll.res.status, "刷新"), true);
-        return;
+        return false;
       }
-      renderPayload(outAll.data);
+      renderSavedBrowsePayload(outAll.data);
+      return true;
     } catch (errRf) {
       setStatus("刷新请求异常：" + (errRf.message || String(errRf)), true);
+      return false;
     }
   }
 
@@ -4590,6 +4825,7 @@
       setStatus("当前配置无法从 DB 载入数据。", true);
       return;
     }
+    if (!beginBrowseLoad()) return;
     clearYamlPickUi();
     if ($file) $file.value = "";
     setStatus(opts.autoRestore ? "自动加载上次 DB 数据（全部）…" : "从 DB 读取全部数据…", false);
@@ -4609,6 +4845,8 @@
       closeDbCatalogPopover();
     } catch (eAllDb) {
       setStatus("加载请求异常：" + (eAllDb.message || String(eAllDb)), true);
+    } finally {
+      finishBrowseLoad();
     }
   }
 

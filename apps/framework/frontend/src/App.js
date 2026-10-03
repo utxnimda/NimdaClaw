@@ -36,10 +36,13 @@ export default {
   methods: {
     async mountLegacyShell() {
       try {
-        await import("/features/collection-detail/index.js?v=127");
-        await import("/features/collection-info/index.js?v=127");
-        await import("/features/media-directory-organizer/index.js?v=127");
-        await import("./legacy/shell.js?v=127");
+        await import("./operation-center.js?v=133");
+        await import("/features/collection-detail/new-work-dialog.js?v=131");
+        await import("/features/collection-detail/work-detail-dialog.js?v=134");
+        await import("/features/collection-detail/index.js?v=131");
+        await import("/features/collection-info/index.js?v=131");
+        await import("/features/media-directory-organizer/index.js?v=136");
+        await import("./legacy/shell.js?v=135");
       } catch (error) {
         this.legacyError = error && error.message ? error.message : String(error);
       }
@@ -176,7 +179,7 @@ export default {
                     </div>
                   </div>
                   <button type="button" class="btn" id="btn-sheet-save" disabled>保存到 YAML</button>
-                  <button type="button" class="btn secondary" id="btn-sheet-add-row" disabled>新增行</button>
+                  <button type="button" class="btn secondary" id="btn-sheet-add-row" disabled aria-haspopup="dialog">新增作品</button>
                   <button type="button" class="btn secondary" id="btn-enum-editor" disabled>枚举</button>
                 </div>
                 <div id="yaml-pick-panel" class="yaml-pick-panel" hidden>

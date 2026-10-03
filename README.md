@@ -92,6 +92,16 @@ package contains no database or normal feature-config copy;
 server lifecycle, so closing the application also closes its listener.
 See `docs/desktop-app.md` for packaging and source-mode launch details.
 
+Every desktop build now verifies its Python modules, frontend resources, default
+configuration, shared-workspace bootstrap and ZIP contents against the checkout.
+To check an existing package without launching it:
+
+```powershell
+.\build\desktop-venv\Scripts\python.exe .\scripts\verify-desktop.py --workspace "E:\Project\nimda"
+```
+
+See `docs/review-2026-09-20.md` for the latest review, fixes and verification limits.
+
 Run all framework/feature Python tests, JavaScript behavior tests and syntax checks:
 
 ```powershell

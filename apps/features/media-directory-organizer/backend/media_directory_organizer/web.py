@@ -20,6 +20,8 @@ from media_directory_organizer.catalog import (
     MediaCatalog,
     normalized_identity,
     normalized_value,
+    normalize_press_group,
+    normalized_press_group,
     path_key,
 )
 from media_directory_organizer.landing import (
@@ -41,6 +43,7 @@ from media_directory_organizer.service import _stable_plan_id, apply_plan, build
 from media_directory_organizer.settings import OrganizerSettings, load_organizer_settings
 from media_directory_organizer.suggestions import suggest_work_landing
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings, get_resolved_browse_settings
+from work_catalog_yaml.paths import normalize_copied_path
 
 
 _PLAN_ID_RE = re.compile(r"[0-9a-f]{16}\Z")
@@ -329,7 +332,7 @@ def _prepare_source_work_bindings(
             "registration": None,
             "next_action": "none",
         }
-        binding_presses: list[dict[str, str]] = []
+        binding_presses: list[dict[str, Any]] = []
         if raw_binding_presses is not None:
             if not isinstance(raw_binding_presses, list):
                 raise ValueError(f"来源目录 {source.name!r} 的 presses 必须是数组")
@@ -352,6 +355,10 @@ def _prepare_source_work_bindings(
                         {
                             "press_format": press_format,
                             "press_group": press_group,
+                            "press_group_confirmed": (
+                                "press_group" in raw_press
+                                and raw_press.get("press_group_confirmed") is not False
+                            ),
                             "press_path": press_path,
                         }
                     )
@@ -481,6 +488,7 @@ def _prepare_source_work_bindings(
                         {
                             "press_format": inferred_format,
                             "press_group": inferred_group,
+                            "press_group_confirmed": bool(inferred_group),
                             "press_path": inferred_path,
                         }
                     )
@@ -488,6 +496,7 @@ def _prepare_source_work_bindings(
                 {
                     "press_format": press["press_format"],
                     "press_group": press["press_group"],
+                    "press_group_confirmed": press.get("press_group_confirmed", True),
                     "suggested_press_path": press["press_path"],
                 }
                 for press in binding_presses
@@ -525,12 +534,11 @@ def _prepare_source_work_bindings(
                 exact_press = [
                     press
                     for press in same_format
-                    if inferred_group
-                    and normalized_value(press.press_group) == normalized_value(inferred_group)
+                    if normalized_press_group(press.press_group) == normalized_press_group(inferred_group)
                 ]
                 if (
                     not same_format
-                    or (inferred_group and len(exact_press) != 1)
+                    or len(exact_press) != 1
                     or (len(exact_press) == 1 and not exact_press[0].press_path.strip())
                 ):
                     press_repair_required = True
@@ -615,20 +623,18 @@ def _source_press_overrides_from_body(
             not isinstance(raw_format, str) or not raw_format.strip()
         ):
             raise ValueError(f"来源目录 {source!r} 的 press_format 必须是非空字符串")
-        if raw_group is not None and (
-            not isinstance(raw_group, str) or not raw_group.strip()
-        ):
-            raise ValueError(f"来源目录 {source!r} 的 press_group 必须是非空字符串")
+        if "press_group" in press and not isinstance(raw_group, str):
+            raise ValueError(f"来源目录 {source!r} 的 press_group 必须是字符串（允许空字符串表示无组）")
         press_format = raw_format.strip() if isinstance(raw_format, str) else ""
-        press_group = raw_group.strip() if isinstance(raw_group, str) else ""
-        if not press_format and not press_group:
+        press_group = normalize_press_group(raw_group) if isinstance(raw_group, str) else ""
+        if not press_format and "press_group" not in press:
             raise ValueError(
                 f"来源目录 {source!r} 至少要提供 press_format 或 press_group"
             )
         override: dict[str, str] = {}
         if press_format:
             override["press_format"] = press_format
-        if press_group:
+        if "press_group" in press:
             override["press_group"] = press_group
         overrides[source.strip()] = override
     return overrides
@@ -655,7 +661,10 @@ def _root_from_body(body: Mapping[str, Any], settings: OrganizerSettings) -> str
         raise ValueError("缺少要整理的作品目录 root")
     if not isinstance(raw, str):
         raise ValueError("root 必须是非空字符串")
-    return raw.strip()
+    root_text = normalize_copied_path(raw)
+    if not root_text:
+        raise ValueError("root 必须是非空字符串")
+    return root_text
 
 
 def _build_from_ui_body(
@@ -834,8 +843,8 @@ def _merge_prepared_source_bindings(
                         for item in requested_inferred_press
                         if normalized_value(str(item.get("press_format") or ""))
                         == normalized_value(str(inferred.get("press_format") or ""))
-                        and normalized_value(str(item.get("press_group") or ""))
-                        == normalized_value(str(inferred.get("press_group") or ""))
+                        and normalized_press_group(str(item.get("press_group") or ""))
+                        == normalized_press_group(str(inferred.get("press_group") or ""))
                     ),
                     None,
                 )
@@ -873,8 +882,8 @@ def _merge_prepared_source_bindings(
                     for assignment in source_assignments
                     if normalized_value(str(assignment.get("press_format") or ""))
                     == normalized_value(str(inferred.get("press_format") or ""))
-                    and normalized_value(str(assignment.get("press_group") or ""))
-                    == normalized_value(str(inferred.get("press_group") or ""))
+                    and normalized_press_group(str(assignment.get("press_group") or ""))
+                    == normalized_press_group(str(inferred.get("press_group") or ""))
                 ),
                 None,
             )
@@ -892,7 +901,7 @@ def _merge_prepared_source_bindings(
                 press
                 for press in work.presses
                 if normalized_value(press.press_format) == normalized_value(press_format)
-                and normalized_value(press.press_group) == normalized_value(press_group)
+                and normalized_press_group(press.press_group) == normalized_press_group(press_group)
             ]
             if len(matches) != 1 or not matches[0].press_path.strip():
                 missing_press = True
@@ -911,12 +920,11 @@ def _merge_prepared_source_bindings(
                 exact = [
                     press
                     for press in same_format
-                    if press_group
-                    and normalized_value(press.press_group) == normalized_value(press_group)
+                    if normalized_press_group(press.press_group) == normalized_press_group(press_group)
                 ]
                 if (
                     not same_format
-                    or (press_group and len(exact) != 1)
+                    or len(exact) != 1
                     or (len(exact) == 1 and not exact[0].press_path.strip())
                 ):
                     missing_press = True
@@ -959,13 +967,13 @@ def _merge_prepared_source_bindings(
                     press
                     for press in existing_presses
                     if normalized_value(press["press_format"]) == normalized_value(press_format)
-                    and press_group
-                    and normalized_value(press["press_group"]) == normalized_value(press_group)
+                    and normalized_press_group(press["press_group"]) == normalized_press_group(press_group)
                 ]
                 if len(matches) == 1:
                     editable_presses.append(
                         {
                             **dict(matches[0]),
+                            "press_group_confirmed": True,
                             "source_names": [str(row.get("source_name") or "")],
                             "press_path": str(matches[0]["press_path"] or "")
                             or str(inferred.get("suggested_press_path") or ""),
@@ -977,6 +985,7 @@ def _merge_prepared_source_bindings(
                         "source_names": [str(row.get("source_name") or "")],
                         "press_format": press_format,
                         "press_group": press_group,
+                        "press_group_confirmed": inferred.get("press_group_confirmed", bool(press_group)),
                         "press_path": str(inferred.get("suggested_press_path") or ""),
                     }
                 )

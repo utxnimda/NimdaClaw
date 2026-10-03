@@ -1508,7 +1508,15 @@ html[data-theme="sakura"] .db-catalog-load-select {
 .collection-year-chip input {
   width: 0.95rem;
   height: 0.95rem;
+  flex-shrink: 0;
   accent-color: var(--accent);
+}
+
+.collection-year-chip-unavailable {
+  grid-column: span 2;
+  min-width: 0;
+  text-align: left;
+  line-height: 1.4;
 }
 
 .collection-year-chip:has(input:checked) {
@@ -1874,6 +1882,17 @@ table.sheet tbody tr.sheet-row-new td {
   background: color-mix(in srgb, var(--accent) 10%, var(--row-alt));
 }
 
+.sheet-new-work-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
 table.sheet .col-idx {
   white-space: nowrap;
   font-weight: 600;
@@ -1882,7 +1901,9 @@ table.sheet .col-idx {
 
 table.sheet .col-date {
   width: 1%;
-  max-width: 5.4rem;
+  min-width: 6.25rem;
+  max-width: 7.5rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2364,6 +2385,7 @@ table.sheet td.cell-tags-press .pill-pair.fmt-agg-s11 {
 
 table.sheet.sheet-editing .col-name {
   position: relative;
+  padding-right: 3.5rem;
 }
 
 table.sheet.sheet-editing .row-delete-inline-btn {
@@ -2759,4 +2781,29 @@ table.sheet tbody td.col-tax {
   text-align: center;
   font-size: 0.82rem;
 }
+
+.sheet-work-name-link {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  line-height: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.sheet-work-name-link:hover { color: var(--accent); }
+.sheet-work-name-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.sheet-work-name-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; min-width: 0; }
+.sheet-work-name-edit { display: inline-block; min-width: 0; max-width: 100%; color: var(--muted); font-size: 0.75em; }
+.sheet-work-name-edit:has(.sheet-inline-input) { grid-column: 1 / -1; }
+.sheet-work-name-edit .sheet-edit-trigger { max-width: 100%; }
+.sheet-work-name-edit .sheet-inline-input { font-size: 1rem; min-width: 0; width: 100%; box-sizing: border-box; }
 

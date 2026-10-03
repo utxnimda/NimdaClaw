@@ -18,7 +18,11 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Callable, Iterable, Mapping, Protocol, runtime_checkable
 
-from media_directory_organizer.catalog import normalized_identity, normalized_value
+from media_directory_organizer.catalog import (
+    normalize_press_group,
+    normalized_identity,
+    normalized_value,
+)
 from work_catalog_yaml.media_groups import media_group_classifier_family
 
 
@@ -641,6 +645,66 @@ class LayoutDecision:
                 raise ValueError(f"LayoutDecision.{field_name} 不能为空")
 
 
+def canonical_resolution_episode_subdirectories(
+    items: Iterable[tuple[str, str, Path, LayoutDecision]],
+    *,
+    directory_stem: str,
+    press_format: str,
+) -> dict[str, Path]:
+    """Recognize existing resolution episode bundles, not arbitrary packaging.
+
+    Only direct ``<press stem>_<episode>/<file>`` layouts containing videos
+    and their subtitles qualify. Every file must carry its own matching
+    episode marker; a parent folder must never supply the missing evidence.
+    This is deliberately separate from deciding when a new bundle is needed.
+    Filesystem callers must additionally reject links and non-regular files.
+    """
+
+    if not is_resolution_press_format(press_format):
+        return {}
+    safe_stem = _safe_category(directory_stem)
+    grouped: dict[tuple[str, str], list[tuple[str, Path, LayoutDecision]]] = {}
+    seen_ids: set[str] = set()
+    for raw_file_id, raw_scope_id, raw_path, decision in items:
+        file_id = str(raw_file_id).strip()
+        scope_id = str(raw_scope_id).strip()
+        if not file_id or file_id in seen_ids or not scope_id:
+            raise ValueError("已有分集布局的 file_id 必须唯一且来源标识不能为空")
+        if not isinstance(decision, LayoutDecision):
+            raise TypeError("已有分集布局必须接收 LayoutDecision")
+        seen_ids.add(file_id)
+        path = _safe_relative_path(raw_path)
+        if len(path.parts) > 1:
+            grouped.setdefault(
+                (scope_id, normalized_value(path.parts[0])), []
+            ).append((file_id, path, decision))
+
+    preserved: dict[str, Path] = {}
+    for rows in grouped.values():
+        markers: set[tuple[str, str]] = set()
+        video_count = 0
+        for _file_id, path, decision in rows:
+            if (
+                len(path.parts) != 2
+                or decision.category != CATEGORY_DISC
+                or path.suffix.casefold() not in (_VIDEO_EXTENSIONS | _SUBTITLE_EXTENSIONS)
+            ):
+                break
+            marker = _disc_episode_marker(Path(path.name))
+            if marker is None or normalized_value(path.parts[0]) != normalized_value(
+                f"{safe_stem}_{marker[1]}"
+            ):
+                break
+            markers.add(marker)
+            video_count += path.suffix.casefold() in _VIDEO_EXTENSIONS
+        else:
+            if len(markers) == 1 and video_count:
+                preserved.update(
+                    (file_id, Path(path.parts[0])) for file_id, path, _decision in rows
+                )
+    return preserved
+
+
 def disc_version_subdirectories(
     items: Iterable[tuple[str, str, Path, LayoutDecision]],
     *,
@@ -1236,6 +1300,8 @@ class ClassifierRegistry:
         object.__setattr__(self, "by_family_prefix", MappingProxyType(family))
 
     def classifier_for(self, press_group: str) -> PressGroupClassifier | None:
+        if not normalize_press_group(press_group):
+            return None
         exact = self.by_group.get(normalized_value(press_group))
         if exact is not None:
             return exact
@@ -1330,6 +1396,7 @@ __all__ = [
     "PressGroupClassifier",
     "VcbClassifier",
     "VcbmClassifier",
+    "canonical_resolution_episode_subdirectories",
     "disc_version_subdirectories",
     "is_resolution_press_format",
     "is_vcb_family_group",

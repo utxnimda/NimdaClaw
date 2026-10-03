@@ -7,6 +7,7 @@ from typing import Any
 
 from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.yaml_io import load_yaml
+from work_catalog_yaml.paths import normalize_copied_path
 
 
 _DEFAULT_FORMAT_MARKERS: dict[str, tuple[str, ...]] = {
@@ -31,10 +32,6 @@ _DEFAULT_GROUP_SUFFIXES: dict[str, str] = {
     "MW": "MW",
     "CKCS": "CKCS",
 }
-
-
-def _string(raw: Any) -> str:
-    return raw.strip() if isinstance(raw, str) else ""
 
 
 def _mapping_of_markers(raw: Any, fallback: dict[str, tuple[str, ...]]) -> dict[str, tuple[str, ...]]:
@@ -71,7 +68,7 @@ def load_organizer_settings(config_path: str | Path | None = None) -> OrganizerS
     if not isinstance(raw, dict):
         raw = {}
     paths = raw.get("paths") if isinstance(raw.get("paths"), dict) else {}
-    catalog_raw = _string(paths.get("catalog_root"))
+    catalog_raw = normalize_copied_path(paths.get("catalog_root"))
     catalog_root = (
         resolve_workspace_path(catalog_raw)
         if catalog_raw
@@ -84,12 +81,16 @@ def load_organizer_settings(config_path: str | Path | None = None) -> OrganizerS
         detail_raw = load_yaml(detail_cfg) if detail_cfg.is_file() else {}
         detail_paths = detail_raw.get("paths") if isinstance(detail_raw, dict) else {}
         allowed_raw = detail_paths.get("resource_roots") if isinstance(detail_paths, dict) else []
-    allowed = tuple(
-        resolve_workspace_path(item.strip())
-        for item in (allowed_raw if isinstance(allowed_raw, list) else [])
-        if isinstance(item, str) and item.strip()
-    )
-    default_root_raw = _string(paths.get("default_work_root"))
+    allowed_paths: list[Path] = []
+    for item in (allowed_raw if isinstance(allowed_raw, list) else []):
+        if not isinstance(item, str) or not item.strip():
+            continue
+        cleaned = normalize_copied_path(item)
+        if not cleaned:
+            raise ValueError("allowed_resource_roots 必须包含有效路径，不能仅包含复制标记或引号")
+        allowed_paths.append(resolve_workspace_path(cleaned))
+    allowed = tuple(allowed_paths)
+    default_root_raw = normalize_copied_path(paths.get("default_work_root"))
     default_work_root = (
         resolve_workspace_path(default_root_raw)
         if default_root_raw

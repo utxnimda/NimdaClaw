@@ -87,6 +87,11 @@ $desktopConfigText = [string]::Join([Environment]::NewLine, $desktopConfigLines)
 
 $archive = Join-Path $repoRoot "dist\Nimda-Windows-x64.zip"
 Compress-Archive -LiteralPath $packageRoot -DestinationPath $archive -Force
+& $venvPython (Join-Path $scriptRoot "verify-desktop.py") `
+    --package $packageRoot --archive $archive --workspace $sharedWorkspaceRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "Desktop package verification failed; do not distribute this build."
+}
 Write-Host "Nimda desktop package: $exe"
 Write-Host "Nimda desktop config: $desktopConfig"
 Write-Host "Nimda shared workspace: $sharedWorkspaceRoot"

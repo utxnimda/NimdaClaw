@@ -16,10 +16,12 @@ from collection_detail.save import _file_sha256
 from media_directory_organizer.catalog import (
     MediaCatalog,
     normalized_identity,
+    normalized_press_group,
     normalized_value,
     path_key,
 )
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
+from work_catalog_yaml.input_validation import parse_record_index
 from work_catalog_yaml.jp_tv.validate import (
     entry_air_dates,
     entry_collection_type_data,
@@ -233,7 +235,7 @@ def _date_identity(value: Any) -> str:
 def _press_identity(row: Mapping[str, Any]) -> tuple[str, str, str]:
     return (
         str(row.get("press_format") or "").strip().casefold(),
-        str(row.get("press_group") or "").strip().casefold(),
+        normalized_press_group(str(row.get("press_group") or "")),
         str(row.get("press_path") or "").strip().replace("\\", "/").strip("/").casefold(),
     )
 
@@ -312,13 +314,7 @@ def _record_from_work_ref(
         raw_ref.get("yaml_source_rel"),
         catalog_root=catalog_root,
     )
-    raw_index = raw_ref.get("index_in_file")
-    if isinstance(raw_index, bool):
-        raise ValueError("work_ref.index_in_file 必须是非负整数")
-    try:
-        index = int(raw_index)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("work_ref.index_in_file 必须是非负整数") from exc
+    index = parse_record_index(raw_ref.get("index_in_file"), label="work_ref.index_in_file")
     reader = session or CatalogReadSession()
     entries = reader.entries(source)
     if index < 0 or index >= len(entries):
@@ -388,10 +384,10 @@ def _repair_draft_for_record(
     for assignment in assignments or []:
         pair = (
             normalized_value(str(assignment.get("press_format") or "")),
-            normalized_value(str(assignment.get("press_group") or "")),
+            normalized_press_group(str(assignment.get("press_group") or "")),
         )
         relpath = str(assignment.get("target_relpath") or "").strip().replace("\\", "/").strip("/")
-        if pair[0] and pair[1] and relpath:
+        if pair[0] and relpath:
             assignment_paths[pair] = relpath
 
     presses: list[dict[str, Any]] = []
@@ -402,7 +398,7 @@ def _repair_draft_for_record(
             record_pair_counts[
                 (
                     normalized_value(str(raw_row.get("press_format") or "")),
-                    normalized_value(str(raw_row.get("press_group") or "")),
+                    normalized_press_group(str(raw_row.get("press_group") or "")),
                 )
             ] += 1
     for row in record.get("presses") or []:
@@ -410,9 +406,9 @@ def _repair_draft_for_record(
             continue
         press_format = str(row.get("press_format") or "").strip()
         press_group = str(row.get("press_group") or "").strip()
-        if not press_format or not press_group:
+        if not press_format:
             continue
-        pair = (normalized_value(press_format), normalized_value(press_group))
+        pair = (normalized_value(press_format), normalized_press_group(press_group))
         known_pairs.add(pair)
         presses.append(
             {
@@ -440,7 +436,7 @@ def _repair_draft_for_record(
                 assignment
                 for assignment in assignments or []
                 if normalized_value(str(assignment.get("press_format") or "")) == pair[0]
-                and normalized_value(str(assignment.get("press_group") or "")) == pair[1]
+                and normalized_press_group(str(assignment.get("press_group") or "")) == pair[1]
             ),
             {},
         )
@@ -509,7 +505,6 @@ def _public_repair_candidate(record: Mapping[str, Any], *, root: Path) -> dict[s
         if isinstance(row, Mapping)
         and str(row.get("press_key") or "").strip()
         and str(row.get("press_format") or "").strip()
-        and str(row.get("press_group") or "").strip()
     ]
     return {
         "catalog_ref": catalog_ref,

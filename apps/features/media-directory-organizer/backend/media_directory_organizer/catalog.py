@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
+from work_catalog_yaml.media_groups import normalize_press_group, normalized_press_group
+from work_catalog_yaml.operation_progress import report_progress
 from work_catalog_yaml.jp_tv.validate import (
     entry_air_dates,
     entry_collection_type_data,
@@ -58,14 +60,14 @@ class CatalogWork:
     def identity(self) -> str:
         return normalized_identity(self.name)
 
-    def presses_for(self, press_format: str, press_group: str = "") -> tuple[PressRecord, ...]:
+    def presses_for(self, press_format: str, press_group: str | None = None) -> tuple[PressRecord, ...]:
         fmt_key = normalized_value(press_format)
-        group_key = normalized_value(press_group)
+        group_key = normalized_press_group(press_group)
         return tuple(
             press
             for press in self.presses
             if normalized_value(press.press_format) == fmt_key
-            and (not group_key or normalized_value(press.press_group) == group_key)
+            and (press_group is None or normalized_press_group(press.press_group) == group_key)
         )
 
 
@@ -151,7 +153,9 @@ class MediaCatalog:
             raise FileNotFoundError(f"作品数据库目录不存在：{root}")
         works: list[CatalogWork] = []
         errors: list[str] = []
-        for yaml_path in sorted(root.glob("*.yaml")):
+        yaml_paths = sorted(root.glob("*.yaml"))
+        for file_index, yaml_path in enumerate(yaml_paths):
+            report_progress("加载媒体整理作品数据库", completed=file_index, total=len(yaml_paths), unit="数据文件", detail=str(yaml_path))
             try:
                 source_sha256 = hashlib.sha256(yaml_path.read_bytes()).hexdigest()
                 entries = load_jp_tv_yaml_file(yaml_path)
@@ -173,7 +177,7 @@ class MediaCatalog:
                             continue
                         press_format = str(row.get("press_format") or "").strip()
                         press_group = str(row.get("press_group") or "").strip()
-                        if not press_format or not press_group:
+                        if not press_format:
                             continue
                         presses.append(
                             PressRecord(
@@ -200,6 +204,7 @@ class MediaCatalog:
         if errors:
             joined = "；".join(errors[:10])
             raise ValueError(f"读取作品数据库失败：{joined}")
+        report_progress("媒体整理数据库加载完成", completed=len(yaml_paths), total=len(yaml_paths), unit="数据文件", detail=f"共 {len(works)} 个候选作品")
         return cls(works=tuple(works), catalog_root=root)
 
     def matching_family_for_root(self, work_root: str | Path) -> tuple[CatalogWork, ...]:

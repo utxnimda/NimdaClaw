@@ -13,6 +13,7 @@ from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
 
 from work_catalog_yaml.api_runtime import api_health, api_lifespan, install_api_queues
+from work_catalog_yaml.operation_progress import api_operation_progress
 from work_catalog_yaml.layout import feature_frontend_root, framework_frontend_root
 from work_catalog_yaml.jp_tv.browse_security import is_loopback_hostname, mutation_source_is_allowed
 from work_catalog_yaml.jp_tv import browse_api as api
@@ -69,7 +70,10 @@ class _BrowseLocalApiSecurityMiddleware(BaseHTTPMiddleware):
             "HEAD",
             "OPTIONS",
         }
-        if is_api_mutation:
+        is_progress_request = request.url.path.startswith("/api/operations/") or (
+            request.url.path.startswith("/api") and "x-nimda-operation-id" in request.headers
+        )
+        if is_api_mutation or is_progress_request:
             fetch_site = request.headers.get("sec-fetch-site", "").strip().casefold()
             if fetch_site == "cross-site":
                 return JSONResponse(
@@ -101,10 +105,16 @@ def build_jp_tv_browse_app() -> Starlette:
     jp_tv_browse_api = Router(
         routes=[
             Route("/health", endpoint=api_health, methods=["GET"]),
+            Route("/operations/{operation_id}", endpoint=api_operation_progress, methods=["GET"]),
             Route("/config", endpoint=api._get_config_api, methods=["GET"]),
             Route("/browse/default", endpoint=api._get_browse_default_api, methods=["GET"]),
             Route("/browse/catalog", endpoint=api._post_browse_catalog_api, methods=["POST"]),
             Route("/browse/save", endpoint=api._post_browse_save_api, methods=["POST"]),
+            Route(
+                "/collection-detail/work/detail",
+                endpoint=api._post_collection_detail_work_detail_api,
+                methods=["POST"],
+            ),
             Route("/config/enum-edits", endpoint=api._post_config_enum_edits_api, methods=["POST"]),
             Route("/collection-info", endpoint=api._get_collection_records_api, methods=["GET"]),
             Route("/collection-info", endpoint=api._post_collection_records_api, methods=["POST"]),
@@ -167,8 +177,8 @@ def build_jp_tv_browse_app() -> Starlette:
             ),
             Route(
                 "/collection-detail/resource-libraries/scan",
-                endpoint=api._get_collection_detail_resource_libraries_scan_api,
-                methods=["GET"],
+                endpoint=api._post_collection_detail_resource_libraries_scan_api,
+                methods=["POST"],
             ),
             Route(
                 "/collection-detail/resource-libraries/cache",

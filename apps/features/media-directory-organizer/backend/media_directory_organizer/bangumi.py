@@ -18,6 +18,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from work_catalog_yaml.operation_progress import report_progress
 
 
 _API_ORIGIN = "https://api.bgm.tv"
@@ -532,7 +533,9 @@ def search_bangumi_anime(
         },
         method="POST",
     )
+    report_progress("正在请求 Bangumi 作品搜索", detail=normalized_query)
     payload = _read_payload(request, timeout=request_timeout, opener=opener)
+    report_progress("解析 Bangumi 返回结果并计算匹配度")
     data = payload["data"]
     candidates = [
         candidate
@@ -554,6 +557,7 @@ def search_bangumi_anime(
     search_url = (
         f"{_SUBJECT_ORIGIN}/subject_search/{quote(normalized_query, safe='')}?cat=2"
     )
+    report_progress("Bangumi 候选已生成，等待手动确认", completed=len(candidates), unit="候选作品")
     return {
         "query": normalized_query,
         "search_url": search_url,

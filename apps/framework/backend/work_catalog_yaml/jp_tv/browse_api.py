@@ -1,11 +1,13 @@
 """Synchronous browse response builders, independent of request/worker scheduling."""
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
 from starlette.responses import JSONResponse
 from work_catalog_yaml.api_runtime import json_endpoint, query_endpoint, upload_endpoint
+from work_catalog_yaml.operation_progress import report_progress
 from work_catalog_yaml.layout import ensure_feature_backend_paths
 
 ensure_feature_backend_paths()
@@ -15,6 +17,12 @@ from collection_info.service import (
     save_collection_records_from_ui_body,
 )
 from collection_detail.payload import build_jp_tv_browse_payload_single_group_order
+from collection_detail.work_detail import (
+    CatalogDetailStaleError,
+    json_work_record,
+    raw_work_records,
+    work_detail_payload,
+)
 from collection_detail.save import (
     CatalogRollbackConflictError,
     annotate_save_capabilities,
@@ -125,22 +133,25 @@ def _build_catalog_browse_payload(
     sources_loaded: list[dict[str, int | str]] = []
     resolved_files: list[Path] = []
 
-    for abs_s in abs_paths_ordered:
+    for file_number, abs_s in enumerate(abs_paths_ordered):
         fp = Path(abs_s).resolve()
+        report_progress("读取作品数据库", completed=file_number, total=len(abs_paths_ordered), unit="文件", detail=fp.name)
         if not fp.is_file():
             raise OSError(f"数据文件不存在：{fp.name}")
-        raw = fp.read_text(encoding="utf-8")
-        doc = load_yaml_string(raw)
+        raw_bytes = fp.read_bytes()
+        doc = load_yaml_string(raw_bytes.decode("utf-8"))
         works = load_jp_tv_entries_from_yaml(doc)
         try:
             yrel = jp_tv_yaml_catalog_relpath(settings, fp)
         except (OSError, ValueError):
             yrel = fp.name
-        sources_loaded.append({"relpath": yrel, "count": len(works)})
+        sources_loaded.append({"relpath": yrel, "count": len(works), "sha256": hashlib.sha256(raw_bytes).hexdigest()})
         for i, ent in enumerate(works):
             agg_entries.append(ent)
             row_meta_accum.append((yrel, i))
         resolved_files.append(fp)
+
+    report_progress("汇总作品列表", completed=len(abs_paths_ordered), total=len(abs_paths_ordered), unit="文件", detail=f"共 {len(agg_entries)} 部作品")
 
     fname_disp = (
         resolved_files[0].name
@@ -347,6 +358,7 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
     agg_entries: list[Any] = []
     row_meta_accum: list[tuple[str | None, int]] = []
     sources_loaded: list[dict[str, int | str]] = []
+    uploaded_records: dict[tuple[str, int], dict[str, Any]] = {}
     yrel_count: dict[str, int] = {}
 
     def disambig_relpath(raw_name: str) -> str:
@@ -358,7 +370,8 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
         stem, suf = Path(base).stem, Path(base).suffix
         return f"{stem}__{n}{suf}"
 
-    for fname, raw_bytes in uploads:
+    for file_number, (fname, raw_bytes) in enumerate(uploads):
+        report_progress("解析上传的作品数据", completed=file_number, total=len(uploads), unit="文件", detail=fname)
         if not raw_bytes.strip():
             return JSONResponse(
                 {"ok": False, "error": f"空文件：{fname or '（未命名）'}"},
@@ -375,6 +388,8 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
         try:
             doc = load_yaml_string(text)
             works = load_jp_tv_entries_from_yaml(doc)
+            for index, record in enumerate(raw_work_records(doc)):
+                uploaded_records[(yrel, index)] = json_work_record(record)
         except ValueError as e:
             return JSONResponse({"ok": False, "error": f"{yrel}：{e}"}, status_code=400)
         except Exception as e:
@@ -382,7 +397,7 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
                 {"ok": False, "error": f"{yrel}：YAML / 条目解析失败：{e}"},
                 status_code=400,
             )
-        sources_loaded.append({"relpath": yrel, "count": len(works)})
+        sources_loaded.append({"relpath": yrel, "count": len(works), "sha256": hashlib.sha256(raw_bytes).hexdigest()})
         for i, ent in enumerate(works):
             agg_entries.append(ent)
             row_meta_accum.append((yrel, i))
@@ -393,6 +408,7 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
         else f"上传聚合 {len(uploads)} 个 YAML"
     )
     try:
+        report_progress("组装上传作品列表", completed=len(uploads), total=len(uploads), unit="文件", detail=f"共 {len(agg_entries)} 部作品")
         payload = build_jp_tv_browse_payload_single_group_order(
             agg_entries,
             row_meta=row_meta_accum,
@@ -400,11 +416,33 @@ def _post_browse_api(uploads: list[tuple[str, bytes]]) -> JSONResponse:
         )
         if payload.get("ok"):
             payload["sources_loaded"] = sources_loaded
+            for group in payload.get("profile_groups", []):
+                for row in group.get("rows", []):
+                    row["source_record"] = uploaded_records[(row["yaml_source_rel"], row["index_in_file"])]
     except Exception as e:
         return JSONResponse({"ok": False, "error": f"组装浏览数据失败：{e}"}, status_code=400)
 
     annotate_save_capabilities(payload, yaml_disk_abs=None, settings=st)
     return JSONResponse(payload)
+
+
+@json_endpoint
+def _post_collection_detail_work_detail_api(body: dict[str, Any]) -> JSONResponse:
+    try:
+        settings, _cfg_used = get_resolved_browse_settings()
+    except ValueError as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+    try:
+        return JSONResponse(work_detail_payload(body, settings))
+    except CatalogDetailStaleError as exc:
+        return JSONResponse(
+            {"ok": False, "error": str(exc), "code": "catalog-source-changed", "reload_required": True},
+            status_code=409,
+        )
+    except ValueError as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    except OSError as exc:
+        return JSONResponse({"ok": False, "error": f"无法读取作品数据：{exc}"}, status_code=400)
 
 
 @json_endpoint
@@ -647,8 +685,8 @@ def _post_collection_detail_resource_libraries_config_api(body: dict[str, Any]) 
         return JSONResponse({"ok": False, "error": f"write resource library config failed: {e}"}, status_code=500)
 
 
-@query_endpoint
-def _get_collection_detail_resource_libraries_scan_api(query: dict[str, str]) -> JSONResponse:
+@json_endpoint
+def _post_collection_detail_resource_libraries_scan_api(body: dict[str, Any]) -> JSONResponse:
     try:
         return JSONResponse(scan_resource_libraries_payload())
     except ValueError as e:

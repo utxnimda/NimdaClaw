@@ -8,10 +8,48 @@ from pathlib import Path
 from unittest.mock import patch
 
 from collection_detail import link_index, resource_cache
-from collection_detail.resource_tree import resource_search_tree_from_entries
+from collection_detail.resource_tree import resource_node_cache_payload, resource_node_summary, resource_search_tree_from_entries
+from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml
 
 
 class ResourceCacheTest(unittest.TestCase):
+    def test_summary_preserves_lazy_counts_and_is_idempotent(self) -> None:
+        node = {
+            "relpath": "root:0/Series", "children_loaded": False,
+            "children": [], "files": [], "has_children": True,
+            "child_count": 3, "direct_file_count": 2,
+            "direct_child_count": 5, "total_child_count": 20, "size": 1024,
+        }
+        summary = resource_node_summary(node)
+        self.assertTrue(summary["has_children"])
+        self.assertEqual(summary["child_count"], 3)
+        self.assertEqual(summary["direct_file_count"], 2)
+        self.assertEqual(resource_node_summary(summary), summary)
+        cached = resource_node_cache_payload(node)["node"]
+        self.assertFalse(cached["children_loaded"])
+        self.assertEqual(cached["direct_child_count"], 5)
+
+    def test_file_only_directory_remains_expandable_in_summary_and_cache(self) -> None:
+        node = {"relpath": "root:0/Series/Disc", "children": [], "files": [{"name": "ep01.mkv"}], "children_loaded": True}
+        summary = resource_node_summary(node)
+        self.assertTrue(summary["has_children"])
+        self.assertEqual(summary["direct_file_count"], 1)
+        cached = resource_node_cache_payload({"children": [node], "files": []})["node"]
+        self.assertTrue(cached["children"][0]["has_children"])
+
+    def test_legacy_file_only_summary_is_repaired_without_rescanning(self) -> None:
+        first = link_index.scan_resource_libraries_payload()
+        node_path = resource_cache.node_cache_path(Path(first["node_cache_dir"]).parent, "root:0/Series", first["generation"])
+        cached = load_yaml(node_path)
+        cached["node"]["children"][0]["has_children"] = False
+        node_path.write_text(dump_yaml_string(cached), encoding="utf-8")
+        before = node_path.read_bytes()
+        with patch.object(link_index, "_resource_live_node_from_relpath", side_effect=AssertionError("unexpected disk scan")):
+            node = link_index.resource_libraries_node_payload("root:0/Series")
+        self.assertTrue(node["cached"])
+        self.assertTrue(node["node"]["children"][0]["has_children"])
+        self.assertEqual(node_path.read_bytes(), before)
+
     def setUp(self) -> None:
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)

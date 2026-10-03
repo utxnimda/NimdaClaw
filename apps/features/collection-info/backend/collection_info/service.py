@@ -9,13 +9,14 @@ from typing import Any
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.persistence import FileWrite, commit_file_writes, directory_write_transaction, history_snapshot_name
+from work_catalog_yaml.operation_progress import report_progress
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml
 
 _FINISH_DIR_ENV = "JP_TV_COLLECTION_FINISH_DIR"
 _INFO_PATH_ENV = "JP_TV_COLLECTION_INFO_PATH"
 _RECORDS_PATH_ENV = "JP_TV_COLLECTION_RECORDS_PATH"
 _DEFAULT_FINISH_DIR = r"E:\LinkVideo\[ACG] Japan\Finish"
-_YEAR_NAME_RE = re.compile(r"^\[?((?:19|20)\d{2}|(?:19|20)\dX)\]?$", re.IGNORECASE)
+_YEAR_NAME_RE = re.compile(r"((?:19|20)\d{2}|(?:19|20)\dX)", re.IGNORECASE)
 
 
 def _str_or_blank(v: Any) -> str:
@@ -88,7 +89,10 @@ def collection_records_history_root(settings: JpTvBrowseSettings) -> Path:
 
 
 def collection_year_key_from_dirname(name: str) -> str | None:
-    m = _YEAR_NAME_RE.match(name.strip())
+    candidate = name.strip()
+    if candidate.startswith("[") and candidate.endswith("]"):
+        candidate = candidate[1:-1]
+    m = _YEAR_NAME_RE.fullmatch(candidate)
     if not m:
         return None
     return m.group(1).upper()
@@ -103,9 +107,12 @@ def _year_sort_key(key: str) -> tuple[int, str]:
 
 def scan_finish_years(finish_dir: str | Path) -> list[dict[str, str]]:
     root = Path(finish_dir).expanduser()
+    report_progress("扫描收集完成年份目录", detail=str(root))
     entries: list[dict[str, str]] = []
     seen: set[str] = set()
-    for child in root.iterdir():
+    for child_index, child in enumerate(root.iterdir()):
+        if child_index % 100 == 0:
+            report_progress("读取收集年份目录", completed=child_index, unit="目录项", detail=str(child))
         if not child.is_dir():
             continue
         key = collection_year_key_from_dirname(child.name)
@@ -170,6 +177,7 @@ def normalize_collection_record(
 
 
 def _load_records_from_path(path: Path, *, allowed_years: set[str] | None) -> list[dict[str, Any]]:
+    report_progress("读取收集情况数据库", detail=str(path))
     if not path.is_file():
         return [_default_record()]
     raw = load_yaml(path)
@@ -195,9 +203,11 @@ def collection_records_payload(settings: JpTvBrowseSettings) -> dict[str, Any]:
         years = scan_finish_years(finish_dir)
     except OSError as exc:
         warning = f"cannot scan finish dir: {exc}"
-    allowed = {it["key"] for it in years} if years else None
     path = collection_records_path(settings)
-    records = _load_records_from_path(path, allowed_years=allowed)
+    # Directory availability is a UI hint, not authority over saved history.
+    # A disconnected disk or removed year folder must not silently erase data.
+    records = _load_records_from_path(path, allowed_years=None)
+    report_progress("收集情况读取完成", completed=len(records), total=len(records), unit="记录")
     return {
         "ok": True,
         "path": str(path),
@@ -230,14 +240,7 @@ def save_collection_records_from_ui_body(
     settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
     finish_dir = collection_finish_dir()
-    allowed_years: set[str] | None = None
-    try:
-        years = scan_finish_years(finish_dir)
-    except OSError:
-        years = []
-    if years:
-        allowed_years = {it["key"] for it in years}
-    records = _records_from_body(body, allowed_years=allowed_years)
+    records = _records_from_body(body, allowed_years=None)
     target = collection_records_path(settings)
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -245,11 +248,14 @@ def save_collection_records_from_ui_body(
         "finish_dir": str(finish_dir),
         "records": records,
     }
+    report_progress("等待收集情况写入锁", detail=str(target))
     with directory_write_transaction(target.parent, lock_filename=".nimda-collection-info.lock"):
         previous = target.read_bytes() if target.is_file() else None
         history_file = history_snapshot_name(target) if previous is not None else ""
         history_path = collection_records_history_root(settings) / history_file if history_file else None
+        report_progress("备份并保存收集情况", detail=str(target))
         commit_file_writes([FileWrite(target, dump_yaml_string(payload).encode("utf-8"), previous, history_path)])
+    report_progress("收集情况保存完成", completed=len(records), total=len(records), unit="记录")
     return {
         "path": str(target),
         "history_file": history_file,

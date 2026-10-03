@@ -12,10 +12,10 @@ import unicodedata
 from collections.abc import Iterable, Mapping
 from typing import Any
 
+from media_directory_organizer.catalog import normalize_press_group, normalized_press_group
 
 _MEDIA_FORMAT_IDENTITIES = {"bdrip", "dvdrip"}
 _RESOLUTION_FORMAT_RE = re.compile(r"^(?:2160|1080|720|576|480|456|432|384|360)p$")
-_PLACEHOLDER_GROUPS = {"", "----", "---", "--", "-"}
 _UPLOADER_MARKER_IDENTITIES = {"mawen", "mawen1250"}
 _CONFIDENCE_ORDER = {"none": 0, "low": 1, "medium": 2, "high": 3}
 _INVALID_WINDOWS_TRANSLATION = str.maketrans(
@@ -570,10 +570,10 @@ def suggest_press_paths(
     for press in source_rows:
         press_format = str(press.get("press_format") or "").strip()
         press_group = str(press.get("press_group") or "").strip()
-        if not press_format or press_group.upper() in _PLACEHOLDER_GROUPS:
+        if not press_format:
             continue
         groups_by_format.setdefault(_normalized_text(press_format), set()).add(
-            _normalized_text(press_group)
+            normalized_press_group(press_group)
         )
 
     result: list[dict[str, Any]] = []
@@ -587,7 +587,7 @@ def suggest_press_paths(
         if stem and press_format:
             suggestion = f"{stem}_{safe_windows_component(press_format)}"
             distinct_groups = groups_by_format.get(_normalized_text(press_format), set())
-            if len(distinct_groups) > 1 and press_group.upper() not in _PLACEHOLDER_GROUPS:
+            if len(distinct_groups) > 1 and normalize_press_group(press_group):
                 suffix = safe_windows_component(_group_suffix(press_group, settings))
                 if suffix:
                     suggestion += f"({suffix})"

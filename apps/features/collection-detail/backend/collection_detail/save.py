@@ -19,6 +19,7 @@ from work_catalog_yaml.jp_tv.browse_settings import (
     JpTvBrowseSettings,
     resolve_safe_yaml_under_root,
 )
+from work_catalog_yaml.jp_tv.dates import normalize_air_date
 from work_catalog_yaml.jp_tv.validate import (
     TV_JP_DOMAIN_KEY,
     TV_JP_PRESS_FORMAT_KEY,
@@ -34,6 +35,9 @@ from work_catalog_yaml.jp_tv.validate import (
     load_jp_tv_entries_from_yaml,
 )
 from work_catalog_yaml.layout import feature_data_root
+from work_catalog_yaml.input_validation import parse_record_index
+from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.paths import normalize_copied_path
 from work_catalog_yaml.persistence import (
     FileWrite,
     atomic_write_bytes as _atomic_write_bytes,
@@ -41,7 +45,11 @@ from work_catalog_yaml.persistence import (
     directory_write_transaction,
     history_snapshot_name,
 )
-from work_catalog_yaml.media_groups import media_group_code_known
+from work_catalog_yaml.media_groups import (
+    media_group_code_known,
+    normalize_press_group,
+    normalized_press_group,
+)
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml_string
 
 
@@ -81,7 +89,7 @@ def history_catalog_root(settings: JpTvBrowseSettings) -> Path:
 
 
 def current_year_catalog_relpath(*, now: datetime | None = None) -> str:
-    """新增行固定写入当前日期所在年份的数据文件。"""
+    """Compatibility default for a Japanese work with no known broadcast year."""
     dt = now or datetime.now()
     return f"[JP][TVInfo][{dt:%Y}].yaml"
 
@@ -118,9 +126,7 @@ def _set_scalar_attr(work: dict[str, Any], typ: str, data: Any) -> None:
 
 
 def _clean_rel_path(raw: Any) -> str:
-    if not isinstance(raw, str):
-        return ""
-    return raw.strip().replace("\\", "/").strip("/")
+    return normalize_copied_path(raw).replace("\\", "/").strip("/")
 
 
 def _collection_ordered_to_coll_data(
@@ -186,7 +192,8 @@ def _collection_ordered_to_coll_data(
         TV_JP_DOMAIN_KEY: domain_s,
         TV_JP_RELEASE_TYPE_KEY: release_type_s,
     }
-    path_s = _clean_rel_path(path)
+    # The work root may be absolute (including UNC); do not strip its root.
+    path_s = normalize_copied_path(path).replace("\\", "/")
     if path_s:
         out["path"] = path_s
     out["collectioned"] = main
@@ -209,11 +216,7 @@ def _row_ref_from_body_item(raw: Any, *, label: str) -> tuple[str, int]:
     rel_s = ysr.strip().replace("\\", "/") if isinstance(ysr, str) else ""
     if not rel_s:
         raise ValueError(f"{label}.yaml_source_rel 须为非空字符串")
-    idx = raw.get("index_in_file")
-    try:
-        ii = int(idx)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{label}.index_in_file 非法：{idx!r}") from exc
+    ii = parse_record_index(raw.get("index_in_file"), label=f"{label}.index_in_file")
     return rel_s, ii
 
 
@@ -245,8 +248,8 @@ def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
             {
                 "type": "date",
                 "data": {
-                    "start": start.strip() if isinstance(start, str) else "",
-                    "end": end.strip() if isinstance(end, str) else "",
+                    "start": normalize_air_date(start, validate_calendar=True),
+                    "end": normalize_air_date(end, validate_calendar=True),
                 },
             },
             {
@@ -277,7 +280,24 @@ def _apply_row_patch_to_work(work: Any, patch: dict[str, Any]) -> None:
     start = date_patch.get("start") if isinstance(date_patch, dict) else None
     end = date_patch.get("end") if isinstance(date_patch, dict) else None
     if isinstance(start, str) and isinstance(end, str):
-        _set_scalar_attr(work, "date", {"start": start.strip(), "end": end.strip()})
+        previous_dates = next((
+            attribute["data"] for attribute in attrs
+            if isinstance(attribute, dict) and attribute.get("type") == "date"
+            and isinstance(attribute.get("data"), dict)
+        ), {})
+        normalized_dates: dict[str, str] = {}
+        for field, value in (("start", start), ("end", end)):
+            normalized = normalize_air_date(value)
+            try:
+                previous = normalize_air_date(previous_dates.get(field))
+            except ValueError:
+                previous = None
+            # A full-table save must not force users to invent corrections for
+            # unrelated historical calendar errors. Only changed dates are new input.
+            if normalized != previous:
+                normalize_air_date(normalized, validate_calendar=True)
+            normalized_dates[field] = normalized
+        _set_scalar_attr(work, "date", normalized_dates)
 
     name_raw = patch.get("name")
     if isinstance(name_raw, str):
@@ -359,14 +379,15 @@ def _browse_save_yaml_from_ui_body_unlocked(
 
         by_rel.setdefault(rel_s, {})[ii] = rp
 
-    new_rel_s = current_year_catalog_relpath(now=now)
     for ni, nr in enumerate(new_rows):
         if not isinstance(nr, dict):
             raise ValueError(f"new_rows[{ni}] 须为对象")
-        rel_s = new_rel_s
-        tgt_probe = resolve_safe_yaml_under_root(settings.filesystem_root, rel_s)
-        if clip is not None and len(singles) == 1 and tgt_probe.resolve() != clip.resolve():
-            raise ValueError("new_rows 当前年份目标文件与当前打开的 YAML 不一致")
+        date_patch = nr.get("date")
+        start = date_patch.get("start") if isinstance(date_patch, dict) else ""
+        # New rows have no existing file identity. Derive the destination on the
+        # server, ignoring a stale or forged client yaml_source_rel entirely.
+        rel_s = catalog_relpath_for_new_work(nr.get("country") or "japan", start, now=now)
+        resolve_safe_yaml_under_root(settings.filesystem_root, rel_s)
         new_by_rel.setdefault(rel_s, []).append(nr)
 
     for di, dr in enumerate(deleted_rows):
@@ -382,7 +403,8 @@ def _browse_save_yaml_from_ui_body_unlocked(
 
     out: list[tuple[Path, str]] = []
     staged: list[FileWrite] = []
-    for rel_s in sorted_rels:
+    for file_index, rel_s in enumerate(sorted_rels):
+        report_progress("校验并准备数据库文件", completed=file_index, total=len(sorted_rels), unit="文件", detail=rel_s)
         target = resolve_safe_yaml_under_root(settings.filesystem_root, rel_s).expanduser().resolve()
         new_seq = new_by_rel.get(rel_s, [])
         target_existed = target.is_file()
@@ -427,8 +449,11 @@ def _browse_save_yaml_from_ui_body_unlocked(
             hist_name = history_snapshot_name(target)
         staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name if hist_name else None))
         out.append((target, hist_name))
+        report_progress("数据库文件校验完成", completed=file_index + 1, total=len(sorted_rels), unit="文件", detail=rel_s)
 
+    report_progress("备份并原子写入数据库", completed=0, total=len(staged), unit="文件")
     commit_file_writes(staged)
+    report_progress("数据库写入完成", completed=len(staged), total=len(staged), unit="文件")
     return out
 
 
@@ -440,7 +465,9 @@ def browse_save_yaml_from_ui_body(
 ) -> list[tuple[Path, str]]:
     if settings.filesystem_root is None:
         raise ValueError("未配置 filesystem_root，禁止写盘")
+    report_progress("等待数据库写入锁")
     with catalog_write_transaction(settings.filesystem_root):
+        report_progress("准备校验数据库修改")
         return _browse_save_yaml_from_ui_body_unlocked(body, settings=settings, now=now)
 
 
@@ -478,15 +505,16 @@ def _normalized_catalog_identity(value: Any) -> str:
     return "".join(ch for ch in normalized if ch.isalnum())
 
 
-def catalog_relpath_for_new_work(country: str, begin_date: str) -> str:
+def catalog_relpath_for_new_work(country: str, begin_date: Any, *, now: datetime | None = None) -> str:
     country_key = str(country or "").strip().casefold()
     country_code = _COUNTRY_FILE_CODES.get(country_key)
     if country_code is None:
         raise ValueError(f"新增作品暂不支持国家代码：{country}")
-    matched = _ISO_DATE_RE.fullmatch(str(begin_date or "").strip())
-    if matched is None:
-        raise ValueError("新增作品开始日期必须为 YYYY-MM-DD")
-    return f"[{country_code}][TVInfo][{matched.group('year')}].yaml"
+    normalized_date = normalize_air_date(begin_date, validate_calendar=True)
+    year = normalized_date[:4]
+    if not year.isascii() or not year.isdigit() or int(year) == 0:
+        year = f"{(now or datetime.now()):%Y}"
+    return f"[{country_code}][TVInfo][{year}].yaml"
 
 
 def _strict_new_work_patch(patch: Any) -> dict[str, Any]:
@@ -504,6 +532,8 @@ def _strict_new_work_patch(patch: Any) -> dict[str, Any]:
         raise ValueError("新增作品开始日期必须为 YYYY-MM-DD")
     if end_date and _ISO_DATE_RE.fullmatch(end_date) is None:
         raise ValueError("新增作品结束日期必须为 YYYY-MM-DD 或留空")
+    normalize_air_date(begin_date, validate_calendar=True)
+    normalize_air_date(end_date, validate_calendar=True)
     if end_date and end_date < begin_date:
         raise ValueError("新增作品结束日期不能早于开始日期")
     path = patch.get("path")
@@ -528,7 +558,10 @@ def _strict_new_work_patch(patch: Any) -> dict[str, Any]:
         if not isinstance(raw, dict):
             raise ValueError(f"新增作品压制记录 {index + 1} 必须是对象")
         press_format = str(raw.get(TV_JP_PRESS_FORMAT_KEY) or "").strip()
-        press_group = str(raw.get(TV_JP_PRESS_GROUP_KEY) or "").strip().upper()
+        raw_group = raw.get(TV_JP_PRESS_GROUP_KEY)
+        if TV_JP_PRESS_GROUP_KEY not in raw or not isinstance(raw_group, str):
+            raise ValueError(f"新增作品压制记录 {index + 1} 必须选择组简称或无压制组")
+        press_group = normalize_press_group(raw_group).upper()
         press_path_raw = raw.get(TV_JP_PRESS_PATH_KEY)
         if not isinstance(press_path_raw, str):
             press_path = ""
@@ -540,11 +573,11 @@ def _strict_new_work_patch(patch: Any) -> dict[str, Any]:
             if any(part in {"", ".", ".."} for part in parts):
                 raise ValueError(f"新增作品压制记录 {index + 1} 的目标目录包含非法路径片段")
             press_path = "/".join(parts)
-        if not press_format or not press_group or not press_path:
-            raise ValueError(f"新增作品压制记录 {index + 1} 必须填写格式、组简称和目标目录")
-        if not media_group_code_known(press_group):
+        if not press_format or not press_path:
+            raise ValueError(f"新增作品压制记录 {index + 1} 必须填写格式和目标目录")
+        if press_group and not media_group_code_known(press_group):
             raise ValueError(f"新增作品压制记录 {index + 1} 使用了未登记的组简称：{press_group}")
-        key = (press_format.casefold(), press_group.casefold())
+        key = (press_format.casefold(), normalized_press_group(press_group))
         if key in press_keys:
             raise ValueError(f"新增作品存在重复压制记录：{press_format}/{press_group}")
         press_keys.add(key)
@@ -574,25 +607,33 @@ def _catalog_files(settings: JpTvBrowseSettings) -> list[Path]:
     return [path.resolve() for path in sorted(root.glob("*.yaml")) if path.is_file()]
 
 
+@dataclass(frozen=True)
+class _CatalogMatch:
+    source: Path
+    index: int
+    exact: bool
+    source_sha256: str
+
+
 def _existing_catalog_match(
     patch: dict[str, Any],
     settings: JpTvBrowseSettings,
     *,
     allow_shared_path_with_different_name: bool = False,
-) -> tuple[Path, int, bool] | None:
+) -> _CatalogMatch | None:
     wanted_name = _normalized_catalog_identity(patch["name"])
     wanted_path = os.path.normcase(os.path.abspath(str(patch["path"])))
     wanted_presses = {
         (
             str(row[TV_JP_PRESS_FORMAT_KEY]).casefold(),
-            str(row[TV_JP_PRESS_GROUP_KEY]).casefold(),
+            normalized_press_group(str(row[TV_JP_PRESS_GROUP_KEY])),
             str(row[TV_JP_PRESS_PATH_KEY]).replace("\\", "/").casefold(),
         )
         for row in patch["collectioned_ordered"]
     }
     for yaml_path in _catalog_files(settings):
-        raw_text = yaml_path.read_text(encoding="utf-8")
-        entries = load_jp_tv_entries_from_yaml(load_yaml_string(raw_text))
+        source_bytes = yaml_path.read_bytes()
+        entries = load_jp_tv_entries_from_yaml(load_yaml_string(source_bytes.decode("utf-8")))
         for index, entry in enumerate(entries):
             name_matches = _normalized_catalog_identity(entry_display_name(entry)) == wanted_name
             data = entry_collection_type_data(entry)
@@ -612,7 +653,7 @@ def _existing_catalog_match(
             existing_presses = {
                 (
                     str(row.get(TV_JP_PRESS_FORMAT_KEY) or "").strip().casefold(),
-                    str(row.get(TV_JP_PRESS_GROUP_KEY) or "").strip().casefold(),
+                    normalized_press_group(str(row.get(TV_JP_PRESS_GROUP_KEY) or "")),
                     str(row.get(TV_JP_PRESS_PATH_KEY) or "").strip().replace("\\", "/").casefold(),
                 )
                 for row in data.get("collectioned", [])
@@ -628,10 +669,11 @@ def _existing_catalog_match(
                 and normalize_date(existing_start) == normalize_date(patch["date"]["start"])
                 and normalize_date(existing_end) == normalize_date(patch["date"]["end"])
             )
-            return (
+            return _CatalogMatch(
                 yaml_path,
                 index,
                 metadata_matches and wanted_presses.issubset(existing_presses),
+                _file_sha256(source_bytes),
             )
     return None
 
@@ -653,16 +695,15 @@ def preview_catalog_work_append(
         allow_shared_path_with_different_name=allow_shared_path_with_different_name,
     )
     if existing is not None:
-        yaml_path, index, exact = existing
-        if not exact:
+        if not existing.exact:
             raise ValueError("数据库中已有该作品，但作品信息或压制记录不同；请先在作品数据库中核对并合并")
         return {
             "action": "already_exists",
-            "target": str(yaml_path),
-            "yaml_source_rel": yaml_path.name,
-            "index_in_file": index,
-            "before_sha256": _file_sha256(yaml_path.read_bytes()),
-            "after_sha256": _file_sha256(yaml_path.read_bytes()),
+            "target": str(existing.source),
+            "yaml_source_rel": existing.source.name,
+            "index_in_file": existing.index,
+            "before_sha256": existing.source_sha256,
+            "after_sha256": existing.source_sha256,
             "patch": normalized,
         }
 
@@ -1001,6 +1042,7 @@ def _browse_apply_enum_edits_from_ui_body_unlocked(
     settings: JpTvBrowseSettings,
     config_path: Path | None,
 ) -> dict[str, Any]:
+    report_progress("校验枚举配置修改")
     edits = _normalize_enum_edits(body.get("edits"))
     if config_path is None or not config_path.is_file():
         raise ValueError("当前未使用可写的浏览配置文件，无法编辑枚举")
@@ -1024,8 +1066,10 @@ def _browse_apply_enum_edits_from_ui_body_unlocked(
     staged: list[FileWrite] = []
     if renames and settings.filesystem_root is not None:
         hist_root = history_catalog_root(settings)
-        for abs_s in settings.resolved_catalog_yaml_paths:
+        catalog_paths = settings.resolved_catalog_yaml_paths
+        for file_index, abs_s in enumerate(catalog_paths):
             target = Path(abs_s).resolve()
+            report_progress("检查数据库中的枚举引用", completed=file_index, total=len(catalog_paths), unit="文件", detail=target.name)
             _assert_save_target_allowed(target, settings)
             previous = target.read_bytes()
             raw_text = previous.decode("utf-8")
@@ -1052,7 +1096,9 @@ def _browse_apply_enum_edits_from_ui_body_unlocked(
         buffer = StringIO()
         y.dump(raw_cfg, buffer)
         staged.append(FileWrite(config_path, buffer.getvalue().encode("utf-8"), config_previous))
+    report_progress("备份并写入枚举与数据库修改", completed=0, total=len(staged), unit="文件")
     commit_file_writes(staged)
+    report_progress("枚举与数据库修改完成", completed=len(staged), total=len(staged), unit="文件")
     return {
         "config_path": str(config_path.resolve()),
         "config_changed": config_changed,

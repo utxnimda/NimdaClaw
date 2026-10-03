@@ -25,7 +25,12 @@
   var root = ensureFeatureRegistry();
 
   var collectionRecordsPayload = null;
+  var collectionYearChoices = null;
   var collectionRecordsSaving = false;
+  var collectionRecordsLoading = false;
+  var collectionLoadSerial = 0;
+  var featureGeneration = 0;
+  var featureActive = false;
   var collectionRecordsBound = false;
   var cleanupCallbacks = [];
   var featureCtx = null;
@@ -39,13 +44,33 @@
   }
 
   function disposeCollectionRecordsFeature() {
+    featureGeneration += 1;
+    featureActive = false;
+    invalidateCollectionLoad();
+    collectionRecordsSaving = false;
     collectionRecordsPayload = null;
+    collectionYearChoices = null;
     while (cleanupCallbacks.length) {
       try {
         cleanupCallbacks.pop()();
       } catch (_e) {}
     }
     collectionRecordsBound = false;
+  }
+
+  function invalidateCollectionLoad() {
+    collectionLoadSerial += 1;
+    collectionRecordsLoading = false;
+  }
+
+  function setCollectionStatus(message, isError) {
+    if (featureActive && ctx().setStatus) ctx().setStatus(message, !!isError);
+  }
+
+  function preserveCollectionDraft() {
+    if (!collectionRecordsPayload) return;
+    var records = gatherCollectionRecordsFromView();
+    if (records.length) collectionRecordsPayload.records = records;
   }
 
   function arrSlice() {
@@ -119,13 +144,30 @@
   }
 
   function collectionYearsForUi() {
+    if (collectionYearChoices) return collectionYearChoices;
     var years =
       collectionRecordsPayload && Array.isArray(collectionRecordsPayload.years)
         ? collectionRecordsPayload.years
         : [];
-    return years.filter(function (it) {
-      return it && typeof it === "object" && String(it.key || "").trim();
+    var seen = Object.create(null);
+    var choices = [];
+    years.forEach(function (item) {
+      if (!item || typeof item !== "object") return;
+      var key = String(item.key || "").trim().toUpperCase();
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      choices.push({ key: key, label: String(item.label || key) });
     });
+    // Directory availability must not hide saved checkboxes and erase their values on save.
+    collectionRecordsForUi().forEach(function (record) {
+      record.completed_years.forEach(function (key) {
+        if (seen[key]) return;
+        seen[key] = true;
+        choices.push({ key: key, label: key + "（已记录，目录未发现）", unavailable: true });
+      });
+    });
+    collectionYearChoices = choices;
+    return collectionYearChoices;
   }
 
   function renderCollectionEnumSelect(enumKey, cur, idx) {
@@ -208,7 +250,7 @@
         var key = String(y.key || "").toUpperCase();
         var lab = String(y.label || key);
         h +=
-          '<label class="collection-year-chip">' +
+          '<label class="collection-year-chip' + (y.unavailable ? ' collection-year-chip-unavailable' : '') + '">' +
           '<input type="checkbox" class="collection-year-cb" data-year-key="' +
           esc(key) +
           '" data-record-index="' +
@@ -246,6 +288,7 @@
       '<button type="button" class="btn secondary sm" data-collection-action="reload">重读情况</button>' +
       '<button type="button" class="btn secondary sm" data-collection-action="add-record">新增情况</button>' +
       '<button type="button" class="btn sm" data-collection-action="save">保存情况</button>' +
+      '<button type="button" class="operation-details-link" data-operation-details data-operation-prefix="/api/collection-info">查看处理详情</button>' +
       "</div>" +
       "</div>";
     if (collectionRecordsPayload.warning) {
@@ -268,31 +311,47 @@
     if (!view) return;
     arrSlice().call(view.querySelectorAll('[data-collection-action="save"], [data-collection-action="reload"]'))
       .forEach(function (button) {
-        button.disabled = collectionRecordsSaving;
+        button.disabled = collectionRecordsSaving || collectionRecordsLoading;
+      });
+    arrSlice().call(view.querySelectorAll('.collection-select, .collection-year-cb, [data-collection-action="add-record"], [data-collection-action="delete-record"]'))
+      .forEach(function (control) {
+        control.disabled = collectionRecordsLoading;
       });
   }
 
   async function loadCollectionRecords() {
-    if (collectionRecordsSaving) return;
+    if (collectionRecordsSaving || collectionRecordsLoading) return;
     var view = collectionView();
     if (!view) return;
-    if (ctx().loadServerConfig) {
-      await ctx().loadServerConfig().catch(function () {});
+    var serial = ++collectionLoadSerial;
+    collectionRecordsLoading = true;
+    syncCollectionSaveButtons();
+    function current() {
+      return featureActive && serial === collectionLoadSerial;
     }
-    ctx().setStatus && ctx().setStatus("收集情况读取中...", false);
-    view.innerHTML = "";
-    var out = await ctx().fetchJson("/api/collection-info", { method: "GET" });
-    if (!out.res.ok || !out.data || !out.data.ok) {
-      ctx().setStatus &&
-        ctx().setStatus(
-          (out.data && out.data.error) ||
-            ctx().browseHttpFailHint(out.res.status, "收集情况读取"),
-          true,
-        );
-      return;
+    try {
+      if (ctx().loadServerConfig) {
+        await ctx().loadServerConfig().catch(function () {});
+      }
+      if (!current()) return;
+      setCollectionStatus("收集情况读取中...", false);
+      var out = await ctx().fetchJson("/api/collection-info", { method: "GET" });
+      if (!current()) return;
+      if (!out.res.ok || !out.data || !out.data.ok) {
+        throw new Error((out.data && out.data.error) ||
+          ctx().browseHttpFailHint(out.res.status, "收集情况读取"));
+      }
+      collectionYearChoices = null;
+      renderCollectionRecords(out.data);
+      setCollectionStatus("", false);
+    } catch (error) {
+      if (current()) setCollectionStatus("收集情况读取失败：" + (error.message || String(error)), true);
+    } finally {
+      if (serial === collectionLoadSerial) {
+        collectionRecordsLoading = false;
+        syncCollectionSaveButtons();
+      }
     }
-    renderCollectionRecords(out.data);
-    ctx().setStatus && ctx().setStatus("", false);
   }
 
   function gatherCollectionRecordsFromView() {
@@ -324,29 +383,30 @@
   }
 
   async function saveCollectionRecords() {
-    if (collectionRecordsSaving) return;
+    if (collectionRecordsSaving || collectionRecordsLoading) return;
     var records = gatherCollectionRecordsFromView();
     if (!records.length) {
-      ctx().setStatus && ctx().setStatus("没有可保存的收集情况。", true);
+      setCollectionStatus("没有可保存的收集情况。", true);
       return;
     }
     var savedSnapshot = JSON.stringify(records);
+    var generation = featureGeneration;
     collectionRecordsSaving = true;
     syncCollectionSaveButtons();
     try {
-      ctx().setStatus && ctx().setStatus("收集情况保存中...", false);
+      setCollectionStatus("收集情况保存中...", false);
       var out = await ctx().fetchJson("/api/collection-info", {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ records: records }),
       });
+      if (generation !== featureGeneration) return;
       if (!out.res.ok || !out.data || !out.data.ok) {
-        ctx().setStatus &&
-          ctx().setStatus(
-            (out.data && out.data.error) ||
-              ctx().browseHttpFailHint(out.res.status, "收集情况保存"),
-            true,
-          );
+        setCollectionStatus(
+          (out.data && out.data.error) ||
+            ctx().browseHttpFailHint(out.res.status, "收集情况保存"),
+          true,
+        );
         return;
       }
       var currentRecords = gatherCollectionRecordsFromView();
@@ -355,13 +415,19 @@
       collectionRecordsPayload.records = editedDuringSave ? currentRecords : (out.data.records || records);
       if (out.data.path) collectionRecordsPayload.path = out.data.path;
       if (!editedDuringSave) renderCollectionRecords(collectionRecordsPayload);
-      ctx().setStatus && ctx().setStatus(
+      setCollectionStatus(
         editedDuringSave ? "收集情况已保存；保存期间的新编辑尚未保存。" : "收集情况已保存。",
         false,
       );
+    } catch (error) {
+      if (generation === featureGeneration) {
+        setCollectionStatus("收集情况保存失败：" + (error.message || String(error)), true);
+      }
     } finally {
-      collectionRecordsSaving = false;
-      syncCollectionSaveButtons();
+      if (generation === featureGeneration) {
+        collectionRecordsSaving = false;
+        syncCollectionSaveButtons();
+      }
     }
   }
 
@@ -396,18 +462,13 @@
       var btn = t.closest("[data-collection-action]");
       if (!btn || !view.contains(btn)) return;
       var action = btn.getAttribute("data-collection-action");
+      if (collectionRecordsLoading) return;
       if (action === "reload") {
-        loadCollectionRecords().catch(function (e) {
-          ctx().setStatus &&
-            ctx().setStatus("收集情况读取失败：" + (e.message || String(e)), true);
-        });
+        loadCollectionRecords();
         return;
       }
       if (action === "save") {
-        saveCollectionRecords().catch(function (e) {
-          ctx().setStatus &&
-            ctx().setStatus("收集情况保存失败：" + (e.message || String(e)), true);
-        });
+        saveCollectionRecords();
         return;
       }
       if (action === "add-record") {
@@ -437,13 +498,21 @@
     },
     activate: function (nextCtx) {
       featureCtx = nextCtx;
-      loadCollectionRecords().catch(function (e) {
-        ctx().setStatus && ctx().setStatus("收集情况加载失败：" + (e.message || String(e)), true);
-      });
+      featureActive = true;
+      if (!collectionRecordsPayload) loadCollectionRecords();
+    },
+    deactivate: function () {
+      preserveCollectionDraft();
+      featureActive = false;
+      invalidateCollectionLoad();
+      syncCollectionSaveButtons();
     },
     refreshAfterConfig: function (nextCtx) {
       featureCtx = nextCtx;
-      if (collectionRecordsPayload) renderCollectionRecords(collectionRecordsPayload);
+      if (collectionRecordsPayload) {
+        preserveCollectionDraft();
+        renderCollectionRecords(collectionRecordsPayload);
+      }
     },
     dispose: function () {
       disposeCollectionRecordsFeature();

@@ -80,6 +80,13 @@ Each feature frontend registers itself through `window.JpTvBrowseFeatureRegistry
 
 The current Vue migration is incremental: Vue owns the app shell, while legacy tab behavior is still mounted from `apps/framework/frontend/src/legacy/shell.js`. Future work can move one feature at a time into Vue components without changing the workspace layout.
 
+Feature lifecycle methods must preserve unsaved drafts when switching tabs or
+refreshing enum choices. `collection-info` uses lifecycle/load generations to
+ignore stale responses after deactivation, disposal or a newer load. Explicit
+reload still replaces a draft when it succeeds; failed reloads retain it.
+Saved years missing from the current directory scan remain visible, selectable
+and marked as unavailable, rather than being silently removed.
+
 ## Development Boundaries
 
 The project boundary is data-first:
@@ -102,7 +109,10 @@ Examples:
 
 - Adding a row: Vue collects blank/default UI fields; Python chooses the current-year DB file and writes the YAML.
 - Renaming an enum: Vue sends `old -> new`; Python updates config and synchronizes existing data.
-- Collection years: Vue renders checkboxes; Python scans the finish directory and normalizes saved years.
+- Collection years: Python scans the finish directory for choices and separately
+  normalizes saved years. A missing/offline directory never deletes saved years;
+  saving records does not need another directory scan. Vue renders both available
+  and previously recorded choices.
 - Link index generation: Vue edits work-directory and press-subdirectory mappings; Python builds the configured directory tree and writes `.lnk` shortcuts.
 - New display mode: Vue can change layout freely; Python payload contracts should remain stable or versioned.
 
@@ -122,6 +132,16 @@ separate two-worker queue. `/api/health` bypasses both queues and reports
 `ready`, `busy` or `stopping`, with running and queued counts. Database reads
 still wait behind active disk work; the queues are not a general background-job
 API and do not return durable job IDs.
+
+Each queue admits at most 64 unfinished futures (running plus queued) by default.
+Saturation returns HTTP 503 with `code: api-queue-full` and `Retry-After: 1`.
+Clients do not automatically retry mutations. This bounds admitted unfinished
+work, not total process memory or the executor's internal cancelled work items.
+
+Resource-library scanning writes a cache and therefore uses
+`POST /api/collection-detail/resource-libraries/scan` with a JSON body (`{}` is
+valid). It is subject to the same origin checks as other mutations; GET/HEAD
+return 405 and never scan. Read-only resource browsing remains GET-based.
 
 Cancelling a pending request cancels its queued work. An operation that has
 started is allowed to finish. Shutdown rejects new work with HTTP 503, cancels
@@ -155,6 +175,13 @@ Organizer internals have narrower responsibilities:
 - `landing_catalog`: catalog references, press identities and matching candidates.
 - `landing`: database/media/shortcut transaction coordination and retry receipts.
 
+Forward moves and rollback share a no-overwrite primitive in `execution`.
+Windows uses same-volume rename without `shutil.move`'s copy fallback; POSIX uses
+an exclusive hard link followed by source unlink. Cross-volume moves fail rather
+than silently copying media. Catchable interruptions and incomplete cleanup
+produce explicit recovery information; partial rollback preserves related
+catalog changes for reconciliation instead of reporting a clean rollback.
+
 `landing_catalog.CatalogReadSession` shares parsed entries and lazily built press
 records within one read-only preview/normalization phase. A record's content hash
 is computed from the same bytes that produced its entries; each incoming catalog
@@ -171,11 +198,18 @@ of cache identity; old-format or mismatched caches require a rescan, not silent
 reuse with different `root:N` mappings. Media files are never deleted by cache
 generation cleanup.
 
+Tree summaries and cached payloads share one projection. Lazy nodes keep their
+unloaded counts, and `has_children` includes files as well as subdirectories.
+Compatible legacy cache nodes are reprojected on read, without a rescan/write.
+
 Shared backend building blocks are kept independent of the web routes:
 
 - `work_catalog_yaml.layout`: workspace/config path resolution and backend discovery.
 - `work_catalog_yaml.paths`: validated export paths shared by both materialization commands.
 - `work_catalog_yaml.persistence`: staged writes and rollback shared by collection features.
+- `work_catalog_yaml.input_validation`: strict non-negative record indices shared
+  by collection edits/deletes and organizer references; booleans and floats are
+  rejected instead of silently selecting a different row through integer coercion.
 - `work_catalog_yaml.yaml_cache`: bounded content-keyed YAML parse reuse, consumed
   by `yaml_io`. File reads remain fresh and every consumer gets an isolated copy;
   failed parses are not cached. Its byte limit estimates retained objects rather
@@ -246,6 +280,18 @@ Current feature data:
 - `collection-info/history`: backups written before collection-info saves.
 
 New rows in `collection-detail` are saved to the current calendar year's DB file, for example `[JP][TVInfo][2026].yaml`. This uses the current date, not the row content date.
+
+Broadcast dates use compact `YYYYMMDD` strings in YAML and read API payloads.
+The collection table displays and edits them as `YYYY-MM-DD`; filters accept
+both forms and sorting compares compact keys. New writes normalize date values
+through `jp_tv.dates.normalize_air_date`. Unknown `00`/`X` components and blank
+values are retained, not guessed. Changed/new dates are calendar-validated;
+unchanged historical errors do not block unrelated full-table edits.
+
+`scripts/normalize-catalog-dates.py` previews format-only repairs by default;
+`--apply` backs up changed files and uses the shared catalog lock/atomic writes.
+It preserves unrelated YAML bytes and reports invalid dates/reversed ranges.
+Files with YAML aliases are rejected to avoid modifying shared non-date data.
 
 ## Adding A Feature
 

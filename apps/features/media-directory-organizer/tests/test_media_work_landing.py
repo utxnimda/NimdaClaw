@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 import tempfile
 import unittest
 from contextlib import ExitStack, contextmanager
@@ -16,6 +15,7 @@ from media_directory_organizer.landing import (
     preview_work_landing_shortcut_retry,
 )
 from media_directory_organizer.settings import OrganizerSettings
+from media_directory_organizer.execution import _move_file_no_replace
 from media_directory_organizer.service import MediaRollbackError
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
@@ -204,7 +204,7 @@ class MediaWorkLandingSafetyTest(unittest.TestCase):
             fixture = _LandingFixture(Path(temp))
             catalog_file = fixture.catalog_root / "[JP][TVInfo][2097].yaml"
             catalog_file.write_text("[]\n", encoding="utf-8")
-            original_move = shutil.move
+            original_move = _move_file_no_replace
             move_calls = 0
 
             def fail_second_move_and_rollback(source, target):
@@ -222,7 +222,7 @@ class MediaWorkLandingSafetyTest(unittest.TestCase):
                 )
                 self.assertTrue(preview["ready"], preview)
                 with patch(
-                    "media_directory_organizer.execution.shutil.move",
+                    "media_directory_organizer.execution._move_file_no_replace",
                     side_effect=fail_second_move_and_rollback,
                 ):
                     with self.assertRaises(MediaRollbackError) as raised:

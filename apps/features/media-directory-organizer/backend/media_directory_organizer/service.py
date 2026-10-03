@@ -9,13 +9,17 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.paths import normalize_copied_path
 
 from media_directory_organizer.catalog import (
     CatalogMatchIndex,
     CatalogWork,
     MediaCatalog,
     PressRecord,
+    normalize_press_group,
     normalized_identity,
+    normalized_press_group,
     normalized_value,
     path_key,
 )
@@ -27,6 +31,7 @@ from media_directory_organizer.classification import (
     DEFAULT_CLASSIFIER_REGISTRY,
     LAYOUT_CATEGORIES,
     LayoutDecision,
+    canonical_resolution_episode_subdirectories,
     disc_version_subdirectories,
     is_resolution_press_format,
     is_vcb_family_group,
@@ -50,7 +55,6 @@ from media_directory_organizer.plan_identity import stable_plan_id as _stable_pl
 
 
 _INVALID_WINDOWS_NAME_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
-_PLACEHOLDER_GROUPS = {"", "----", "---", "--", "-"}
 _DISC_VIDEO_EXTENSIONS = frozenset(
     {
         ".avi",
@@ -66,7 +70,7 @@ _DISC_VIDEO_EXTENSIONS = frozenset(
         ".wmv",
     }
 )
-_CLASSIFIER_FINGERPRINT = "virtual-folder-filter-layout-v8-ordinary-source-20260905"
+_CLASSIFIER_FINGERPRINT = "virtual-folder-filter-layout-v10-empty-group-20261001"
 _TRAILING_GROUP_SUFFIX_RE = re.compile(r"^(?P<base>.+?)\((?P<group>[^()]*)\)$")
 _BRACKET_CONTENT_RE = re.compile(r"\[([^\[\]\r\n]+)\]")
 _BRACKET_YEAR_OR_DATE_RE = re.compile(
@@ -162,11 +166,10 @@ def _synthesized_press_path(
     same_format = [item for item in work.presses if _same_value(item.press_format, press.press_format)]
     base = f"{work.name}_{press.press_format}"
     distinct_groups = {
-        normalized_value(item.press_group)
+        normalized_press_group(item.press_group)
         for item in same_format
-        if item.press_group.strip() not in _PLACEHOLDER_GROUPS
     }
-    if len(distinct_groups) > 1 and press.press_group.strip() not in _PLACEHOLDER_GROUPS:
+    if len(distinct_groups) > 1 and normalize_press_group(press.press_group):
         base += f"({_group_suffix(press.press_group, settings)})"
     return base
 
@@ -295,9 +298,11 @@ def _scan_files(
 ) -> tuple[list[Path], list[dict[str, str]]]:
     files: list[Path] = []
     issues: list[dict[str, str]] = []
+    report_progress("扫描待整理文件", completed=0, unit="文件", detail=str(source))
     if is_reparse_point(source):
         return [], [_issue("reparse-point", "拒绝移动符号链接或目录联接", source)]
     excluded_keys = {path_key(path) for path in excluded_directories}
+    scanned_directories = 0
 
     def record_walk_error(error: OSError) -> None:
         issues.append(
@@ -315,6 +320,9 @@ def _scan_files(
         onerror=record_walk_error,
     ):
         current_path = Path(current)
+        scanned_directories += 1
+        if scanned_directories % 100 == 0:
+            report_progress("遍历待整理子目录", completed=scanned_directories, unit="目录", detail=str(current_path))
         safe_dirnames: list[str] = []
         for dirname in sorted(dirnames):
             child = current_path / dirname
@@ -332,6 +340,9 @@ def _scan_files(
                 continue
             if child.is_file():
                 files.append(child)
+                if len(files) % 100 == 0:
+                    report_progress("扫描待整理文件", completed=len(files), unit="文件", detail=str(child))
+    report_progress("来源目录文件扫描完成", completed=len(files), unit="文件", detail=str(source))
     return files, issues
 
 
@@ -423,7 +434,7 @@ def _equivalent_shared_database_target_rows(
     signatures = {
         (
             normalized_value(str(row["press"].press_format)),
-            normalized_value(str(row["press"].press_group)),
+            normalized_press_group(str(row["press"].press_group)),
         )
         for row in selected
         if isinstance(row.get("press"), PressRecord)
@@ -436,7 +447,7 @@ def _equivalent_shared_database_target_rows(
     return (
         len(signatures) == 1
         and len(work_keys) == len(selected)
-        and all(signature for signature in next(iter(signatures), ()))
+        and bool(next(iter(signatures), ("",))[0])
     )
 
 
@@ -479,7 +490,7 @@ def _resolution_flat_press_is_settled(
     settings: OrganizerSettings,
     classifier_registry: ClassifierRegistry,
 ) -> bool:
-    """Recognize an already-flat resolution release without masking extras."""
+    """Recognize flat or canonical episode resolution layouts without extras."""
 
     if not target_rows:
         return False
@@ -497,16 +508,28 @@ def _resolution_flat_press_is_settled(
 
     try:
         children = tuple(directory.iterdir())
-        if not children or any(
-            not child.is_file() or child.is_symlink()
-            for child in children
-        ):
+        if not children:
             return False
-        relative_paths = tuple(Path(child.name) for child in children)
+        files: list[Path] = []
+        for child in children:
+            if is_reparse_point(child):
+                return False
+            if child.is_file():
+                files.append(child)
+                continue
+            if not child.is_dir():
+                return False
+            episode_files = tuple(child.iterdir())
+            if not episode_files or any(
+                is_reparse_point(item) or not item.is_file() for item in episode_files
+            ):
+                return False
+            files.extend(episode_files)
+        relative_paths = tuple(child.relative_to(directory) for child in files)
         decisions = {
             path_key(child): classifier_registry.classify(
                 ClassificationContext(
-                    relative_path=Path(child.name),
+                    relative_path=child.relative_to(directory),
                     route_relative_paths=relative_paths,
                     work_name=work.name,
                     press_format=press.press_format,
@@ -516,25 +539,42 @@ def _resolution_flat_press_is_settled(
                     target_dir_name=directory.name,
                 )
             )
-            for child in children
+            for child in files
         }
         if any(decision.category != CATEGORY_DISC for decision in decisions.values()):
             return False
-        episode_directories = disc_version_subdirectories(
+        layout_items = tuple(
             (
-                (
-                    path_key(child),
-                    path_key(directory),
-                    Path(child.name),
-                    decisions[path_key(child)],
-                )
-                for child in children
-            ),
-            directory_stem=_category_stem(str(first.get("relpath") or ""), press, settings),
+                path_key(child),
+                path_key(directory),
+                child.relative_to(directory),
+                decisions[path_key(child)],
+            )
+            for child in files
+        )
+        directory_stem = _category_stem(str(first.get("relpath") or ""), press, settings)
+        preserved_directories = canonical_resolution_episode_subdirectories(
+            layout_items,
+            directory_stem=directory_stem,
+            press_format=press.press_format,
+        )
+        if any(
+            child.parent != directory and path_key(child) not in preserved_directories
+            for child in files
+        ):
+            return False
+        episode_directories = disc_version_subdirectories(
+            layout_items,
+            directory_stem=directory_stem,
             release_type=work.release_type,
             press_format=press.press_format,
         )
-        return not episode_directories
+        return all(
+            normalized_value(str(child.relative_to(directory).parent))
+            == normalized_value(str(episode_directories[path_key(child)]))
+            for child in files
+            if path_key(child) in episode_directories
+        )
     except (OSError, TypeError, ValueError):
         return False
 
@@ -1099,7 +1139,7 @@ def _route_id(
             path_key(source),
             _work_key(work),
             normalized_value(press_format),
-            normalized_value(press_group),
+            normalized_press_group(press_group),
         )
     )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
@@ -1119,6 +1159,7 @@ class _SourceScan:
     suggested_work_name: str
     directory_name_authoritative: bool
     directory_catalog_matches: tuple[CatalogWork, ...]
+    group_selected: bool = False
 
 
 @dataclass(frozen=True)
@@ -1126,6 +1167,7 @@ class _SourcePressOverride:
     source: Path
     press_format: str = ""
     press_group: str = ""
+    press_group_selected: bool = False
 
 
 @dataclass
@@ -1533,15 +1575,16 @@ def _parse_source_press_overrides(
         if (
             not source_value
             or (raw_format is not None and not isinstance(raw_format, str))
-            or (raw_group is not None and not isinstance(raw_group, str))
+            or ("press_group" in raw_press and not isinstance(raw_group, str))
         ):
             issues.append(
                 _issue("source-press-override-invalid-type", "来源压制修正的目录、格式和组简称必须是字符串")
             )
             continue
         press_format = (raw_format or "").strip()
-        press_group = (raw_group or "").strip()
-        if not press_format and not press_group:
+        press_group = normalize_press_group(raw_group)
+        press_group_selected = "press_group" in raw_press
+        if not press_format and not press_group_selected:
             issues.append(
                 _issue("source-press-override-empty", "来源压制修正至少要选择压制格式或压制组")
             )
@@ -1563,6 +1606,7 @@ def _parse_source_press_overrides(
             source=source_path,
             press_format=press_format,
             press_group=press_group,
+            press_group_selected=press_group_selected,
         )
     return parsed
 
@@ -1574,7 +1618,10 @@ def _groups_matching_explicit(
     """Prefer an exact real group, then a unique compatible VCB-family group."""
 
     candidates = list(presses)
-    exact = [press for press in candidates if _same_value(press.press_group, explicit_group)]
+    exact = [
+        press for press in candidates
+        if normalized_press_group(press.press_group) == normalized_press_group(explicit_group)
+    ]
     if exact:
         return exact
     if is_vcb_family_group(explicit_group):
@@ -1589,11 +1636,11 @@ def _resolve_group(
     work = routed.work
     press_format = routed.source_scan.press_format
     available = {
-        normalized_value(press.press_group): press.press_group
+        normalized_press_group(press.press_group): press.press_group
         for press in _presses_for_format(work, press_format)
     }
     explicit = routed.source_scan.explicit_group
-    if explicit:
+    if explicit or routed.source_scan.group_selected:
         matches = _groups_matching_explicit(
             _presses_for_format(work, press_format),
             explicit,
@@ -1601,18 +1648,17 @@ def _resolve_group(
         if len(matches) == 1:
             matched = matches[0].press_group
             reason = routed.source_scan.group_reason
-            if not _same_value(matched, explicit):
+            if normalized_press_group(matched) != normalized_press_group(explicit):
                 reason += f"；数据库唯一 VCB 系真实组码为 {matched}"
             return matched, reason
         if len(matches) > 1:
             return None, (
-                f"来源只识别到 VCB 系列，但数据库作品 {work.name} 的 {press_format} "
-                "存在多个 VCB 系压制组："
-                + ", ".join(sorted({press.press_group for press in matches}, key=str.casefold))
+                f"数据库作品 {work.name} 的 {press_format} 对应多个压制记录："
+                + ", ".join(sorted({normalize_press_group(press.press_group) or '----（无）' for press in matches}, key=str.casefold))
             )
         return None, (
-            f"数据库作品 {work.name} 的 {press_format} 没有压制组 {explicit}；"
-            f"候选为：{', '.join(sorted(available.values(), key=str.casefold)) or '无'}"
+            f"数据库作品 {work.name} 的 {press_format} 没有压制组 {explicit or '----（无）'}；"
+            f"候选为：{', '.join(sorted((normalize_press_group(value) or '----（无）' for value in available.values()), key=str.casefold)) or '无记录'}"
         )
     if len(available) == 1:
         return next(iter(available.values())), "数据库中该作品/格式只有一个压制组"
@@ -1622,7 +1668,7 @@ def _resolve_group(
         return remaining[0], "结合其他来源目录的明确组标记，匹配数据库中唯一未命中的压制组"
     return None, (
         "无法唯一确定压制组；数据库候选为："
-        + (", ".join(sorted(available.values(), key=str.casefold)) or "无")
+        + (", ".join(sorted((normalize_press_group(value) or '----（无）' for value in available.values()), key=str.casefold)) or "无记录")
     )
 
 
@@ -1642,7 +1688,11 @@ def build_plan(
     classifier_registry: ClassifierRegistry = DEFAULT_CLASSIFIER_REGISTRY,
 ) -> dict[str, Any]:
     """Analyze a work directory without changing it and return a serializable plan."""
-    root = Path(work_root).expanduser().resolve()
+    root_text = normalize_copied_path(str(work_root)) if isinstance(work_root, (str, Path)) else ""
+    if not root_text:
+        raise ValueError("root 必须是非空路径")
+    root = Path(root_text).expanduser().resolve()
+    report_progress("分析作品目录及数据库匹配", detail=str(root))
     if not root.is_dir():
         raise FileNotFoundError(f"作品目录不存在：{root}")
     if settings.allowed_resource_roots and not any(
@@ -1900,7 +1950,9 @@ def build_plan(
     }
     source_scans: list[_SourceScan] = []
     all_scanned_files: set[str] = set()
-    for source in sources:
+    preserved_file_keys: set[str] = set()
+    for source_index, source in enumerate(sources):
+        report_progress("分析来源压制目录", completed=source_index, total=len(sources), unit="目录", detail=str(source))
         files, scan_issues = _scan_files(
             source,
             excluded_directories=source_scan_exclusions.get(path_key(source), ()),
@@ -2046,7 +2098,7 @@ def build_plan(
             ]
         groups = (
             [manual_press.press_group]
-            if manual_press is not None and manual_press.press_group
+            if manual_press is not None and manual_press.press_group_selected
             else [physical_database_binding["press"].press_group]
             if physical_database_binding is not None
             else parsed_group_matches
@@ -2058,7 +2110,7 @@ def build_plan(
             for work in family:
                 for press in _presses_for_format(work, formats[0]):
                     available_groups.setdefault(
-                        normalized_value(press.press_group), press.press_group
+                        normalized_press_group(press.press_group), press.press_group
                     )
             issue = _issue(
                 "group-ambiguous",
@@ -2075,7 +2127,7 @@ def build_plan(
             continue
         explicit_group = groups[0] if groups else ""
         manual_group = bool(
-            manual_press is not None and manual_press.press_group
+            manual_press is not None and manual_press.press_group_selected
         )
         candidates = matching_candidates(formats[0])
         directory_catalog_matches: tuple[CatalogWork, ...] = ()
@@ -2163,6 +2215,7 @@ def build_plan(
                 suggested_work_name=suggested_work_name,
                 directory_name_authoritative=directory_name_authoritative,
                 directory_catalog_matches=directory_catalog_matches,
+                group_selected=bool(manual_group or physical_database_binding is not None),
             )
         )
 
@@ -2183,6 +2236,7 @@ def build_plan(
     used_source_catalog_work_override_keys: set[str] = set()
     used_source_work_blocker_keys: set[str] = set()
     for scan in source_scans:
+        report_progress("识别文件对应作品", completed=0, total=len(scan.files), unit="文件", detail=str(scan.source))
         candidates = matching_candidates(scan.press_format)
         source_default = scan.source_matches[0] if len(scan.source_matches) == 1 else None
         file_match_cache: dict[
@@ -2195,7 +2249,9 @@ def build_plan(
             ],
         ] = {}
         primary_unknown_titles: set[str] = set()
-        for source_file in scan.files:
+        for file_index, source_file in enumerate(scan.files):
+            if file_index % 100 == 0:
+                report_progress("识别文件对应作品", completed=file_index, total=len(scan.files), unit="文件", detail=str(source_file))
             relative = source_file.relative_to(scan.source)
             matched = _match_works(
                 str(relative),
@@ -2240,6 +2296,24 @@ def build_plan(
             _path_under(file_path, scan.source)
             for file_path, _work_name in work_overrides.values()
         )
+        if (
+            (source_manual is not None or source_catalog_manual is not None)
+            and source_manual_work is None
+            and not has_explicit_file_work_choice
+        ):
+            # A rejected folder binding is one decision for the whole source,
+            # rather than hundreds of unrelated file decisions.
+            issues.append(
+                _issue(
+                    "work-ambiguous",
+                    source_manual_reason,
+                    scan.source,
+                    source_key=str(scan.source),
+                    press_format=scan.press_format,
+                    candidates=" / ".join(candidate.name for candidate in candidates),
+                )
+            )
+            continue
         if (
             scan.directory_name_authoritative
             and source_manual is None
@@ -2601,10 +2675,11 @@ def build_plan(
             )
         )
 
+    report_progress("应用压制组分类规则并规划目标目录", completed=0, total=len(routed_files), unit="文件")
     explicit_group_usage: dict[tuple[str, str], set[str]] = {}
     for routed in routed_files:
         explicit = routed.source_scan.explicit_group
-        if not explicit:
+        if not explicit and not routed.source_scan.group_selected:
             continue
         matching = _groups_matching_explicit(
             _presses_for_format(routed.work, routed.source_scan.press_format),
@@ -2612,7 +2687,7 @@ def build_plan(
         )
         if len(matching) == 1:
             key = (_work_key(routed.work), normalized_value(routed.source_scan.press_format))
-            explicit_group_usage.setdefault(key, set()).add(normalized_value(matching[0].press_group))
+            explicit_group_usage.setdefault(key, set()).add(normalized_press_group(matching[0].press_group))
 
     group_cache: dict[tuple[str, str, str], tuple[str | None, str]] = {}
     group_issue_keys: set[tuple[str, str, str]] = set()
@@ -2634,7 +2709,7 @@ def build_plan(
                     routed.work, routed.source_scan.press_format
                 ):
                     available_groups.setdefault(
-                        normalized_value(press.press_group), press.press_group
+                        normalized_press_group(press.press_group), press.press_group
                     )
                 issue: dict[str, Any] = _issue(
                     "group-unresolved",
@@ -2659,7 +2734,7 @@ def build_plan(
             path_key(routed.source_scan.source),
             _work_key(routed.work),
             normalized_value(routed.source_scan.press_format),
-            normalized_value(routed.group),
+            normalized_press_group(routed.group),
         )
         route_buckets.setdefault(key, []).append(routed)
 
@@ -2818,7 +2893,9 @@ def build_plan(
             routed_file.relative_path for routed_file in metadata["files"]
         )
         classified_decisions: dict[str, LayoutDecision] = {}
-        for routed in metadata["files"]:
+        for file_index, routed in enumerate(metadata["files"]):
+            if file_index % 100 == 0:
+                report_progress("应用文件类型分类规则", completed=file_index, total=len(metadata["files"]), unit="文件", detail=str(routed.source_file))
             try:
                 decision: LayoutDecision = classifier_registry.classify(
                     ClassificationContext(
@@ -2854,17 +2931,27 @@ def build_plan(
                     for decision in classified_decisions.values()
                 )
             )
-            disc_version_directories = disc_version_subdirectories(
+            disc_layout_items = tuple(
                 (
-                    (
-                        path_key(routed.source_file),
-                        path_key(routed.source_scan.source),
-                        routed.relative_path,
-                        classified_decisions[path_key(routed.source_file)],
-                    )
-                    for routed in metadata["files"]
-                    if path_key(routed.source_file) in classified_decisions
-                ),
+                    path_key(routed.source_file),
+                    path_key(routed.source_scan.source),
+                    routed.relative_path,
+                    classified_decisions[path_key(routed.source_file)],
+                )
+                for routed in metadata["files"]
+                if path_key(routed.source_file) in classified_decisions
+            )
+            preserved_episode_directories = (
+                canonical_resolution_episode_subdirectories(
+                    disc_layout_items,
+                    directory_stem=_category_stem(suggested_relpath, press, settings),
+                    press_format=press.press_format,
+                )
+                if resolution_disc_only and in_place
+                else {}
+            )
+            disc_version_directories = disc_version_subdirectories(
+                disc_layout_items,
                 directory_stem=_category_stem(suggested_relpath, press, settings),
                 release_type=work.release_type,
                 press_format=press.press_format,
@@ -2880,7 +2967,9 @@ def build_plan(
             )
             continue
 
-        for routed in metadata["files"]:
+        for file_index, routed in enumerate(metadata["files"]):
+            if file_index % 100 == 0:
+                report_progress("规划文件目标位置并检查冲突", completed=file_index, total=len(metadata["files"]), unit="文件", detail=str(routed.source_file))
             routed_key = path_key(routed.source_file)
             decision = classified_decisions.get(routed_key)
             if decision is None:
@@ -2894,10 +2983,15 @@ def build_plan(
                     != normalized_value(episode_directory.name)
                 ):
                     layout_inner_path = episode_directory / layout_inner_path.name
+            elif routed_key in preserved_episode_directories:
+                layout_inner_path = (
+                    preserved_episode_directories[routed_key] / layout_inner_path.name
+                )
             elif resolution_disc_only:
                 # Resolution releases commonly contain only one encoded video
-                # plus external subtitles per episode.  Their source episode
-                # folders are packaging, not a second canonical hierarchy.
+                # plus subtitles per episode. Unrecognized source containers
+                # remain packaging; verified existing episode layouts above
+                # are deliberately preserved instead of being flattened.
                 layout_inner_path = Path(layout_inner_path.name)
             try:
                 layout_relative = _category_layout_path(
@@ -2957,6 +3051,19 @@ def build_plan(
                 )
                 continue
             destination_key = path_key(destination)
+            if (
+                destination_key == routed_key
+                and resolution_disc_only
+                and (
+                    routed_key in preserved_episode_directories
+                    or len(routed.relative_path.parts) == 1
+                )
+            ):
+                # Verified episodes and flat root files can share a partially
+                # settled release with raw packaging. Neither is a move or a
+                # collision when it already occupies its planned destination.
+                preserved_file_keys.add(routed_key)
+                continue
             if destination.exists() or destination.is_symlink():
                 issues.append(
                     _issue(
@@ -3332,6 +3439,11 @@ def build_plan(
                     {
                         "press_format": press_format,
                         "press_group": press_group,
+                        "press_group_confirmed": bool(
+                            (press_format, press_group) in inferred_press_paths
+                            or (scan is not None and scan.group_selected)
+                            or normalize_press_group(press_group)
+                        ),
                         "suggested_press_path": inferred_press_paths.get(
                             (press_format, press_group),
                             "",
@@ -3379,7 +3491,7 @@ def build_plan(
         "ready": (
             bool(moves)
             and not issues
-            and len(moves) == scanned_file_count
+            and len(moves) + len(preserved_file_keys) == scanned_file_count
         ),
         "summary": {
             "source_directory_count": len(
@@ -3396,7 +3508,8 @@ def build_plan(
             "category_directory_count": len(planned_category_directories),
             "file_count": len(moves),
             "scanned_file_count": scanned_file_count,
-            "classified_file_count": len(moves),
+            "classified_file_count": len(moves) + len(preserved_file_keys),
+            "preserved_file_count": len(preserved_file_keys),
             "fallback_file_count": fallback_file_count,
             "others_file_count": others_file_count,
             "unresolved_file_count": len(unresolved_files),
@@ -3420,4 +3533,5 @@ def build_plan(
         },
     }
     payload["plan_id"] = _stable_plan_id(payload)
+    report_progress("媒体整理预览已生成，尚未移动文件", completed=scanned_file_count, total=scanned_file_count, unit="文件", detail=f"计划移动 {len(moves)}，待处理问题 {len(issues)}")
     return payload

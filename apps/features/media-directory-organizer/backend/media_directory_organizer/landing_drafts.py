@@ -17,6 +17,8 @@ from media_directory_organizer.catalog import (
     MediaCatalog,
     PressRecord,
     normalized_identity,
+    normalize_press_group,
+    normalized_press_group,
     normalized_value,
     path_key,
 )
@@ -204,6 +206,7 @@ def _registration_work_drafts(
                     "source_names": [source["name"]],
                     "press_format": source["suggested_press_format"],
                     "press_group": source["suggested_press_group"],
+                    "press_group_confirmed": bool(source["suggested_press_group"]),
                     "press_path": "",
                     "suggestion_confidence": source["suggestion_confidence"],
                     "suggestion_reasons": source["suggestion_reasons"],
@@ -335,13 +338,17 @@ def _normalize_draft(
         if not isinstance(raw_press, Mapping):
             raise ValueError(f"压制记录 {index + 1} 必须是对象")
         press_format = str(raw_press.get("press_format") or "").strip()
-        press_group = str(raw_press.get("press_group") or "").strip().upper()
+        if "press_group" not in raw_press or not isinstance(raw_press["press_group"], str):
+            raise ValueError(f"压制记录 {index + 1} 必须选择压制组（可以选择无组）")
+        if raw_press.get("press_group_confirmed") is False:
+            raise ValueError(f"压制记录 {index + 1} 尚未确认压制组（可以选择无组）")
+        press_group = normalize_press_group(raw_press["press_group"]).upper()
         press_path = str(raw_press.get("press_path") or "").strip().replace("\\", "/").strip("/")
-        if not press_format or not press_group or not press_path:
-            raise ValueError(f"压制记录 {index + 1} 必须填写格式、组简称和目标目录")
-        if not media_group_code_known(press_group):
+        if not press_format or not press_path:
+            raise ValueError(f"压制记录 {index + 1} 必须填写格式和目标目录")
+        if press_group and not media_group_code_known(press_group):
             raise ValueError(f"压制记录 {index + 1} 使用了未登记的组简称：{press_group}")
-        pair = (press_format.casefold(), press_group.casefold())
+        pair = (press_format.casefold(), normalized_press_group(press_group))
         existing_press_path = press_paths_by_pair.get(pair)
         if existing_press_path is not None and existing_press_path.casefold() != press_path.casefold():
             raise ValueError(
@@ -570,8 +577,12 @@ def _selected_catalog_repair_patch(raw: Mapping[str, Any], *, root: Path) -> dic
             raise ValueError(f"修复作品压制记录 {index + 1} 必须是对象")
         press_format = str(raw_press.get("press_format") or "").strip()
         press_group = str(raw_press.get("press_group") or "").strip()
-        if not press_format or not press_group:
-            raise ValueError(f"修复作品压制记录 {index + 1} 必须填写格式和组简称")
+        if not press_format:
+            raise ValueError(f"修复作品压制记录 {index + 1} 必须填写格式")
+        if "press_group" not in raw_press or not isinstance(raw_press["press_group"], str):
+            raise ValueError(f"修复作品压制记录 {index + 1} 必须选择压制组（可以选择无组）")
+        if raw_press.get("press_group_confirmed") is False:
+            raise ValueError(f"修复作品压制记录 {index + 1} 尚未确认压制组（可以选择无组）")
         row: dict[str, Any] = {
             "press_format": press_format,
             "press_group": press_group,

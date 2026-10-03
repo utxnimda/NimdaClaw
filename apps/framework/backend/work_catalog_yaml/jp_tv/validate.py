@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 from typing import Any, Mapping, TypedDict, cast
 
+from work_catalog_yaml.jp_tv.dates import normalize_air_date
+
 
 class DateRangeData(TypedDict):
     start: str
@@ -417,7 +419,7 @@ def entry_air_dates(entry: JpTvEntry) -> tuple[str, str]:
     for a in entry.attributes:
         if a.type == _TYPE_DATE and isinstance(a.data, dict):
             bd = a.data
-            return str(bd["start"]), str(bd["end"])
+            return normalize_air_date(bd["start"]), normalize_air_date(bd["end"])
     raise ValueError("作品中缺少 date 播出日期")
 
 
@@ -471,6 +473,9 @@ def jp_tv_txt_relpath_from_entry(entry: JpTvEntry, txt_basename: str) -> str:
 def attribute_to_plain(a: CatalogAttribute) -> dict[str, Any]:
     if a.type == "collection-type" and isinstance(a.data, dict):
         data_out: dict[str, Any] | str = _emit_collection_type_yaml_dict(a.data)
+    elif a.type == _TYPE_DATE and isinstance(a.data, dict):
+        data_out = {**a.data, "start": normalize_air_date(a.data.get("start")),
+                    "end": normalize_air_date(a.data.get("end"))}
     else:
         data_out = a.data
     o: dict[str, Any] = {"type": a.type, "data": data_out}
