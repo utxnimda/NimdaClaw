@@ -27,6 +27,9 @@ data/features/**/db/index/
 data/features/**/history/
 data/framework/logs/
 data/framework/runtime/
+# External provider snapshots/assets stay local; adopted catalog fields are versioned.
+data/features/catalog-library/sources/
+data/features/catalog-library/assets/
 **/.nimda-catalog.lock
 **/.nimda-collection-info.lock
 

@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import unicodedata
+from uuid import uuid4
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -224,7 +225,10 @@ def _row_ref_from_body_item(raw: Any, *, label: str) -> tuple[str, int]:
 
 def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
     if "raw_record" in patch:
-        return normalize_raw_record(patch["raw_record"])
+        record = normalize_raw_record(patch["raw_record"])
+        record.setdefault("id", "work_" + uuid4().hex)
+        record.setdefault("schema_version", 1)
+        return record
     date_patch = patch.get("date") or {}
     start = date_patch.get("start") if isinstance(date_patch, dict) else ""
     end = date_patch.get("end") if isinstance(date_patch, dict) else ""
@@ -248,6 +252,8 @@ def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
         markers=patch.get("markers"),
     )
     return {
+        "id": "work_" + uuid4().hex,
+        "schema_version": 1,
         "attributes": [
             {
                 "type": "date",
@@ -402,6 +408,17 @@ def normalize_raw_record(raw: Any, *, previous: dict[str, Any] | None = None) ->
         record = json_work_record(raw)
     except (ValueError, TypeError, RecursionError) as exc:
         raise ValueError("作品记录必须为有限、无循环的 JSON 数据") from exc
+    # Old editing surfaces do not own the optional library extensions. A raw
+    # record posted without these fields must not erase stable IDs or sources.
+    for key in ("id", "schema_version", "classifications", "metadata", "source_refs"):
+        if previous is not None and key in previous and key not in record:
+            record[key] = copy.deepcopy(previous[key])
+    if previous is not None and previous.get("id") and record.get("id") != previous["id"]:
+        raise ValueError("已有作品稳定 ID 不允许更改")
+    if "id" in record and (not isinstance(record["id"], str) or re.fullmatch(r"work_[0-9a-f]{32}", record["id"]) is None):
+        raise ValueError("作品 id 必须为 work_ 加 32 位小写十六进制稳定标识")
+    if "schema_version" in record and (type(record["schema_version"]) is not int or record["schema_version"] != 1):
+        raise ValueError("不支持的作品 schema_version")
     attrs = record.get("attributes")
     if not isinstance(attrs, list):
         raise ValueError("作品记录缺少 attributes 数组")
@@ -623,6 +640,26 @@ def _browse_save_yaml_from_ui_body_unlocked(
         staged.append(FileWrite(target, new_text.encode("utf-8"), previous, hist_root / hist_name if hist_name else None))
         out.append((target, hist_name))
         report_progress("数据库文件校验完成", completed=file_index + 1, total=len(sorted_rels), unit="文件", detail=rel_s)
+
+    # Stable identities are catalog-wide, not scoped to a year file. This also
+    # protects creates through older collection/organizer entry points.
+    from collection_detail.catalog_repository import CatalogRepository
+    identity_sources = {write.target.resolve(): write.content for write in staged}
+    catalog_paths = set(CatalogRepository(settings).catalog_paths()) | set(identity_sources)
+    identity_owners: dict[str, str] = {}
+    for source_path in catalog_paths:
+        content = identity_sources.get(source_path.resolve())
+        content = source_path.read_bytes() if content is None else content
+        for index, record in enumerate(_works_list_mut(load_yaml_string(content.decode("utf-8")))):
+            identity = record.get("id") if isinstance(record, dict) else None
+            if identity is None:
+                continue
+            if not isinstance(identity, str) or re.fullmatch(r"work_[0-9a-f]{32}", identity) is None:
+                raise ValueError(f"作品稳定 ID 无效：{source_path.name}#{index}")
+            owner = f"{source_path.name}#{index}"
+            if identity in identity_owners:
+                raise ValueError(f"作品稳定 ID 重复：{identity_owners[identity]} / {owner}")
+            identity_owners[identity] = owner
 
     if dry_run:
         return out

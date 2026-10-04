@@ -1,3 +1,4 @@
 # Versions are pinned for reproducible Windows desktop builds.
 pywebview==6.1
 pyinstaller==6.21.0
+Pillow==12.3.0

@@ -207,7 +207,14 @@ class CatalogEditServiceTest(unittest.TestCase):
                             self.assertEqual((save.history_catalog_root(settings) / writes[0][1]).read_text(encoding="utf-8"), "[]\n")
                         self.assertEqual(sorted(path.name for path in db.glob("*.yaml")), [target.name])
                         stored.append(raw_work_records(load_yaml_string(target.read_text(encoding="utf-8"))))
-                    self.assertEqual(stored[0], stored[1])
+                    # Independent creations have independent stable identities;
+                    # all business fields and schema remain pipeline-equivalent.
+                    for records in stored:
+                        self.assertRegex(records[0]["id"], r"^work_[0-9a-f]{32}$")
+                        self.assertEqual(records[0]["schema_version"], 1)
+                    self.assertNotEqual(stored[0][0]["id"], stored[1][0]["id"])
+                    self.assertEqual([{key: value for key, value in record.items() if key != "id"} for record in stored[0]],
+                                     [{key: value for key, value in record.items() if key != "id"} for record in stored[1]])
                     self.assertEqual(attribute(stored[0][0], "date")["data"], {"start": "20970403", "end": "20970626"})
                     self.assertEqual(attribute(stored[0][0], "collection-type")["data"]["path"], media_root.as_posix())
                     self.assertFalse(media_root.exists())

@@ -106,6 +106,7 @@ async function setup(options = {}) {
   }
   rendered = true;
   nav.appendChild(document.getElementById("tab-directory-organizer"));
+  nav.appendChild(document.getElementById("tab-catalog-library"));
   const app = { ...window.App.data() };
   await window.App.methods.mountFeatureRuntime.call(app);
   await tick();
@@ -138,11 +139,13 @@ test("the real frontend bootstrap composes retained features and the new indepen
   assert.equal(typeof fixture.window.NimdaCommon.DirectoryBrowser.mount, "function");
   assert.equal(typeof fixture.window.NimdaWorkRecordForm.applyPatch, "function");
   assert.ok(fixture.imports.every((url) => !url.includes("legacy/shell")));
-  assert.deepEqual(Array.from(fixture.window.JpTvBrowseFeatureRegistry.features, (item) => item.id), ["collection-detail", "collection-info", "directory-organizer"]);
+  assert.deepEqual(Array.from(fixture.window.JpTvBrowseFeatureRegistry.features, (item) => item.id), ["collection-detail", "collection-info", "directory-organizer", "catalog-library"]);
   assert.deepEqual(fixture.requests, ["/api/config"]);
   assert.equal(fixture.app._nimdaRuntime.host.getActiveId(), "collection-detail");
   assert.equal(fixture.elements.get("collection-info-view").hidden, true);
   assert.equal(fixture.elements.get("directory-organizer-view").hidden, true);
+  assert.equal(fixture.elements.get("catalog-library-view").hidden, true);
+  assert.ok(fixture.imports.some((url) => url.startsWith("/features/catalog-library/index.js")));
   fixture.window.App.beforeUnmount.call(fixture.app);
   assert.equal(fixture.app._nimdaRuntime, null);
   assert.equal(fixture.elements.get("btn-reload-cfg").listeners.get("click").size, 0);
@@ -196,7 +199,7 @@ test("App composes the feature view without owning its collection configuration 
   assert.match(fixture.window.App.template, /<CollectionDetailView\s*\/>/);
   assert.doesNotMatch(fixture.window.App.template, /id="(?:config-panel|cfg-fs-root|viewport|collection-detail-view)"|collection-detail-subtabs/);
   assert.deepEqual(Array.from(fixture.window.App.template.matchAll(/\bdata-tab="([^"]+)"/g), (match) => match[1]),
-    ["collection-detail", "collection-info", "directory-organizer"]);
+    ["catalog-library", "collection-detail", "collection-info", "directory-organizer"]);
   fixture.window.App.beforeUnmount.call(fixture.app);
 });
 

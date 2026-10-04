@@ -56,6 +56,7 @@ _EMPTY_ENUM_LABELS: Mapping[str, Mapping[str, str]] = MappingProxyType({})
 _EMPTY_ENUM_SECTION_LABELS: Mapping[str, str] = MappingProxyType({})
 
 _DEFAULT_APP_FEATURES: tuple[Mapping[str, Any], ...] = (
+    MappingProxyType({"id": "catalog-library", "label": "作品库", "order": 5}),
     MappingProxyType({"id": "collection-detail", "label": "作品数据", "order": 10}),
     MappingProxyType({"id": "collection-info", "label": "收集情况", "order": 20}),
     MappingProxyType({"id": "directory-organizer", "label": "目录整理", "order": 30}),

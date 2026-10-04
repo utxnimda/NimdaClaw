@@ -98,3 +98,30 @@ test("missing appearance controls still allow programmatic preferences", () => {
   app.controller.applyFont("yahei");
   assert.deepEqual(app.attributes, { "data-theme": "contrast", "data-font": "yahei" });
 });
+
+test("theme rules change palette only, never the component geometry or typography", () => {
+  const css = fs.readFileSync(path.resolve(__dirname, "../frontend/styles/app.css"), "utf8");
+  const rules = [...css.matchAll(/([^{}]*html\[data-theme=[^{}]+)\{([^{}]*)\}/g)];
+  assert.ok(rules.length >= 8, "all built-in color palettes are inspected");
+  const visualProperties = new Set(["color-scheme", "color", "background", "background-color", "border-color", "box-shadow"]);
+  for (const [, selector, body] of rules) {
+    for (const declaration of body.split(";")) {
+      const match = declaration.trim().match(/^([\w-]+)\s*:/);
+      if (!match) continue;
+      const property = match[1];
+      if (property.startsWith("--")) {
+        assert.doesNotMatch(property, /(?:font|width|height|padding|margin|radius|display|position|grid|size)|-gap$/, selector);
+      } else {
+        assert.ok(visualProperties.has(property), selector + " changes " + property);
+      }
+    }
+  }
+});
+
+test("appearance remains a compact tone/font control with stable public IDs", () => {
+  const app = fs.readFileSync(path.resolve(__dirname, "../frontend/src/App.js"), "utf8");
+  assert.match(app, /id="theme-select"[^>]+aria-label="界面色调"/);
+  assert.match(app, /id="font-select"[^>]+aria-label="界面字体"/);
+  assert.match(app, /只改变色调，页面布局保持一致/);
+  assert.match(app, /class="app-brand"/);
+});

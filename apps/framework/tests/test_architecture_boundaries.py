@@ -71,7 +71,7 @@ class ArchitectureBoundaryTest(unittest.TestCase):
                 self.assertFalse((REPOSITORY / relative).exists())
         framework_config = load_yaml(REPOSITORY / "config" / "framework" / "app.yaml")
         feature_ids = [feature["id"] for feature in framework_config["app"]["features"]]
-        self.assertEqual(feature_ids, ["collection-detail", "collection-info", "directory-organizer"])
+        self.assertEqual(feature_ids, ["catalog-library", "collection-detail", "collection-info", "directory-organizer"])
         parser = build_parser()
         self.assertNotIn("media-directory-organizer", parser.format_help())
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as rejected:
@@ -87,7 +87,7 @@ class ArchitectureBoundaryTest(unittest.TestCase):
         for path in shared:
             with self.subTest(module=path.relative_to(FRAMEWORK_PACKAGE)):
                 forbidden = [name for name in imported_modules(path) if name.split(".", 1)[0] in {
-                    "collection_detail", "collection_info", "media_directory_organizer", "directory_organizer",
+                    "collection_detail", "collection_info", "media_directory_organizer", "directory_organizer", "catalog_library",
                 }]
                 self.assertEqual(forbidden, [])
 

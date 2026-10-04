@@ -437,6 +437,7 @@ class JpTvBrowseEditTest(unittest.TestCase):
             self.assertEqual(
                 [(item["id"], item["label"], item["order"]) for item in st.app_features],
                 [
+                    ("catalog-library", "作品库", 5),
                     ("collection-detail", "作品数据", 10),
                     ("collection-info", "收集情况", 20),
                     ("directory-organizer", "目录整理", 30),

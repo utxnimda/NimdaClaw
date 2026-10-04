@@ -39,6 +39,7 @@ export default {
         await import("/features/collection-info/index.js?v=138");
         await import("/features/directory-organizer/structure-preview.js?v=143");
         await import("/features/directory-organizer/index.js?v=149");
+        await import("/features/catalog-library/index.js?v=153");
         await import("/features/collection-detail/table-controller.js?v=144");
         if (this._nimdaDisposed) return;
         const status = document.getElementById("status-line");
@@ -85,11 +86,15 @@ export default {
   template: `
     <div class="nimda-app-shell">
       <header class="top">
-        <div class="toolbar toolbar-row">
+        <div class="app-brand" aria-label="Nimda 本地收藏">
+          <span class="app-brand-name">nimda</span>
+          <span class="app-brand-caption">本地收藏</span>
+        </div>
+        <div class="toolbar toolbar-row appearance-toolbar">
           <label class="theme-select-wrap">
-            <span class="theme-select-label">界面风格</span>
+            <span class="theme-select-label">色调</span>
             <span class="theme-select-ui">
-              <select id="theme-select" class="theme-select" aria-label="界面风格">
+              <select id="theme-select" class="theme-select" aria-label="界面色调" title="只改变色调，页面布局保持一致">
                 <option value="midnight">深蓝</option>
                 <option value="paper">纸张浅色</option>
                 <option value="forest">森林暗绿</option>
@@ -103,7 +108,7 @@ export default {
             </span>
           </label>
           <label class="theme-select-wrap">
-            <span class="theme-select-label">界面字体</span>
+            <span class="theme-select-label">字体</span>
             <span class="theme-select-ui">
               <select id="font-select" class="theme-select font-select" aria-label="界面字体">
                 <option value="reference">参考网页</option>
@@ -119,6 +124,9 @@ export default {
       </header>
 
       <nav class="app-tabs nav" aria-label="页面">
+        <button type="button" class="app-tab" id="tab-catalog-library" data-tab="catalog-library">
+          作品库
+        </button>
         <button type="button" class="app-tab is-active" id="tab-collection-detail" data-tab="collection-detail">
           作品数据
         </button>
@@ -134,6 +142,7 @@ export default {
 
       <main id="collection-info-view" class="collection-info-view collection-records-view" hidden></main>
       <main id="directory-organizer-view" class="directory-organizer-view" hidden></main>
+      <main id="catalog-library-view" class="catalog-library-view" hidden></main>
       <p v-if="featureError" class="status err">功能加载失败：{{ featureError }}</p>
       <footer class="foot muted" aria-hidden="true">&nbsp;</footer>
     </div>

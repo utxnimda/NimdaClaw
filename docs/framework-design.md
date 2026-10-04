@@ -70,6 +70,7 @@ The Vue shell in `apps/framework/frontend/src/App.js` owns:
 
 Feature tabs are served from:
 
+- `/features/catalog-library/`
 - `/features/collection-detail/`
 - `/features/collection-info/`
 - `/features/directory-organizer/`
@@ -129,9 +130,10 @@ HTTP composition and scheduling are separated from feature behavior:
 - `api_runtime`: request parsing, upload resource cleanup and owned worker queues.
 
 Disk-backed API operations use one worker per app, preserving their ordering
-without blocking the ASGI event loop. A separate two-worker network queue is
-reserved for future read-only provider integrations; no current production route
-submits to it, and it starts no worker threads without a job. `/api/health`
+without blocking the ASGI event loop. A separate two-worker network queue handles
+explicit catalog-library provider searches and snapshot previews. Provider
+application uses the disk queue and canonical catalog writer; normal browsing
+never makes provider requests. `/api/health`
 bypasses both queues and reports
 `ready`, `busy` or `stopping`, with running and queued counts. Database reads
 still wait behind active disk work; the queues are not a general background-job
@@ -285,6 +287,11 @@ Feature data lives in `data/features/<feature-id>/`.
 
 Current feature data:
 
+- `catalog-library/db/classifications.json`: stable classification definitions;
+  series pages are queries over work classification references, not parent works.
+- `catalog-library/sources/bangumi`: local external snapshots used for explicit
+  import previews. They are not a second authoritative work database and are not
+  published to version control automatically. Include them in local data backups.
 - `collection-detail/db`: JP/KR work collection YAML database files.
 - `collection-detail/history`: backups written before YAML saves and enum rename syncs.
 - `collection-detail` link-index mappings live inside each work YAML row:
@@ -372,7 +379,7 @@ DB-only works never become organizing tasks. A changed draft needs a new preview
 and confirmation; a batch reuses the single-child executor sequentially.
 
 `BaseOrganizer` supplies overridable directory filters and pure layout helpers;
-generic, VCB, Jsum and manual strategies never move media or save DB records.
+the current automatic/general classifier never moves media or saves DB records.
 All automatic fields can be edited. Multiple DB works can share one physical
 release directory; one work can keep several independent press directories.
 
@@ -411,9 +418,87 @@ To add a new tab:
 
 ## Current Design Notes
 
+- `catalog-library` is the local-first 作品库 feature; existing tabs remain available.
 - `collection-detail` is the 作品数据 feature.
 - `collection-info` is the 收集情况 feature.
 - `directory-organizer` is the 目录整理 feature, sharing canonical catalog/shortcut services.
 - The app shell is Vue, but feature internals are still plain JavaScript modules.
 - Framework frontend code owns shell/appearance/feature hosting; collection-table business behavior is owned by the collection-detail feature.
 - Runtime logs, `__pycache__`, and local process helpers are not part of the architecture and should be ignored or moved out of source-controlled project files.
+
+## Local work library: first release
+
+The library is a new view over the existing authoritative collection records, not
+a second catalog. One root item is one independent work. The storage format stays
+unchanged; optional `id`, `schema_version`, `metadata`, `classifications` and
+`source_refs` extend the existing record. New records receive a stable local ID.
+Older records remain readable without a migration; the maintenance action offers
+an explicit preview and confirmation for adding IDs in bounded batches.
+
+The new tab supports card/list browsing, local search, domain/year/series filters
+and detail sections for overview, resource bindings, chapters, classifications
+and sources. It reuses the existing enum-aware work form and catalog writer.
+Series membership references a stable classification definition, with optional
+display order. Renaming a series does not rename works, merge records or move
+directories. The first UI exposes series; the model also reserves topic/universe
+classification types for later views.
+
+Bangumi integration is explicitly invoked from the work detail's
+`刷新 Bangumi 数据` action or its Sources section. A unique saved association
+refreshes directly into a difference preview, preserving its episode range.
+Multiple associations (including separate ranges of one subject) require an
+explicit choice in Sources. Unbound works open source search with their local
+name filled in; they are never automatically associated. `刷新本地列表` only
+reloads the local catalog and does not contact Bangumi.
+
+The import flow remains:
+
+1. Search a public subject and select a candidate.
+2. Fetch a complete local subject/episode snapshot and preview field differences.
+3. Optionally limit main-story chapters to an episode range before previewing.
+4. Select fields to adopt and confirm. No checkbox is selected by default.
+   Confirming a full source association also appends the source's primary name
+   as an alias when it differs from the retained local name. The preview names
+   this automatic addition, and the empty-selection button explicitly says it
+   will associate the source and append the alias. Merely previewing never
+   changes the authoritative record.
+
+Alias imports merge with existing local aliases in stable order, using Unicode,
+case and whitespace equivalence for deduplication without fuzzy title matching.
+The optional alias field adds the provider's translated/infobox names; leaving
+it unchecked still appends a different primary source name on confirmation.
+Selecting the source name as the new primary name removes that automatic
+addition and updates the alias preview accordingly. Preview and apply share
+the same merge projection. Existing aliases are not truncated to a provider
+limit, and cover-only updates never change aliases.
+
+The apply step uses the saved, hash-checked snapshot and a version-bound expiring
+preview token, not a second remote fetch or client-supplied replacement record.
+Different local works can reference different episode ranges of one subject.
+Imports retain field provenance and flag locally modified values. Source failure,
+partial pagination or stale catalog versions cannot overwrite local work data.
+Directory bindings, press information, end dates and classification membership
+are not inferred or overwritten by the provider.
+
+Cover acquisition is part of the explicit source preview. A bound subject also
+supports a cover-only preview without fetching episodes. The user must select
+the cover difference before applying it; failed downloads preserve the existing
+cover and do not block adoption of other successfully fetched fields. Images
+are restricted to Bangumi's HTTPS cover CDN, bounded in bytes/dimensions/frame
+count, fully decoded with Pillow, and stored by content hash under
+`data/features/catalog-library/assets`. Canonical `metadata.cover` contains the
+local asset identity and source provenance, not an online display dependency.
+
+Normal browsing is entirely local, including cover requests: the asset endpoint
+only reads and checks local files, never downloads on a GET. Missing covers use
+explicit placeholders. Both API and cover requests use the standard system /
+environment proxy configuration with certificate verification enabled; network
+errors distinguish TLS, DNS, timeouts and incomplete responses. Source snapshots
+and image assets are local-only ignored files and should accompany workspace
+backups; adopted canonical fields and classification definitions remain eligible
+for normal repository backups. User data is not bundled into the desktop EXE.
+
+The library uses compact cover cards/list rows, a right-hand filter sidebar and
+a cover-led detail page. App appearance choices change only palette and font,
+not page geometry. Account synchronization, ratings/social features and automatic
+series inference remain outside this release.

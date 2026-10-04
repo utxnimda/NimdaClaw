@@ -3,6 +3,9 @@ version: 1
 
 app:
   features:
+    - id: catalog-library
+      label: 作品库
+      order: 5
     - id: collection-detail
       label: 作品数据
       order: 10

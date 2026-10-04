@@ -2,11 +2,22 @@
 
 Each top-level browser tab is a feature directory.
 
-The application provides three tabs: `collection-detail` for work records, shortcut
+The application provides four tabs: `catalog-library` for local-first work cards,
+classification aggregation and explicit metadata-source imports; `collection-detail` for work records, shortcut
 indexes and resource-library browsing, and `collection-info` for collection
 status, plus `directory-organizer` for disk-first per-child organizing previews
 and confirmed execution. The replacement organizer does not restore the retired
 `media-directory-organizer` APIs or maintain a separate work database.
+
+The library reuses the collection catalog and editor rather than introducing a
+parallel work store. Each root record remains an independent work. Series are
+typed classification references; changing a classification never moves media,
+merges records, or regenerates shortcuts. Provider search/snapshot requests run
+on the network queue; only confirmed imports use the shared catalog writer.
+Cover previews share this confirmation flow. Downloaded covers are validated
+with Pillow and stored in the workspace as content-addressed local assets; normal
+card/detail rendering never contacts Bangumi. A cover-only update preserves the
+existing subject/episode snapshot and resource bindings.
 
 Feature modules register themselves through `window.JpTvBrowseFeatureRegistry`:
 

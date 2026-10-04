@@ -21,6 +21,7 @@ ensure_feature_backend_paths()
 from collection_detail import web as api
 from collection_info import web as info_api
 from directory_organizer import web as organizer_api
+from catalog_library import web as library_api
 
 
 def _resolve_browse_static_dir() -> Path:
@@ -104,9 +105,24 @@ def build_jp_tv_browse_app(*, operation_log_root: Path | None = None) -> Starlet
     collection_detail_frontend = str(_resolve_feature_frontend_dir("collection-detail"))
     collection_info_frontend = str(_resolve_feature_frontend_dir("collection-info"))
     organizer_frontend = str(_resolve_feature_frontend_dir("directory-organizer"))
+    library_frontend = str(_resolve_feature_frontend_dir("catalog-library"))
     jp_tv_browse_api = Router(
         routes=[
             Route("/health", endpoint=api_health, methods=["GET"]),
+            Route("/catalog-library/browse", endpoint=library_api.browse, methods=["POST"]),
+            Route("/catalog-library/detail", endpoint=library_api.detail, methods=["POST"]),
+            Route("/catalog-library/classifications", endpoint=library_api.classifications, methods=["GET"]),
+            Route("/catalog-library/classifications", endpoint=library_api.save_classification, methods=["POST"]),
+            Route("/catalog-library/classification-edits/preview", endpoint=library_api.classification_preview, methods=["POST"]),
+            Route("/catalog-library/identities/preview", endpoint=library_api.identities_preview, methods=["POST"]),
+            Route("/catalog-library/identities/apply", endpoint=library_api.edits_apply, methods=["POST"]),
+            Route("/catalog-library/edits/preview", endpoint=library_api.edits_preview, methods=["POST"]),
+            Route("/catalog-library/edits/apply", endpoint=library_api.edits_apply, methods=["POST"]),
+            Route("/catalog-library/provider/search", endpoint=library_api.provider_search, methods=["POST"]),
+            Route("/catalog-library/provider/preview", endpoint=library_api.provider_preview, methods=["POST"]),
+            Route("/catalog-library/provider/cover-preview", endpoint=library_api.provider_cover_preview, methods=["POST"]),
+            Route("/catalog-library/provider/apply", endpoint=library_api.provider_apply, methods=["POST"]),
+            Route("/catalog-library/assets/{filename}", endpoint=library_api.asset, methods=["GET", "HEAD"]),
             Route("/directory-organizer/scan", endpoint=organizer_api.scan, methods=["POST"]),
             Route("/directory-organizer/preview", endpoint=organizer_api.preview, methods=["POST"]),
             Route("/directory-organizer/execute", endpoint=organizer_api.execute, methods=["POST"]),
@@ -219,6 +235,7 @@ def build_jp_tv_browse_app(*, operation_log_root: Path | None = None) -> Starlet
     )
     routes = [
         Mount("/api", app=jp_tv_browse_api),
+        Mount("/features/catalog-library", app=StaticFiles(directory=library_frontend), name="catalog_library_frontend"),
         Mount("/features/directory-organizer", app=StaticFiles(directory=organizer_frontend), name="directory_organizer_frontend"),
         Mount(
             "/features/collection-detail",
