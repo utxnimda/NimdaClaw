@@ -5,8 +5,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { withCommonRuntime } = require("../../../framework/tests/frontend_runtime_fixture");
 
-const SHELL = path.resolve(__dirname, "../../../framework/frontend/src/legacy/shell.js");
+const SHELL = path.resolve(__dirname, "../frontend/table-controller.js");
 
 function setup() {
   const elements = new Map();
@@ -35,7 +36,7 @@ function setup() {
     },
   };
   const original = fs.readFileSync(SHELL, "utf8");
-  const marker = '  $file.addEventListener("change", function () {';
+  const marker = '  function mount() {';
   assert.ok(original.includes(marker), "shell startup marker must exist");
   const source = original.slice(0, original.indexOf(marker)) + `
     // Test the actual render fragments and event delegation without starting
@@ -46,8 +47,18 @@ function setup() {
       setPayload(value) { lastBrowsePayload = value; },
       setEditing(value) { sheetEditMode = value; $chkEdit.checked = value; },
     };
-  })();`;
-  vm.runInNewContext(source, {
+  }
+  window.createTableFixture = createTableController;
+})();
+window.createTableFixture({
+  featureHost: { getActiveId() { return "collection-detail"; }, configure() {}, refresh() {} },
+  fetchJson(url, options) { return window.testFetch(url, options); },
+  setStatus(message, isError) {
+    const status = document.getElementById("status-line");
+    if (status) { status.textContent = message || ""; status.className = "status" + (isError ? " err" : ""); }
+  },
+});`;
+  vm.runInNewContext(withCommonRuntime(source), {
     window, document, console,
     localStorage: { getItem() { return null; }, setItem() {} },
   }, { filename: SHELL });

@@ -9,6 +9,6 @@ app:
     - id: collection-info
       label: 收集情况
       order: 20
-    - id: media-directory-organizer
+    - id: directory-organizer
       label: 目录整理
       order: 30

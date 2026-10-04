@@ -1,12 +1,30 @@
 """日本 TV 「jp_tv_info」行格式：条目列表校验、解析与渲染。"""
 
-from work_catalog_yaml.jp_tv.browse_payload import (
-    AnimationTvJpBrowsePresenter,
-    JpTvBrowsePresenter,
-    build_jp_tv_browse_payload_single_group_order,
-    jp_tv_collection_type_profile_key,
-    register_jp_tv_browse_presenter,
-)
+_PRESENTATION_EXPORTS = frozenset({
+    "AnimationTvJpBrowsePresenter", "JpTvBrowsePresenter",
+    "build_jp_tv_browse_payload_single_group_order", "jp_tv_collection_type_profile_key",
+    "register_jp_tv_browse_presenter",
+})
+
+
+def __getattr__(name):
+    """Load legacy presentation exports only when explicitly requested.
+
+    Catalog/storage imports must not eagerly pull a feature presenter back in.
+    """
+    if name in _PRESENTATION_EXPORTS:
+        from importlib import import_module
+
+        value = getattr(import_module(f"{__name__}.browse_payload"), name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | _PRESENTATION_EXPORTS)
+
+
 from work_catalog_yaml.jp_tv.load import load_jp_tv_yaml_file
 from work_catalog_yaml.jp_tv.parse import (
     JpTvParseError,

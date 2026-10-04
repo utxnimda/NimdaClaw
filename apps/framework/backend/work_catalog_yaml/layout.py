@@ -68,13 +68,15 @@ def workspace_root() -> Path:
     return repo.parent
 
 
-def resolve_workspace_path(value: str | Path) -> Path:
+def resolve_workspace_path(value: str | Path, *, resolve_links: bool = True) -> Path:
     """Resolve a configured path consistently, independent of the launch cwd."""
     path = Path(value).expanduser()
     windows_path = PureWindowsPath(path)
     if windows_path.drive and not windows_path.root:
         raise ValueError(f"配置路径不能使用驱动器相对路径，请使用完整路径：{value}")
-    return (path if path.is_absolute() else workspace_root() / path).resolve()
+    candidate = path if path.is_absolute() else workspace_root() / path
+    # Security inspectors need the original link/reparse chain, not its target.
+    return candidate.resolve() if resolve_links else Path(os.path.abspath(candidate))
 
 
 def default_source_data_dir() -> Path:

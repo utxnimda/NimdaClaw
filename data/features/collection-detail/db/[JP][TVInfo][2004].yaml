@@ -223,7 +223,7 @@
       path: T:/舞-Hime
       collectioned:
       - press_format: BDRip
-        press_group: ''
+        press_group: MZ
         press_path: 舞-Hime_BDRip
       markers: []
   - type: country
@@ -244,6 +244,9 @@
       - press_format: BDRip
         press_group: FL
         press_path: 魔法少女リリカルなのは_BDRip
+      - press_format: BDRip
+        press_group: VA
+        press_path: 魔法少女リリカルなのは_BDRip(VA)
       markers: []
   - type: country
     data: japan

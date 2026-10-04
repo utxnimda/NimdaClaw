@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-import hashlib
+
 import math
 from pathlib import Path, PureWindowsPath
 import re
@@ -11,6 +11,7 @@ from typing import Any
 from work_catalog_yaml.input_validation import parse_record_index
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings, jp_tv_yaml_catalog_relpath
 from work_catalog_yaml.yaml_io import load_yaml_string
+from collection_detail.catalog_repository import CatalogRepository
 
 
 class CatalogDetailStaleError(ValueError):
@@ -107,8 +108,9 @@ def work_detail_payload(body: dict[str, Any], settings: JpTvBrowseSettings) -> d
     if selected is None:
         raise ValueError(f"不在当前 DB 数据列表中：{relative}")
     canonical_relative, source_path = selected
-    source_bytes = source_path.read_bytes()
-    actual_hash = hashlib.sha256(source_bytes).hexdigest()
+    source = CatalogRepository(settings).read_source(source_path)
+    source_bytes = source.data
+    actual_hash = source.source_sha256
     if expected_hash.lower() != actual_hash:
         raise CatalogDetailStaleError("作品数据库已变化，请重新加载收集列表后查看，避免显示错误的作品")
     try:

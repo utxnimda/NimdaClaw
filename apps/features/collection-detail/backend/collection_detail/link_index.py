@@ -6,8 +6,7 @@ import re
 import shutil
 import stat
 import subprocess
-import threading
-import base64
+
 import hashlib
 import json
 import unicodedata
@@ -27,23 +26,23 @@ from work_catalog_yaml.jp_tv.validate import (
     TV_JP_PRESS_FORMAT_KEY,
     TV_JP_PRESS_GROUP_KEY,
     TV_JP_PRESS_PATH_KEY,
-    entry_air_dates,
-    entry_collection_type_data,
-    entry_country_slug,
-    entry_display_name,
-    entry_domain_slug,
-    entry_release_type_slug,
+
     jp_tv_press_pair_from_row,
     load_jp_tv_entries_from_yaml,
 )
 from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.persistence import FileWrite, atomic_write_bytes, commit_file_writes
-from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.operation_progress import operation_context, report_exception, report_progress
 from work_catalog_yaml.paths import normalize_copied_path
 from work_catalog_yaml.media_groups import normalize_press_group
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml, load_yaml_string
 
-from collection_detail.payload import build_collectioned_ordered
+from collection_detail.catalog_repository import (
+    CatalogRepository, compact_shortcut_date, shortcut_date_range_label,
+    work_key, press_key, press_key_position, press_label,
+    clean_relative_catalog_path, resolve_catalog_directory,
+)
+from work_catalog_yaml.storage import filesystem, windows_shortcuts
 from collection_detail.catalog_bindings import (
     catalog_work_matches_target_name,
     plan_catalog_bindings,
@@ -78,7 +77,6 @@ _DEFAULT_SHORTCUT_NAME = "{press_format}{press_group_suffix}"
 _DEFAULT_LEGACY_MEDIA_ROOT = "E:/LinkVideo/[ACG] Japan"
 _DEFAULT_SHORTCUT_ROOT = "E:/LinkVideo/[ACG] Japan/Finish"
 _SHORTCUT_SCAN_CACHE: dict[str, Any] = {"signature": None, "leaves": []}
-_LINK_INDEX_LITE_PAYLOAD_CACHE: dict[str, Any] = {"signature": None, "payload": None}
 _FEATURE_CONFIG_CACHE: dict[str, Any] = {"signature": None, "data": None}
 _RESOURCE_SCAN_CACHE_FILENAME = "resource-library-scan-cache.yaml"
 _RESOURCE_SCAN_LEGACY_JSON_FILENAME = "resource-library-scan-cache.json"
@@ -86,28 +84,62 @@ _RESOURCE_SCAN_NODE_DIRNAME = "resource-library-scan-cache"
 _SHORTCUT_SCAN_CACHE_FILENAME = "link-index-shortcut-scan-cache.yaml"
 _LINK_INDEX_DB_FILENAME = "link-index.yaml"
 _PRESS_ALIAS_TOKENS = ("VCB", "CK")
-_COMPACT_DATE_RE = re.compile(r"^\d{8}$")
-_ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+
 
 
 def _str_or_blank(v: Any) -> str:
     return v.strip() if isinstance(v, str) else ""
 
 
+def _index_issue(item: dict[str, Any], code: str, reason: str, *, stage: str,
+                 action: str = "核对快捷方式", **extra: Any) -> dict[str, Any]:
+    """Feature-owned identity projection; never log complete catalog rows."""
+    return {
+        "code": code, "message": reason, "reason": reason, "stage": stage, "action": action,
+        "object": _str_or_blank(item.get("name")), "name": _str_or_blank(item.get("name")),
+        "source_path": _str_or_blank(item.get("work_path") or item.get("source_path")),
+        "target_path": _str_or_blank(item.get("target_path")),
+        "shortcut_path": _str_or_blank(item.get("shortcut_path")),
+        "yaml_source_rel": _str_or_blank(item.get("yaml_source_rel")),
+        "index_in_file": item.get("index_in_file"),
+        "work_key": _str_or_blank(item.get("work_key")),
+        "press_key": _str_or_blank(item.get("press_key")),
+        "press_path": _str_or_blank(item.get("press_path")),
+        **extra,
+    }
+
+
+def _index_plan_issues(plan: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    reasons = {
+        "missing_catalog_binding": "作品数据库未完整填写 path / press_path，不能确定应创建的快捷方式目标",
+        "missing_target": "数据库绑定的目标目录不存在或不可访问",
+        "invalid_path": "数据库目录绑定不是有效路径",
+        "shortcut_target_unknown": "现有快捷方式无法解析实际目标",
+        "target_mismatch": "现有快捷方式实际目标与数据库目标不一致",
+    }
+    issues = []
+    for item in plan:
+        status = _str_or_blank(item.get("status"))
+        if status not in reasons:
+            continue
+        cause = _str_or_blank(item.get("error") or item.get("target_error"))
+        reason = reasons[status] + (f"：{cause}" if cause else "")
+        if status == "missing_catalog_binding":
+            missing = [key for key, value in (("path", item.get("work_path")), ("press_path", item.get("press_path"))) if not value]
+            reason += "；缺少字段：" + " / ".join(missing)
+        actual = _str_or_blank(item.get("shortcut_target_path"))
+        if status == "target_mismatch":
+            reason += f"；实际目标：{actual or '空'}；DB 目标：{item.get('target_path') or '空'}"
+        issues.append(_index_issue(item, status, reason, stage="索引目录核对", actual_target_path=actual))
+    return issues
+
+
 def _compact_shortcut_date(raw: Any) -> str:
-    value = _str_or_blank(raw)
-    if _COMPACT_DATE_RE.fullmatch(value):
-        return value
-    matched = _ISO_DATE_RE.fullmatch(value)
-    if matched is not None:
-        return "".join(matched.groups())
-    return value
+    return compact_shortcut_date(raw)
 
 
 def _shortcut_date_range_label(begin_date: str, end_date: str) -> str:
-    if begin_date and end_date:
-        return f"[{begin_date}][{end_date}]"
-    return f"[{begin_date or end_date}]" if begin_date or end_date else ""
+    return shortcut_date_range_label(begin_date, end_date)
 
 
 def _invalidate_feature_config_cache() -> None:
@@ -143,17 +175,17 @@ def _link_index_config() -> dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
-def _path_from_config(key: str, fallback: Path | str) -> Path:
+def _path_from_config(key: str, fallback: Path | str, *, resolve_links: bool = True) -> Path:
     raw = _str_or_blank(_paths_config().get(key))
-    return resolve_workspace_path(raw or fallback)
+    return resolve_workspace_path(raw or fallback, resolve_links=resolve_links)
 
 
-def _legacy_media_root() -> Path:
+def _legacy_media_root(*, resolve_links: bool = True) -> Path:
     """Resolve the pre-resource-library root used by older relative catalog paths."""
-    return _path_from_config("media_root", _DEFAULT_LEGACY_MEDIA_ROOT).resolve()
+    return _path_from_config("media_root", _DEFAULT_LEGACY_MEDIA_ROOT, resolve_links=resolve_links)
 
 
-def resource_roots() -> list[Path]:
+def resource_roots(*, resolve_links: bool = True) -> list[Path]:
     raw = _paths_config().get("resource_roots")
     values: list[str] = []
     if isinstance(raw, list):
@@ -165,7 +197,7 @@ def resource_roots() -> list[Path]:
     for item in values:
         if not item:
             continue
-        p = resolve_workspace_path(item)
+        p = resolve_workspace_path(item, resolve_links=resolve_links)
         key = str(p).casefold()
         if key in seen:
             continue
@@ -173,7 +205,7 @@ def resource_roots() -> list[Path]:
         out.append(p)
     if out:
         return out
-    return [_legacy_media_root()]
+    return [_legacy_media_root(resolve_links=resolve_links)]
 
 
 def _resource_roots_explicitly_configured() -> bool:
@@ -233,11 +265,11 @@ def resource_excludes_for_root(root: Path | str) -> list[str]:
     return list(resource_excludes().get(_resource_root_config_key(root), []))
 
 
-def shortcut_root() -> Path:
-    return _path_from_config("shortcut_root", _DEFAULT_SHORTCUT_ROOT).resolve()
+def shortcut_root(*, resolve_links: bool = True) -> Path:
+    return _path_from_config("shortcut_root", _DEFAULT_SHORTCUT_ROOT, resolve_links=resolve_links)
 
 
-def _shortcut_root_profiles() -> list[dict[str, Any]]:
+def _shortcut_root_profiles(*, resolve_links: bool = True) -> list[dict[str, Any]]:
     raw = _paths_config().get("shortcut_roots")
     if not isinstance(raw, list):
         return []
@@ -258,19 +290,21 @@ def _shortcut_root_profiles() -> list[dict[str, Any]]:
             continue
         out.append(
             {
-                "root": resolve_workspace_path(root_s),
+                "root": resolve_workspace_path(root_s, resolve_links=resolve_links),
                 "match": normal_match,
             }
         )
     return out
 
 
-def shortcut_roots() -> list[Path]:
-    out = [shortcut_root(), *[cast(Path, item["root"]) for item in _shortcut_root_profiles()]]
+def shortcut_roots(*, resolve_links: bool = True) -> list[Path]:
+    out = [shortcut_root(resolve_links=resolve_links), *[
+        cast(Path, item["root"]) for item in _shortcut_root_profiles(resolve_links=resolve_links)
+    ]]
     unique: list[Path] = []
     seen: set[str] = set()
     for root in out:
-        key = _path_compare_key(root)
+        key = _path_compare_key(root) if resolve_links else os.path.normcase(os.path.abspath(root))
         if key and key not in seen:
             seen.add(key)
             unique.append(root)
@@ -581,8 +615,6 @@ def save_resource_library_roots_from_ui_body(body: dict[str, Any]) -> dict[str, 
     y.dump(doc, buffer)
     commit_file_writes([FileWrite(cfg_path, buffer.getvalue().encode("utf-8"), previous)])
     _invalidate_feature_config_cache()
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
     return {"config": collection_link_index_config_json(), "config_path": str(cfg_path.resolve())}
 
 
@@ -602,9 +634,10 @@ def _resource_file_entry(root: Path, path: Path, *, scan_entry: os.DirEntry[str]
         st = scan_entry.stat() if scan_entry is not None else path.stat()
         size = int(st.st_size)
         mtime = int(st.st_mtime)
-    except OSError:
+    except OSError as exc:
         size = 0
         mtime = 0
+        report_exception(exc, context={"stage": "扫描资源文件", "action": "读取大小和修改时间", "source_path": str(path)})
     try:
         relpath = path.relative_to(root).as_posix()
     except ValueError:
@@ -623,7 +656,8 @@ def _resource_dir_stat(path: Path) -> tuple[bool, int]:
     try:
         st = path.stat()
         return stat.S_ISDIR(st.st_mode), int(st.st_mtime)
-    except OSError:
+    except OSError as exc:
+        report_exception(exc, context={"stage": "扫描资源目录", "action": "读取目录属性", "source_path": str(path)})
         return False, 0
 
 
@@ -647,12 +681,14 @@ def _resource_dir_metric_summary(
         try:
             with os.scandir(cur) as iterator:
                 entries = list(iterator)
-        except OSError:
+        except OSError as exc:
+            report_exception(exc, context={"stage": "统计资源子目录", "action": "枚举目录子项", "source_path": str(cur)})
             continue
         for entry in entries:
             try:
                 is_dir = entry.is_dir()
-            except OSError:
+            except OSError as exc:
+                report_exception(exc, context={"stage": "统计资源子目录", "action": "判断目录项类型", "source_path": str(entry.path)})
                 continue
             if is_dir:
                 directory = Path(entry.path)
@@ -668,8 +704,8 @@ def _resource_dir_metric_summary(
                 continue
             try:
                 size += int(entry.stat().st_size)
-            except OSError:
-                pass
+            except OSError as exc:
+                report_exception(exc, context={"stage": "统计资源子目录", "action": "读取文件大小", "source_path": str(entry.path)})
             file_count += 1
             total_child_count += 1
             if first:
@@ -768,6 +804,7 @@ def _resource_dir_node(
             entries = sorted(iterator, key=lambda entry: (not entry.is_dir(), entry.name.casefold()))
     except OSError as exc:
         node["error"] = str(exc)
+        report_exception(exc, context={"stage": "扫描资源目录", "action": "枚举目录子项", "source_path": str(path)})
         return node
     for scan_entry in entries:
         entry = Path(scan_entry.path)
@@ -1016,13 +1053,15 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
     roots = resource_roots()
     report_progress("开始扫描资源库", completed=0, total=len(roots), unit="资源根目录")
     for root_idx, root in enumerate(roots):
-        report_progress("扫描资源根目录", completed=root_idx, total=len(roots), unit="资源根目录", detail=str(root))
+        report_progress("扫描资源根目录", completed=root_idx, total=len(roots), unit="资源根目录", detail=str(root),
+                        context={"stage": "扫描资源库", "action": "读取根目录", "source_path": str(root)})
         root_excludes = resource_excludes_for_root(root)
         root_rel = f"root:{root_idx}"
         try:
             root_mtime = int(root.stat().st_mtime)
-        except OSError:
+        except OSError as exc:
             root_mtime = 0
+            report_exception(exc, context={"stage": "扫描资源库", "action": "读取根目录属性", "source_path": str(root)})
         root_item: dict[str, Any] = {
             "root": str(root),
             "excludes": root_excludes,
@@ -1095,6 +1134,7 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
             max_depth=max_depth,
         )
         tree["children"].append(root_node)
+        root_item["error"] = str(root_node.get("error") or "")
         root_item["dir_count"] = int(root_node.get("dir_count") or 0)
         root_item["file_count"] = int(root_node.get("file_count") or 0)
         root_item["size"] = int(root_node.get("size") or 0)
@@ -1148,9 +1188,26 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
     tree["file_count"] = sum(int(item.get("file_count") or 0) for item in roots_out)
     tree["series_count"] = sum(int(item.get("series_count") or 0) for item in roots_out)
     tree["item_count"] = len(flat_items)
+    issues = []
+    pending_nodes = list(tree.get("children") or [])
+    while pending_nodes:
+        node = pending_nodes.pop()
+        if node.get("error"):
+            issues.append({"code": "resource-scan-incomplete", "stage": "扫描资源库",
+                           "action": "读取目录", "source_path": str(node.get("path") or ""),
+                           "path": str(node.get("path") or ""), "message": str(node["error"]),
+                           "reason": str(node["error"])})
+        pending_nodes.extend(child for child in node.get("children", []) if isinstance(child, dict))
+    for item in roots_out:
+        if "扫描数量达到上限" in str(item.get("error") or ""):
+            issues.append({"code": "resource-scan-limit", "stage": "扫描资源库", "action": "限制扫描数量",
+                           "source_path": item["root"], "path": item["root"],
+                           "message": f"扫描目录数量达到上限 {max_dirs}，此根目录与后续根目录可能尚未完整扫描",
+                           "reason": f"resource_scan_max_dirs={max_dirs}"})
     payload = {
         "ok": True,
         "cached": False,
+        "issues": issues,
         "config": scan_config,
         "summary": {
             "root_count": len(roots_out),
@@ -1172,8 +1229,10 @@ def scan_resource_libraries_payload() -> dict[str, Any]:
         "scanned_at": datetime.now().isoformat(timespec="seconds"),
         "cache_path": str(_resource_scan_cache_path()),
     }
-    report_progress("写入资源库扫描缓存", detail=str(_resource_scan_cache_path()))
-    _save_resource_scan_cache(payload)
+    report_progress("写入资源库扫描缓存", detail=str(_resource_scan_cache_path()),
+                    context={"stage": "保存扫描结果", "action": "原子发布目录缓存", "target_path": str(_resource_scan_cache_path())})
+    with operation_context(stage="保存扫描结果", action="原子发布目录缓存", target_path=str(_resource_scan_cache_path())):
+        _save_resource_scan_cache(payload)
     report_progress("资源库扫描缓存已保存", detail=f"共 {tree['dir_count']} 个目录，{tree['file_count']} 个文件")
     return _load_resource_scan_cache()
 
@@ -1194,98 +1253,41 @@ def _template_text(template: str, ctx: dict[str, Any]) -> str:
     return _safe_name(out)
 
 
-def _year_from_entry(entry: Any, yaml_rel: str) -> str:
-    try:
-        start, _end = entry_air_dates(entry)
-    except ValueError:
-        start = ""
-    m = re.search(r"(19|20)\d{2}", str(start))
-    if m:
-        return m.group(0)
-    m = re.search(r"\[(?:JP|CN|US)?[^\]]*\]\[.*?\]\[((?:19|20)\d{2})\]", yaml_rel)
-    if m:
-        return m.group(1)
-    m = re.search(r"(19|20)\d{2}", yaml_rel)
-    return m.group(0) if m else ""
 
 
-def _air_date_parts(entry: Any) -> tuple[str, str]:
-    try:
-        start, end = entry_air_dates(entry)
-    except ValueError:
-        return "", ""
-    return _compact_shortcut_date(start), _compact_shortcut_date(end)
 
 
-def _enum_display(settings: JpTvBrowseSettings, enum_key: str, raw: str) -> str:
-    labels = settings.enum_labels.get(enum_key, {})
-    return labels.get(raw, raw)
+
+
+
 
 
 def _work_key(yaml_rel: str, index_in_file: int) -> str:
-    return f"{yaml_rel}#{int(index_in_file)}"
+    return work_key(yaml_rel, index_in_file)
 
 
 def _press_key(position: int, row: dict[str, Any]) -> str:
-    fm = _str_or_blank(row.get(TV_JP_PRESS_FORMAT_KEY))
-    gp = _str_or_blank(row.get(TV_JP_PRESS_GROUP_KEY))
-    seg = _str_or_blank(row.get("segment")) or "main"
-    cont = row.get("continuation_index")
-    cont_s = "" if cont is None else str(cont)
-    return f"{position}:{seg}:{cont_s}:{fm}:{gp}"
+    return press_key(position, row)
 
 
 def _press_key_position(press_key: str) -> int | None:
-    head = str(press_key or "").split(":", 1)[0]
-    try:
-        pos = int(head)
-    except (TypeError, ValueError):
-        return None
-    return pos if pos >= 0 else None
+    return press_key_position(press_key)
 
 
 def _press_label(row: dict[str, Any]) -> str:
-    fm = _str_or_blank(row.get(TV_JP_PRESS_FORMAT_KEY))
-    gp = _str_or_blank(row.get(TV_JP_PRESS_GROUP_KEY))
-    if fm and gp:
-        return f"{fm}-{gp}"
-    return fm or gp or "press"
+    return press_label(row)
 
 
 def _catalog_relpath(settings: JpTvBrowseSettings, yaml_abs: Path) -> str:
-    if settings.filesystem_root is None:
-        return yaml_abs.name
-    try:
-        return yaml_abs.resolve().relative_to(settings.filesystem_root.resolve()).as_posix()
-    except ValueError:
-        return yaml_abs.name
+    return CatalogRepository(settings).relative_path(yaml_abs)
 
 
 def _catalog_yaml_paths(settings: JpTvBrowseSettings) -> list[Path]:
-    if settings.filesystem_root is not None:
-        root = settings.filesystem_root.resolve()
-        if root.is_dir():
-            return [
-                p.resolve()
-                for p in sorted(root.glob("*.yaml"))
-                if p.is_file() and not p.name.startswith(".") and p.name != _LINK_INDEX_DB_FILENAME
-            ]
-    return [Path(abs_s).resolve() for abs_s in settings.resolved_catalog_yaml_paths]
+    return CatalogRepository(settings).catalog_paths()
 
 
 def _clean_rel_path(raw: Any, *, label: str) -> str:
-    if not isinstance(raw, str):
-        return ""
-    s = raw.strip().replace("\\", "/")
-    s = re.sub(r"/+", "/", s).strip("/")
-    if not s:
-        return ""
-    if re.match(r"^[A-Za-z]:", s) or s.startswith("/"):
-        raise ValueError(f"{label} 必须为相对路径")
-    parts = s.split("/")
-    if any(part in {"", ".", ".."} for part in parts):
-        raise ValueError(f"{label} 包含非法路径片段")
-    return s
+    return clean_relative_catalog_path(raw, label=label)
 
 
 def _clean_work_path(raw: Any, *, label: str = "path") -> str:
@@ -1307,67 +1309,7 @@ def _load_catalog_works(
     *,
     catalog_overrides: dict[Path, bytes] | None = None,
 ) -> list[dict[str, Any]]:
-    works_out: list[dict[str, Any]] = []
-    catalog_paths = _catalog_yaml_paths(settings)
-    for file_index, fp in enumerate(catalog_paths):
-        report_progress("读取作品数据库", completed=file_index, total=len(catalog_paths), unit="数据文件", detail=str(fp))
-        if not fp.is_file():
-            continue
-        yaml_rel = _catalog_relpath(settings, fp)
-        raw_text = (catalog_overrides[fp].decode("utf-8")
-                    if catalog_overrides is not None and fp in catalog_overrides
-                    else fp.read_text(encoding="utf-8"))
-        entries = load_jp_tv_entries_from_yaml(load_yaml_string(raw_text))
-        for idx, entry in enumerate(entries):
-            name = entry_display_name(entry)
-            domain = entry_domain_slug(entry)
-            country = entry_country_slug(entry)
-            release_type = entry_release_type_slug(entry)
-            year = _year_from_entry(entry, yaml_rel)
-            begin_date, end_date = _air_date_parts(entry)
-            coll = entry_collection_type_data(entry)
-            work_path = normalize_copied_path(coll.get("path")).replace("\\", "/")
-            press_rows: list[dict[str, Any]] = []
-            for pos, row in enumerate(build_collectioned_ordered(coll)):
-                fm = _str_or_blank(row.get(TV_JP_PRESS_FORMAT_KEY))
-                gp = _str_or_blank(row.get(TV_JP_PRESS_GROUP_KEY))
-                if not fm and not gp:
-                    continue
-                press_rows.append(
-                    {
-                        "press_key": _press_key(pos, row),
-                        "press_format": fm,
-                        "press_group": gp,
-                        "press_path": normalize_copied_path(row.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/"),
-                        "label": _press_label(row),
-                        "segment": row.get("segment") or "main",
-                        "continuation_index": row.get("continuation_index"),
-                        "continuation_title": row.get("continuation_title") or "",
-                    },
-                )
-            works_out.append(
-                {
-                    "work_key": _work_key(yaml_rel, idx),
-                    "yaml_source_rel": yaml_rel,
-                    "index_in_file": idx,
-                    "name": name,
-                    "path": work_path,
-                    "year": year,
-                    "year_label": f"[{year}]" if year else "",
-                    "begin_date": begin_date,
-                    "end_date": end_date,
-                    "date_range_label": _shortcut_date_range_label(begin_date, end_date),
-                    "domain": domain,
-                    "domain_label": _enum_display(settings, "domain", domain),
-                    "country": country,
-                    "country_label": _enum_display(settings, "country", country),
-                    "release_type": release_type,
-                    "release_type_label": _enum_display(settings, "release_type", release_type),
-                    "press": press_rows,
-                },
-            )
-    report_progress("作品数据库读取完成", completed=len(catalog_paths), total=len(catalog_paths), unit="数据文件", detail=f"共 {len(works_out)} 条作品记录")
-    return works_out
+    return CatalogRepository(settings).load_works(catalog_overrides=catalog_overrides)
 
 
 def _normalize_ui_work(raw: Any) -> dict[str, Any] | None:
@@ -1447,16 +1389,7 @@ def _path_under(root: Path, raw: str, *, label: str) -> Path:
 
 
 def _target_for(media_root_p: Path, work_path_s: str, press_path_s: str) -> Path:
-    if re.match(r"^[A-Za-z]:[\\/]", str(work_path_s or "")) or str(work_path_s or "").startswith(("/", "\\")):
-        work_dir = Path(str(work_path_s)).expanduser().resolve()
-    else:
-        work_dir = _path_under(media_root_p, work_path_s, label="path")
-    sub = _clean_rel_path(press_path_s, label="press_path")
-    if not sub:
-        raise ValueError("press_path 不能为空")
-    target = (work_dir / sub).resolve()
-    target.relative_to(work_dir)
-    return target
+    return resolve_catalog_directory(media_root_p, work_path_s, press_path_s)
 
 
 def _plan_context(work: dict[str, Any], press: dict[str, Any]) -> dict[str, str]:
@@ -1886,47 +1819,66 @@ def _matching_previous_index_items(
 def _save_index_entries(entries: list[dict[str, Any]], *, catalog_root: str) -> dict[str, Any]:
     payload = _index_payload(entries, catalog_root=catalog_root)
     report_progress("保存索引数据库", detail=str(_link_index_db_path()))
-    _save_link_index_db(payload)
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
+    with operation_context(stage="重建索引缓存", action="保存派生索引，不修改作品DB", source_path=catalog_root,
+                           target_path=str(_link_index_db_path())):
+        _save_link_index_db(payload)
     return payload
 
 
 def _index_db_items_for_payload(works: list[dict[str, Any]], *, catalog_root: str = "") -> tuple[list[dict[str, Any]], bool]:
-    db = _load_link_index_db()
-    raw_items = db.get("items")
-    db_catalog_root = _str_or_blank(db.get("catalog_root"))
-    can_use_db = bool(catalog_root and db_catalog_root and db_catalog_root == catalog_root)
-    if can_use_db and isinstance(raw_items, list) and raw_items:
-        return _refreshed_index_db_display_items(raw_items), True
-    return _index_entries_from_works(works), False
+    # This file is a derived index only; current catalog records define the plan.
+    return _index_entries_from_works(works, use_resource_index=False), _link_index_db_path().is_file()
 
 
-def _refreshed_index_db_display_items(raw_items: Any) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    if not isinstance(raw_items, list):
-        return out
-    for raw in raw_items:
-        if not isinstance(raw, dict):
-            continue
+def _shortcut_path_identity(raw: Any) -> str:
+    value = _str_or_blank(raw)
+    return os.path.normcase(os.path.abspath(value)) if value else ""
+
+
+def _join_observed_shortcuts(
+    plan: list[dict[str, Any]], leaves: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Only an exact physical shortcut path can satisfy a planned DB shortcut."""
+    actual_by_path = {
+        _shortcut_path_identity(item.get("shortcut_path") or item.get("path")): item
+        for item in leaves
+    }
+    consumed: set[str] = set()
+    display: list[dict[str, Any]] = []
+    for raw in plan:
         item = dict(raw)
-        target_s = _str_or_blank(item.get("target_path"))
-        target_exists = False
-        if target_s:
-            try:
-                target_exists = Path(target_s).expanduser().is_dir()
-            except OSError:
-                target_exists = False
-        item["target_exists"] = target_exists
-        item["shortcut_target_path"] = target_s
-        item["shortcut_target_exists"] = target_exists
-        item["link_exists"] = target_exists
-        item["db_linked"] = target_exists
-        item["status"] = "ready" if target_exists else "missing_target"
-        out.append(item)
-    return out
-
-
+        key = _shortcut_path_identity(item.get("shortcut_path"))
+        actual = actual_by_path.get(key)
+        item.update(shortcut_exists=False, db_linked=False, link_exists=False,
+                    shortcut_target_path="", shortcut_target_exists=False,
+                    matched_shortcut_path="", matched_shortcut_relpath="")
+        if not _str_or_blank(item.get("target_path")):
+            item["status"] = "missing_catalog_binding"
+        if actual is not None:
+            consumed.add(key)
+            target = _str_or_blank(actual.get("target_path"))
+            resolved = bool(actual.get("target_resolved"))
+            matches = bool(resolved and target and item.get("target_path")
+                           and _path_compare_key(target) == _path_compare_key(item["target_path"]))
+            item.update(
+                shortcut_exists=True, db_linked=matches,
+                link_exists=bool(matches and actual.get("target_exists")),
+                shortcut_target_path=target,
+                shortcut_target_exists=bool(actual.get("target_exists")),
+                matched_shortcut_path=_str_or_blank(actual.get("shortcut_path")),
+                matched_shortcut_relpath=_str_or_blank(actual.get("shortcut_relpath")),
+                target_resolved=resolved, target_error=_str_or_blank(actual.get("target_error")),
+            )
+            if not _str_or_blank(item.get("target_path")):
+                item["status"] = "missing_catalog_binding"
+            elif not resolved:
+                item["status"] = "shortcut_target_unknown"
+            elif not matches:
+                item["status"] = "target_mismatch"
+        display.append(item)
+    remaining = [dict(item) for item in leaves
+                 if _shortcut_path_identity(item.get("shortcut_path") or item.get("path")) not in consumed]
+    return display, remaining
 def _settings_catalog_root_key(settings: JpTvBrowseSettings) -> str:
     if settings.filesystem_root is None:
         return ""
@@ -1937,13 +1889,7 @@ def _settings_catalog_root_key(settings: JpTvBrowseSettings) -> str:
 
 
 def _path_compare_key(raw: Any) -> str:
-    s = str(raw) if isinstance(raw, Path) else _str_or_blank(raw)
-    if not s:
-        return ""
-    try:
-        return os.path.normcase(str(Path(s).expanduser().resolve()))
-    except OSError:
-        return os.path.normcase(str(Path(s).expanduser()))
+    return filesystem.path_compare_key(raw)
 
 
 def _planned_relpath_keys(plan: list[dict[str, Any]]) -> set[str]:
@@ -1970,9 +1916,6 @@ def _disk_leaf_is_unmapped(
 ) -> bool:
     shortcut_key = _path_compare_key(item.get("shortcut_path") or item.get("path"))
     if shortcut_key and shortcut_key in planned_relpaths:
-        return False
-    target_key = _path_compare_key(item.get("target_path"))
-    if bool(item.get("target_exists")) and target_key and target_key in planned_targets:
         return False
     return True
 
@@ -2008,10 +1951,13 @@ def _plan_summary(plan: list[dict[str, Any]]) -> dict[str, int]:
         "total": len(plan),
         "ready": 0,
         "missing_target": 0,
+        "missing_catalog_binding": 0,
         "target_fixable": 0,
         "duplicate_shortcut": 0,
         "invalid_path": 0,
         "shortcut_exists": 0,
+        "target_mismatch": 0,
+        "shortcut_target_unknown": 0,
         "unmapped_on_disk": 0,
         "empty_target_path": 0,
         "created": 0,
@@ -2021,8 +1967,10 @@ def _plan_summary(plan: list[dict[str, Any]]) -> dict[str, int]:
     }
     for item in plan:
         status = str(item.get("status") or "")
-        if status in out:
+        if status in out and status != "shortcut_exists":
             out[status] += 1
+        if item.get("shortcut_exists") or status == "shortcut_exists":
+            out["shortcut_exists"] += 1
         if not _str_or_blank(item.get("target_path")):
             out["empty_target_path"] += 1
         if item.get("target_fix"):
@@ -2164,7 +2112,19 @@ def _save_shortcut_scan_cache(signature: tuple[Any, ...], leaves: list[dict[str,
     atomic_write_bytes(path, dump_yaml_string(payload).encode("utf-8"))
 
 
-def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, Any]]:
+def _refresh_shortcut_target_facts(leaves: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Parsed targets may be cached; physical target availability never is."""
+    out = _copy_shortcut_leaves(leaves)
+    cache: dict[Path, bool] = {}
+    for item in out:
+        target = _str_or_blank(item.get("target_path"))
+        item["target_exists"] = bool(target and filesystem.ordinary_directory(target, cache=cache))
+    return out
+
+
+def _scan_shortcut_leaves(
+    *, refresh_targets: bool = False, publish_cache: bool = True
+) -> list[dict[str, Any]]:
     max_dirs = _scan_max_dirs()
     max_depth = max(_scan_max_depth(), len(_layout_levels()) + 2)
     leaves: list[dict[str, Any]] = []
@@ -2172,15 +2132,13 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
     signature_parts: list[tuple[str, int, int]] = []
     seen_dirs = 0
     scanned_roots: list[str] = []
-    roots = shortcut_roots()
+    roots = shortcut_roots(resolve_links=False)
+    directory_cache: dict[Path, bool] = {}
     for root_index, root in enumerate(roots):
         report_progress("扫描快捷方式目录", completed=root_index, total=len(roots), unit="根目录", detail=str(root))
-        try:
-            if not root.is_dir():
-                continue
-            root_resolved = root.resolve()
-        except OSError:
+        if not filesystem.ordinary_directory(str(root), cache=directory_cache):
             continue
+        root_resolved = root
         scanned_roots.append(str(root_resolved))
         stack: list[tuple[Path, int]] = [(root_resolved, 0)]
         while stack and seen_dirs < max_dirs:
@@ -2189,21 +2147,31 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
             if seen_dirs == 1 or seen_dirs % 100 == 0:
                 report_progress("查找已有快捷方式", completed=seen_dirs, unit="目录", detail=str(cur))
             try:
-                children = sorted(cur.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
-            except OSError:
+                children = sorted(cur.iterdir(), key=lambda p: p.name.casefold())
+            except OSError as exc:
+                report_exception(exc, context={"stage": "扫描快捷方式目录", "action": "枚举目录子项", "source_path": str(cur)})
                 continue
             for child in reversed(children):
                 if child.name.startswith("."):
                     continue
-                if child.is_dir():
+                try:
+                    st = child.lstat()
+                except OSError as exc:
+                    report_exception(exc, context={"stage": "扫描快捷方式目录", "action": "读取目录项属性", "source_path": str(child)})
+                    continue
+                if stat.S_ISLNK(st.st_mode) or (
+                    getattr(st, "st_file_attributes", 0)
+                    & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+                ):
+                    continue
+                if stat.S_ISDIR(st.st_mode):
                     if depth < max_depth:
                         stack.append((child, depth + 1))
                     continue
-                if child.is_file() and child.suffix.lower() == ".lnk":
+                if stat.S_ISREG(st.st_mode) and child.suffix.lower() == ".lnk":
                     try:
-                        shortcut_abs = child.resolve()
+                        shortcut_abs = child
                         rel = shortcut_abs.relative_to(root_resolved).as_posix()
-                        st = shortcut_abs.stat()
                     except ValueError:
                         continue
                     except OSError:
@@ -2225,13 +2193,13 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
                     )
     signature = ("|".join(scanned_roots), tuple(sorted(signature_parts)))
     if not refresh_targets and _SHORTCUT_SCAN_CACHE.get("signature") == signature:
-        return _copy_shortcut_leaves(cast(list[dict[str, Any]], _SHORTCUT_SCAN_CACHE.get("leaves") or []))
-    if not refresh_targets:
+        return _refresh_shortcut_target_facts(cast(list[dict[str, Any]], _SHORTCUT_SCAN_CACHE.get("leaves") or []))
+    if publish_cache and not refresh_targets:
         cached_leaves = _load_shortcut_scan_cache(signature)
         if cached_leaves is not None:
             _SHORTCUT_SCAN_CACHE["signature"] = signature
             _SHORTCUT_SCAN_CACHE["leaves"] = _copy_shortcut_leaves(cached_leaves)
-            return cached_leaves
+            return _refresh_shortcut_target_facts(cached_leaves)
     report_progress("解析快捷方式实际目标", completed=0, total=len(shortcut_paths), unit="快捷方式")
     target_infos = _windows_shortcut_targets(shortcut_paths)
     report_progress("快捷方式目标解析完成", completed=len(shortcut_paths), total=len(shortcut_paths), unit="快捷方式")
@@ -2239,17 +2207,18 @@ def _scan_shortcut_leaves(*, refresh_targets: bool = False) -> list[dict[str, An
         shortcut_s = str(item.get("shortcut_path") or "")
         info = target_infos.get(shortcut_s) or {}
         target_s = str(info.get("target_path") or "")
-        target = Path(target_s).expanduser().resolve() if target_s else None
+        target = Path(os.path.abspath(Path(target_s).expanduser())) if target_s else None
         item["target_path"] = str(target) if target is not None else ""
-        item["target_exists"] = bool(target and target.exists())
-        item["target_resolved"] = bool(info.get("target_resolved"))
+        item["target_resolved"] = bool(info.get("target_resolved", bool(target_s)))
         item["target_error"] = str(info.get("error") or "")
+    leaves = _refresh_shortcut_target_facts(leaves)
     _SHORTCUT_SCAN_CACHE["signature"] = signature
     _SHORTCUT_SCAN_CACHE["leaves"] = _copy_shortcut_leaves(leaves)
-    try:
-        _save_shortcut_scan_cache(signature, leaves)
-    except OSError:
-        pass
+    if publish_cache:
+        try:
+            _save_shortcut_scan_cache(signature, leaves)
+        except OSError:
+            pass
     return leaves
 
 
@@ -2385,13 +2354,17 @@ def _build_tree(
         }
         if isinstance(item.get("target_fix"), dict):
             link_node["target_fix"] = dict(cast(dict[str, Any], item["target_fix"]))
-        if not link_node["shortcut_exists"] and item.get("source") != "index_db":
+        if not link_node["shortcut_exists"]:
             link_node["warnings"] = ["索引链接尚未生成"]
-        if not link_node["target_exists"]:
+        if not link_node["target_path"]:
+            link_node.setdefault("warnings", []).append("DB 尚未填写目录绑定")
+        elif not link_node["target_exists"]:
             link_node.setdefault("warnings", []).append("目标目录不存在")
-        if link_node["shortcut_exists"] and not link_node["shortcut_target_exists"]:
+        if link_node["shortcut_exists"] and not link_node["target_resolved"]:
+            link_node.setdefault("warnings", []).append("实际快捷方式目标未确认")
+        if link_node["shortcut_exists"] and link_node["target_resolved"] and not link_node["shortcut_target_exists"]:
             link_node.setdefault("warnings", []).append("lnk 实际指向目录不存在")
-        if link_node["shortcut_exists"] and not link_node["db_linked"]:
+        if link_node["target_path"] and link_node["shortcut_exists"] and link_node["target_resolved"] and not link_node["db_linked"]:
             link_node.setdefault("warnings", []).append("lnk 指向与 DB 目标路径不一致")
         cur.setdefault("children", []).append(link_node)
     for item in disk_leaves or []:
@@ -2412,7 +2385,7 @@ def _build_tree(
             rel = "/".join(rel_parts)
             cur = _folder_child(cur, part, rel, str((sr / rel).resolve()))
         rel = str(item.get("shortcut_relpath") or "")
-        match = (disk_matches or {}).get(rel.lower()) or {}
+        match = (disk_matches or {}).get(_shortcut_path_identity(item.get("shortcut_path"))) or {}
         candidates_raw = match.get("candidates") if isinstance(match, dict) else None
         candidates = [c for c in candidates_raw if isinstance(c, dict)] if isinstance(candidates_raw, list) else []
         matched_candidates = [c for c in candidates if c.get("can_apply")]
@@ -2445,7 +2418,9 @@ def _build_tree(
             }
         )
         disk_node = cur.setdefault("children", [])[-1]
-        if not disk_node.get("target_exists"):
+        if not disk_node.get("target_resolved"):
+            disk_node.setdefault("warnings", []).append("实际快捷方式目标未确认")
+        elif not disk_node.get("target_exists"):
             disk_node.setdefault("warnings", []).append("lnk 实际指向目录不存在")
         if isinstance(item.get("target_fix"), dict):
             disk_node["target_fix"] = dict(cast(dict[str, Any], item["target_fix"]))
@@ -2495,6 +2470,7 @@ def _slim_tree_for_index_browser(node: dict[str, Any]) -> dict[str, Any]:
             "index_in_file",
             "press_format",
             "press_group",
+            "warnings",
         ):
             if key in node:
                 out[key] = node[key]
@@ -2602,36 +2578,10 @@ def _resource_work_match_keys(resource: dict[str, Any]) -> set[str]:
     return {key for key in (_strict_name_key(value) for value in values) if key}
 
 
-def _link_index_lite_payload_signature(settings: JpTvBrowseSettings) -> tuple[Any, ...]:
-    files = []
-    for fp in _catalog_yaml_paths(settings):
-        try:
-            st = fp.stat()
-        except OSError:
-            files.append((str(fp), None, None))
-            continue
-        files.append((str(fp), st.st_mtime_ns, st.st_size))
-    index_db = _link_index_db_path()
-    try:
-        index_st = index_db.stat()
-        index_sig: tuple[Any, ...] = (str(index_db), index_st.st_mtime_ns, index_st.st_size)
-    except OSError:
-        index_sig = (str(index_db), None, None)
-    config_s = json.dumps(collection_link_index_config_json(), ensure_ascii=False, sort_keys=True)
-    return (tuple(files), index_sig, config_s, _SHORTCUT_SCAN_CACHE.get("signature"))
 
 
-def _cached_link_index_lite_payload(settings: JpTvBrowseSettings) -> dict[str, Any] | None:
-    signature = _link_index_lite_payload_signature(settings)
-    if _LINK_INDEX_LITE_PAYLOAD_CACHE.get("signature") != signature:
-        return None
-    payload = _LINK_INDEX_LITE_PAYLOAD_CACHE.get("payload")
-    return cast(dict[str, Any], payload) if isinstance(payload, dict) else None
 
 
-def _cache_link_index_lite_payload(settings: JpTvBrowseSettings, payload: dict[str, Any]) -> None:
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = _link_index_lite_payload_signature(settings)
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = payload
 
 
 def validate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
@@ -2948,8 +2898,6 @@ def _commit_catalog_mappings_and_index(
     index_history = history_catalog_root(settings) / history_snapshot_name(index_path) if previous is not None else None
     staged.append(FileWrite(index_path, dump_yaml_string(index).encode("utf-8"), previous, index_history))
     commit_file_writes(staged)
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
     return _load_catalog_works(settings), index, writes
 
 
@@ -2965,337 +2913,16 @@ def _save_ui_mappings_to_catalog(
 
 
 def _create_windows_shortcut(shortcut_path: Path, target_path: Path) -> None:
-    if os.name != "nt":
-        raise OSError(".lnk generation is only supported on Windows")
-    shortcut_path.parent.mkdir(parents=True, exist_ok=True)
-    powershell_exe = os.environ.get(
-        "SystemRoot",
-        r"C:\Windows",
-    ) + r"\System32\WindowsPowerShell\v1.0\powershell.exe"
-    script = (
-        "[Console]::InputEncoding = [System.Text.Encoding]::UTF8\n"
-        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n"
-        "$OutputEncoding = [System.Text.Encoding]::UTF8\n"
-        "$ErrorActionPreference = 'Stop'\n"
-        "$shortcutPath = $env:NIMDA_SHORTCUT_PATH\n"
-        "$targetPath = $env:NIMDA_TARGET_PATH\n"
-        "$typeDefinition = @'\n"
-        "using System;\n"
-        "using System.Text;\n"
-        "using System.Runtime.InteropServices;\n"
-        "namespace NimdaShortcut {\n"
-        "  [ComImport, Guid(\"00021401-0000-0000-C000-000000000046\")]\n"
-        "  public class ShellLink {}\n"
-        "  [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid(\"000214F9-0000-0000-C000-000000000046\")]\n"
-        "  public interface IShellLinkW {\n"
-        "    [PreserveSig] int GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);\n"
-        "    [PreserveSig] int GetIDList(out IntPtr ppidl);\n"
-        "    [PreserveSig] int SetIDList(IntPtr pidl);\n"
-        "    [PreserveSig] int GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);\n"
-        "    [PreserveSig] int SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);\n"
-        "    [PreserveSig] int GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);\n"
-        "    [PreserveSig] int SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);\n"
-        "    [PreserveSig] int GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);\n"
-        "    [PreserveSig] int SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);\n"
-        "    [PreserveSig] int GetHotkey(out short pwHotkey);\n"
-        "    [PreserveSig] int SetHotkey(short wHotkey);\n"
-        "    [PreserveSig] int GetShowCmd(out int piShowCmd);\n"
-        "    [PreserveSig] int SetShowCmd(int iShowCmd);\n"
-        "    [PreserveSig] int GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);\n"
-        "    [PreserveSig] int SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);\n"
-        "    [PreserveSig] int SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);\n"
-        "    [PreserveSig] int Resolve(IntPtr hwnd, uint fFlags);\n"
-        "    [PreserveSig] int SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);\n"
-        "  }\n"
-        "  [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid(\"0000010B-0000-0000-C000-000000000046\")]\n"
-        "  public interface IPersistFile {\n"
-        "    void GetClassID(out Guid pClassID);\n"
-        "    [PreserveSig] int IsDirty();\n"
-        "    [PreserveSig] int Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);\n"
-        "    [PreserveSig] int Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, bool fRemember);\n"
-        "    [PreserveSig] int SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);\n"
-        "    [PreserveSig] int GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);\n"
-        "  }\n"
-        "  public static class ShortcutWriter {\n"
-        "    public static void Save(string shortcutPath, string targetPath) {\n"
-        "      IShellLinkW shellLink = (IShellLinkW)new ShellLink();\n"
-        "      int hr = shellLink.SetPath(targetPath);\n"
-        "      Marshal.ThrowExceptionForHR(hr);\n"
-        "      hr = shellLink.SetWorkingDirectory(targetPath);\n"
-        "      Marshal.ThrowExceptionForHR(hr);\n"
-        "      IPersistFile persist = (IPersistFile)shellLink;\n"
-        "      hr = persist.Save(shortcutPath, true);\n"
-        "      Marshal.ThrowExceptionForHR(hr);\n"
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "'@\n"
-        "Add-Type -TypeDefinition $typeDefinition\n"
-        "$shortcutPath = [System.IO.Path]::GetFullPath($shortcutPath)\n"
-        "$targetPath = [System.IO.Path]::GetFullPath($targetPath)\n"
-        "[NimdaShortcut.ShortcutWriter]::Save($shortcutPath, $targetPath)\n"
-    )
-    kwargs: dict[str, Any] = {}
-    if hasattr(subprocess, "CREATE_NO_WINDOW"):
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
-    proc = subprocess.run(
-        [
-            powershell_exe,
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            script,
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=20,
-        env={
-            **os.environ.copy(),
-            "NIMDA_SHORTCUT_PATH": str(shortcut_path),
-            "NIMDA_TARGET_PATH": str(target_path),
-        },
-        **kwargs,
-    )
-    if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout or "").strip()
-        if not detail:
-            detail = f"PowerShell exited with code {proc.returncode}"
-        raise OSError(f"写入 .lnk 失败：{detail}")
+    windows_shortcuts.create_windows_shortcut(shortcut_path, target_path)
 
 
-_SCOPED_SHORTCUT_LOCK = threading.RLock()
 
 
-def _scoped_work_context(work: dict[str, Any]) -> dict[str, Any]:
-    date = work.get("date") if isinstance(work.get("date"), dict) else {}
-    begin_date = _compact_shortcut_date(date.get("start") or work.get("begin_date"))
-    end_date = _compact_shortcut_date(date.get("end") or work.get("end_date"))
-    year_match = re.search(r"(?:19|20)\d{2}", begin_date)
-    year = year_match.group(0) if year_match else ""
-    return {
-        "work_key": work.get("work_key") or "",
-        "yaml_source_rel": work.get("yaml_source_rel") or "",
-        "index_in_file": work.get("index_in_file"),
-        "name": work.get("name") or "",
-        "path": work.get("path") or "",
-        "domain": work.get("domain") or "",
-        "country": work.get("country") or "",
-        "release_type": work.get("release_type") or "",
-        "year": year,
-        "year_label": f"[{year}]" if year else "",
-        "begin_date": begin_date,
-        "end_date": end_date,
-        "date_range_label": _shortcut_date_range_label(begin_date, end_date),
-    }
 
 
-def preview_scoped_shortcuts_for_work(
-    work: dict[str, Any],
-    presses: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Plan shortcuts for one work without clearing or writing shortcut roots."""
-
-    work_ctx = _scoped_work_context(work)
-    if not _str_or_blank(work_ctx.get("name")):
-        raise ValueError("scoped shortcut work name cannot be empty")
-    planned: list[dict[str, Any]] = []
-    seen_paths: set[str] = set()
-    for index, raw_press in enumerate(presses):
-        if not isinstance(raw_press, dict):
-            raise ValueError(f"scoped shortcut press {index + 1} must be an object")
-        press_format = _str_or_blank(raw_press.get(TV_JP_PRESS_FORMAT_KEY))
-        raw_group = raw_press.get(TV_JP_PRESS_GROUP_KEY)
-        if TV_JP_PRESS_GROUP_KEY not in raw_press or not isinstance(raw_group, str):
-            raise ValueError(f"scoped shortcut press {index + 1} requires a group choice (empty is allowed)")
-        press_group = normalize_press_group(raw_group)
-        press_path = _str_or_blank(raw_press.get(TV_JP_PRESS_PATH_KEY)).replace("\\", "/")
-        target_s = _str_or_blank(raw_press.get("target_path"))
-        if not press_format or not press_path or not target_s:
-            raise ValueError(
-                f"scoped shortcut press {index + 1} requires format, press_path and target_path"
-            )
-        target = Path(target_s).expanduser().resolve()
-        if not _path_under_any_root(target, resource_roots()):
-            raise ValueError(f"shortcut target is outside configured resource roots: {target}")
-        press = {
-            "press_key": raw_press.get("press_key") or f"{index}:main::{press_format}:{press_group}",
-            "label": raw_press.get("label") or f"{press_format}-{press_group}",
-            TV_JP_PRESS_FORMAT_KEY: press_format,
-            TV_JP_PRESS_GROUP_KEY: press_group,
-            TV_JP_PRESS_PATH_KEY: press_path,
-        }
-        relpath, parts = _index_relpath_for(work_ctx, press)
-        item_root = _shortcut_root_for_work(work_ctx)
-        shortcut_path = _safe_shortcut_path_from_rel(item_root, relpath)
-        shortcut_key = _path_compare_key(shortcut_path)
-        if shortcut_key in seen_paths:
-            raise ValueError(f"multiple presses resolve to the same shortcut path: {shortcut_path}")
-        seen_paths.add(shortcut_key)
-        status = "planned"
-        existing_target = ""
-        if shortcut_path.exists():
-            if not shortcut_path.is_file():
-                status = "conflict"
-            else:
-                existing_target = _windows_shortcut_target(shortcut_path)
-                status = (
-                    "already_exists"
-                    if existing_target and _path_compare_key(existing_target) == _path_compare_key(target)
-                    else "conflict"
-                )
-        entry = _index_entry_from_work_press(work_ctx, press, [])
-        entry.update(
-            {
-                "target_path": str(target),
-                "target_source": "media_directory_organizer",
-                "target_exists": target.is_dir(),
-                "shortcut_path": str(shortcut_path),
-                "shortcut_root": str(item_root),
-                "shortcut_relpath": relpath,
-                "shortcut_parts": parts,
-                "shortcut_target_path": str(target),
-                "shortcut_exists": status == "already_exists",
-                "matched_shortcut_path": str(shortcut_path) if status == "already_exists" else "",
-                "matched_shortcut_relpath": relpath if status == "already_exists" else "",
-            }
-        )
-        planned.append(
-            {
-                "status": status,
-                "work_name": str(work_ctx["name"]),
-                "press_format": press_format,
-                "press_group": press_group,
-                "press_path": press_path,
-                "target_path": str(target),
-                "target_exists_before_move": target.is_dir(),
-                "shortcut_root": str(item_root),
-                "shortcut_relpath": relpath,
-                "shortcut_path": str(shortcut_path),
-                "existing_target_path": existing_target,
-                "index_entry": entry,
-            }
-        )
-    return planned
 
 
-def refresh_link_index_db_from_catalog(settings: JpTvBrowseSettings) -> dict[str, Any]:
-    """Refresh the YAML index DB only; this never removes or writes .lnk files."""
 
-    works = _load_catalog_works(settings)
-    previous = _load_link_index_db()
-    catalog_root = _settings_catalog_root_key(settings)
-    entries = _index_entries_from_works(
-        works,
-        use_resource_index=False,
-        prefer_previous_target=True,
-        previous_items=_matching_previous_index_items(works, previous, catalog_root=catalog_root),
-    )
-    payload = {
-        "version": 1,
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "source": "collection-detail catalog yaml",
-        "catalog_root": _settings_catalog_root_key(settings),
-        "layout_levels": list(_layout_levels()),
-        "shortcut_name": _shortcut_name_template(),
-        "items": entries,
-    }
-    _save_link_index_db(payload)
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-    _LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
-    return {
-        "path": str(_link_index_db_path()),
-        "generated_at": payload["generated_at"],
-        "item_count": len(entries),
-    }
-
-
-def _apply_scoped_shortcuts_for_work_process_locked(
-    items: list[dict[str, Any]],
-    *,
-    settings: JpTvBrowseSettings,
-) -> dict[str, Any]:
-    with _SCOPED_SHORTCUT_LOCK:
-        prepared: list[tuple[Path, Path, dict[str, Any]]] = []
-        planned_targets: dict[str, str] = {}
-        already_exists = 0
-        duplicate_count = 0
-        for index, item in enumerate(items):
-            if index % 100 == 0:
-                report_progress("复核待创建快捷方式", completed=index, total=len(items), unit="快捷方式")
-            if not isinstance(item, dict):
-                raise ValueError(f"scoped shortcut item {index + 1} must be an object")
-            item_root = Path(_str_or_blank(item.get("shortcut_root"))).expanduser().resolve()
-            if not any(_path_compare_key(item_root) == _path_compare_key(root) for root in shortcut_roots()):
-                raise ValueError(f"scoped shortcut root is not configured: {item_root}")
-            shortcut_path = _safe_shortcut_path_from_rel(item_root, item.get("shortcut_relpath"))
-            if _path_compare_key(shortcut_path) != _path_compare_key(item.get("shortcut_path")):
-                raise ValueError("scoped shortcut path no longer matches the reviewed plan")
-            target = Path(_str_or_blank(item.get("target_path"))).expanduser().resolve()
-            if not target.is_dir() or not _path_under_any_root(target, resource_roots()):
-                raise FileNotFoundError(f"shortcut target directory is missing or outside resource roots: {target}")
-            shortcut_key, target_key = _path_compare_key(shortcut_path), _path_compare_key(target)
-            if shortcut_key in planned_targets:
-                if planned_targets[shortcut_key] != target_key:
-                    raise FileExistsError(f"同一个快捷方式路径对应多个目标目录：{shortcut_path}")
-                duplicate_count += 1
-                continue
-            planned_targets[shortcut_key] = target_key
-            if shortcut_path.exists():
-                existing_target = _windows_shortcut_target(shortcut_path) if shortcut_path.is_file() else ""
-                if existing_target and _path_compare_key(existing_target) == _path_compare_key(target):
-                    already_exists += 1
-                    continue
-                raise FileExistsError(f"shortcut path already exists with another target: {shortcut_path}")
-            prepared.append((shortcut_path, target, item))
-
-        created: list[Path] = []
-        index_path = _link_index_db_path()
-        previous_index = index_path.read_bytes() if index_path.is_file() else None
-        try:
-            for shortcut_index, (shortcut_path, target, _item) in enumerate(prepared):
-                report_progress("创建作品快捷方式", completed=shortcut_index, total=len(prepared), unit="快捷方式", detail=str(shortcut_path))
-                _create_windows_shortcut(shortcut_path, target)
-                created.append(shortcut_path)
-            report_progress("作品快捷方式创建完成", completed=len(created), total=len(prepared), unit="快捷方式")
-            index_result = refresh_link_index_db_from_catalog(settings)
-        except BaseException:
-            report_progress("快捷方式处理失败，回滚本次创建和索引", completed=0, total=len(created), unit="快捷方式")
-            for shortcut_path in reversed(created):
-                shortcut_path.unlink(missing_ok=True)
-            if previous_index is None:
-                index_path.unlink(missing_ok=True)
-            else:
-                atomic_write_bytes(index_path, previous_index)
-            raise
-        return {
-            "ok": True,
-            "planned_count": len(items),
-            "created_count": len(created),
-            "already_exists_count": already_exists,
-            "duplicate_count": duplicate_count,
-            "shortcut_paths": [str(path) for path in created],
-            "index_db": index_result,
-        }
-
-
-def apply_scoped_shortcuts_for_work(
-    items: list[dict[str, Any]],
-    *,
-    settings: JpTvBrowseSettings,
-) -> dict[str, Any]:
-    """Create reviewed shortcuts and refresh the index as one cross-process transaction."""
-
-    if settings.filesystem_root is None:
-        raise ValueError("未配置 filesystem_root，不能创建作品快捷方式")
-    # The same catalog-root lock also serializes the shared .lnk/index transaction
-    # across a packaged app and a source server. Repair already holds this lock;
-    # catalog_write_transaction is deliberately reentrant for that call path.
-    with catalog_write_transaction(settings.filesystem_root):
-        return _apply_scoped_shortcuts_for_work_process_locked(items, settings=settings)
 
 
 def _payload_from_works(
@@ -3311,22 +2938,50 @@ def _payload_from_works(
         index_db_exists = True
     else:
         plan, index_db_exists = _index_db_items_for_payload(works, catalog_root=catalog_root)
+    leaves = _scan_shortcut_leaves(refresh_targets=refresh_links, publish_cache=False)
+    plan, unmapped = _join_observed_shortcuts(plan, leaves)
+    # Keep diagnostics outside the tree as well: lite responses must retain the
+    # complete list, even when branches are collapsed or the UI is paginated.
+    unmapped_shortcuts = [
+        {
+            "shortcut_path": _str_or_blank(item.get("shortcut_path") or item.get("path")),
+            "shortcut_root": _str_or_blank(item.get("shortcut_root")),
+            "shortcut_relpath": _str_or_blank(item.get("shortcut_relpath")),
+            "shortcut_exists": bool(item.get("shortcut_exists", True)),
+            "target_path": _str_or_blank(item.get("target_path")),
+            "target_resolved": bool(item.get("target_resolved")),
+            "target_exists": bool(item.get("target_exists")),
+            "target_error": _str_or_blank(item.get("target_error")),
+        }
+        for item in sorted(unmapped, key=lambda row: _str_or_blank(row.get("shortcut_path")).casefold())
+    ]
+    if unmapped_shortcuts:
+        detail = "\n".join(
+            f"{item['shortcut_path']} -> {item['target_path'] or '目标未解析'}"
+            for item in unmapped_shortcuts[:25]
+        )
+        if len(unmapped_shortcuts) > 25:
+            detail += f"\n其余 {len(unmapped_shortcuts) - 25} 项见未关联快捷方式明细。"
+        report_progress(f"快捷方式关联核对完成：{len(unmapped_shortcuts)} 项未关联 DB", completed=len(leaves),
+                        total=len(leaves), unit="快捷方式", detail=detail)
     plan_summary = _plan_summary(plan)
-    plan_summary["unmapped_on_disk"] = 0
-    tree = _build_tree(plan, [], {})
+    plan_summary["unmapped_on_disk"] = len(unmapped)
+    tree = _build_tree(plan, unmapped, {})
     payload: dict[str, Any] = {
         "ok": True,
         "config": collection_link_index_config_json(),
         "plan_summary": plan_summary,
         "mapping_summary": _mapping_summary(works),
         "disk_summary": {
-            "shortcut_leaves": 0,
-            "unmapped_on_disk": 0,
+            "shortcut_leaves": len(leaves),
+            "unmapped_on_disk": len(unmapped),
             "db_match_cached": False,
             "index_db_exists": index_db_exists,
             "index_db_path": str(_link_index_db_path()),
         },
         "tree": _slim_tree_for_index_browser(tree) if lite else tree,
+        "unmapped_shortcuts": unmapped_shortcuts,
+        "issues": _index_plan_issues(plan),
     }
     if lite:
         return payload
@@ -3339,30 +2994,6 @@ def _payload_from_works(
     return payload
 
 
-def _lite_payload_from_index_db(settings: JpTvBrowseSettings) -> dict[str, Any] | None:
-    catalog_root = _settings_catalog_root_key(settings)
-    if not catalog_root:
-        return None
-    db = _load_link_index_db()
-    if _str_or_blank(db.get("catalog_root")) != catalog_root:
-        return None
-    items = _refreshed_index_db_display_items(db.get("items"))
-    if not items:
-        return None
-    payload = _payload_from_works(
-        [],
-        lite=True,
-        catalog_root=catalog_root,
-        plan_override=items,
-    )
-    payload["mapping_summary"] = {
-        "total_press": len(items),
-        "mapped_press": sum(1 for item in items if _str_or_blank(item.get("target_path"))),
-        "unconfigured_press": sum(1 for item in items if not _str_or_blank(item.get("target_path"))),
-        "unconfigured_work_path": 0,
-        "unconfigured_press_path": 0,
-    }
-    return payload
 
 
 def collection_link_index_payload(
@@ -3371,22 +3002,15 @@ def collection_link_index_payload(
     refresh_links: bool = False,
     lite: bool = False,
 ) -> dict[str, Any]:
-    if lite and not refresh_links:
-        fast_payload = _lite_payload_from_index_db(settings)
-        if fast_payload is not None:
-            return fast_payload
-        cached = _cached_link_index_lite_payload(settings)
-        if cached is not None:
-            return cached
-    payload = _payload_from_works(
-        _load_catalog_works(settings),
+    # Tree caches are derived: always join current DB records and current disk
+    # observations. YAML parsing and shortcut-target parsing retain their own
+    # versioned caches; neither may replace the work catalog as the authority.
+    return _payload_from_works(
+        CatalogRepository(settings).load_works(),
         refresh_links=refresh_links,
         lite=lite,
         catalog_root=_settings_catalog_root_key(settings),
     )
-    if lite:
-        _cache_link_index_lite_payload(settings, payload)
-    return payload
 
 
 def preview_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
@@ -3410,21 +3034,18 @@ def save_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSe
 
 
 def generate_link_index_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> dict[str, Any]:
-    if body.get("refresh_resources") is True and body.get("preview") is not True:
-        scan_resource_libraries_payload()
     if body.get("preview") is True:
         _, items, _, bindings = _catalog_binding_generation_context(settings)
         return {"generated": items, "catalog_bindings": bindings, "preview": True}
     if settings.filesystem_root is None:
-        raise ValueError("未配置 filesystem_root，不能同步索引与作品目录绑定")
+        raise ValueError("未配置 filesystem_root，不能同步索引")
     with catalog_write_transaction(settings.filesystem_root):
-        _, _, _, bindings = _catalog_binding_generation_context(settings)
-        _assert_catalog_binding_plan_safe(bindings)
-        works, saved, writes = _commit_catalog_mappings_and_index(bindings["mappings"], settings=settings)
+        works, items, _, bindings = _catalog_binding_generation_context(settings)
+        saved = _save_index_entries(items, catalog_root=_settings_catalog_root_key(settings))
         payload = _payload_from_works(works, refresh_links=True, catalog_root=_settings_catalog_root_key(settings))
     payload["generated"] = saved.get("items", [])
     payload["catalog_bindings"] = bindings
-    payload["writes"] = writes
+    payload["writes"] = []
     payload["index_db"] = {
         "path": str(_link_index_db_path()),
         "generated_at": saved.get("generated_at") or "",
@@ -3552,24 +3173,7 @@ def _plan_missing_catalog_bindings(
 
 
 def _ordinary_catalog_target(raw: str, *, cache: dict[Path, bool] | None = None) -> bool:
-    path = Path(raw)
-    if not path.is_absolute() or ".." in path.parts:
-        return False
-    try:
-        for current in (path, *path.parents):
-            ordinary = cache.get(current) if cache is not None else None
-            if ordinary is None:
-                metadata = current.lstat()
-                ordinary = bool(stat.S_ISDIR(metadata.st_mode) and not stat.S_ISLNK(metadata.st_mode) and not (
-                    getattr(metadata, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
-                ))
-                if cache is not None:
-                    cache[current] = ordinary
-            if not ordinary:
-                return False
-    except OSError:
-        return False
-    return True
+    return filesystem.ordinary_directory(raw, cache=cache)
 
 
 def _assert_catalog_binding_plan_safe(plan: dict[str, Any]) -> None:
@@ -3582,31 +3186,105 @@ def _assert_catalog_binding_plan_safe(plan: dict[str, Any]) -> None:
 
 def _catalog_binding_generation_context(
     settings: JpTvBrowseSettings,
+    *, scope: Any = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], bool, dict[str, Any]]:
-    candidates, cached = _link_index_file_generation_plan(settings)
-    works = _load_catalog_works(settings)
-    bindings = _plan_missing_catalog_bindings(works, candidates)
+    """Project only saved DB bindings; disk candidates never become DB writes."""
+    repository = CatalogRepository(settings)
+    sources = [repository.read_source(path) for path in repository.catalog_paths()]
+    works = repository.load_works(catalog_overrides={source.path: source.data for source in sources})
+    all_works = works
+    scope_keys: set[tuple[str, str]] | None = None
+    if scope is not None:
+        if not isinstance(scope, list) or not scope or len(scope) > 1000:
+            raise ValueError("快捷方式 scope 必须为非空数组，最多 1000 条精确作品/压制引用")
+        scope_keys = set()
+        for ref in scope:
+            if not isinstance(ref, dict) or not all(isinstance(ref.get(key), str) and ref[key].strip() for key in ("work_key", "press_key")):
+                raise ValueError("快捷方式 scope 每项必须包含精确 work_key 和 press_key")
+            scope_keys.add((ref["work_key"], ref["press_key"]))
+        known = {(work["work_key"], press["press_key"]) for work in works for press in work.get("press", [])}
+        unknown = scope_keys - known
+        if unknown:
+            raise ValueError("快捷方式范围引用已不存在或已变化，请重新预览：" + "; ".join(f"{work} / {press}" for work, press in sorted(unknown)[:5]))
+        works = [{**work, "press": [press for press in work.get("press", [])
+                                   if (work["work_key"], press["press_key"]) in scope_keys]}
+                 for work in works if any((work["work_key"], press["press_key"]) in scope_keys for press in work.get("press", []))]
+    items = _index_entries_from_works(works, use_resource_index=False)
     previous = _load_link_index_db()
-    if _str_or_blank(previous.get("catalog_root")) == _settings_catalog_root_key(settings):
-        raw_previous = previous.get("items")
-        _, rejected = _validated_previous_index_items(works, raw_previous if isinstance(raw_previous, list) else [])
-        complete_work_keys = {work.get("work_key") for work in works if work.get("press")
-                              and all(_catalog_target_for_work_press(work, press)[1] for press in work["press"])}
-        # A complete current catalog can supersede obsolete derived metadata.
-        # For unbound works, do not disguise contradictory old evidence by
-        # manufacturing a fresh identity around its target or a resource match.
-        bindings["issues"].extend(issue for issue in rejected if issue.get("work_key") not in complete_work_keys)
-        bindings["summary"]["issue_count"] = len(bindings["issues"])
-        bindings["summary"]["blocking_issue_count"] = sum(bool(issue.get("blocking")) for issue in bindings["issues"])
-    projected = _merge_ui_mappings(works, _ui_mapping_items({"works": bindings["mappings"]}))
-    # Only catalog-backed targets (including this exact safe preview mapping)
-    # can become shortcuts. Unconfirmed format-only matches stay unbound.
-    canonical = _index_entries_from_works(projected, use_resource_index=False)
-    by_key = {item["entry_key"]: item for item in canonical}
-    unbound = sum(bool(item.get("target_exists")) and not bool(by_key.get(item.get("entry_key"), {}).get("target_exists"))
-                  for item in candidates)
-    bindings["summary"]["unbound_candidate_count"] = unbound
-    return works, canonical, cached, bindings
+    cached = (_str_or_blank(previous.get("catalog_root")) == _settings_catalog_root_key(settings)
+              and bool(previous.get("items")))
+    issues: list[dict[str, Any]] = []
+    directory_checks: dict[Path, bool] = {}
+    checked = 0
+    for work in works:
+        for press in work.get("press") or []:
+            if checked % 50 == 0:
+                report_progress("核对数据库目录绑定", completed=checked, total=len(items), unit="收集记录",
+                                detail=str(work.get("name") or ""))
+            checked += 1
+            target, exists, error = _catalog_target_for_work_press(work, press)
+            work_path = normalize_copied_path(work.get("path"))
+            press_path = normalize_copied_path(press.get(TV_JP_PRESS_PATH_KEY))
+            if not work_path or not press_path:
+                code = "missing-catalog-binding"
+                missing_fields = [key for key, value in (("path", work_path), ("press_path", press_path)) if not value]
+                message = "作品数据库缺少目录绑定字段：" + " / ".join(missing_fields) + "；请先主动保存或修复数据库，不能由磁盘缓存自动生成快捷方式"
+                blocking = True
+            elif error:
+                code, message, blocking = "invalid-catalog-binding", error, True
+            elif exists and not filesystem.ordinary_directory(str(resolve_catalog_directory(
+                _legacy_media_root(resolve_links=False), work_path, press_path, resolve_links=False,
+            )), cache=directory_checks):
+                code = "unsafe-catalog-binding"
+                message = "数据库目录绑定包含快捷方式、联接或符号链接，不能安全生成快捷方式"
+                blocking = True
+            elif not exists:
+                code = "missing-disk-directory"
+                message = "数据库已绑定，但硬盘目录当前不存在或不可访问；本条快捷方式将跳过"
+                blocking = False
+            else:
+                continue
+            issues.append(_index_issue(
+                {**work, **press, "name": work.get("name"), "work_path": work_path,
+                 "press_path": press_path, "target_path": target},
+                code, message, stage="快捷方式创建预检", action="核对数据库目录绑定",
+                error=message, blocking=blocking, path=target or work_path,
+            ))
+    report_progress("数据库目录绑定核对完成", completed=checked, total=len(items), unit="收集记录")
+    bindings = {
+        "mappings": [], "issues": issues,
+        "source_versions": [{"path": source.relative_path, "sha256": source.source_sha256} for source in sources],
+        "summary": {
+            "work_count": len(works), "press_count": len(items),
+            "mapped_work_count": 0, "mapped_press_count": 0,
+            "unchanged_press_count": sum(bool(item.get("target_exists")) for item in items),
+            "issue_count": len(issues),
+            "blocking_issue_count": sum(bool(issue.get("blocking")) for issue in issues),
+            "unbound_candidate_count": 0,
+        },
+    }
+    if scope_keys is not None:
+        # Scope never widens creation. Check only peers sharing a destination so
+        # selecting one record cannot bypass a conflicting unselected DB row.
+        destinations = {_path_compare_key(item.get("shortcut_path")): item for item in items}
+        conflicts = []
+        for work in all_works:
+            for press in work.get("press", []):
+                if (work["work_key"], press["press_key"]) in scope_keys:
+                    continue
+                relative, _parts = _index_relpath_for(work, press)
+                destination = _shortcut_root_for_work(work) / relative
+                selected = destinations.get(_path_compare_key(destination))
+                if selected is None:
+                    continue
+                target, _exists, _error = _catalog_target_for_work_press(work, press)
+                if _path_compare_key(target) != _path_compare_key(selected.get("target_path")):
+                    reason = f"输出快捷方式与未选中 DB 记录 {work['work_key']} / {press['press_key']} 冲突；未选中目标：{target}"
+                    conflicts.append(_index_issue(selected, "shortcut-scope-output-conflict", reason,
+                                                   stage="快捷方式创建预检", error=reason, blocking=True))
+        bindings["scope_conflicts"] = conflicts
+        bindings["scope"] = [{"work_key": work, "press_key": press} for work, press in sorted(scope_keys)]
+    return works, items, bool(cached), bindings
 
 
 def _shortcut_root_for_index_item(item: dict[str, Any]) -> Path:
@@ -3614,11 +3292,11 @@ def _shortcut_root_for_index_item(item: dict[str, Any]) -> Path:
     return Path(configured).expanduser().resolve() if configured else _shortcut_root_for_work(item)
 
 
-def _shortcut_generation_conflicts(items: list[dict[str, Any]]) -> list[dict[str, str]]:
+def _shortcut_generation_conflicts(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Check the complete cached plan before a rebuild can clear output folders."""
     configured = {_path_compare_key(root) for root in shortcut_roots()}
     destinations: dict[str, str] = {}
-    conflicts: list[dict[str, str]] = []
+    conflicts: list[dict[str, Any]] = []
     for item in items:
         root = _shortcut_root_for_index_item(item)
         rel = _str_or_blank(item.get("shortcut_relpath") or item.get("relpath"))
@@ -3632,7 +3310,8 @@ def _shortcut_generation_conflicts(items: list[dict[str, Any]]) -> list[dict[str
                 raise ValueError(f"同一个快捷方式路径对应多个目标目录：{destination}")
             destinations[key] = target
         except (OSError, ValueError) as exc:
-            conflicts.append({"shortcut_relpath": rel, "error": str(exc)})
+            conflicts.append(_index_issue(item, "shortcut-output-conflict", str(exc), stage="快捷方式创建预检",
+                                          error=str(exc), shortcut_relpath=rel))
     return conflicts
 
 
@@ -3701,18 +3380,154 @@ def _link_index_file_generation_preview(items: list[dict[str, Any]]) -> dict[str
     }
 
 
+def _generate_incremental_link_index_files(
+    body: dict[str, Any], *, settings: JpTvBrowseSettings,
+) -> dict[str, Any]:
+    """Create only missing DB-backed shortcuts; never clear, overwrite or bind."""
+    scoped = "scope" in body
+    if scoped and body["scope"] is None:
+        raise ValueError("显式快捷方式 scope 不能为空或 null")
+    _, original_items, index_db_exists, bindings = (_catalog_binding_generation_context(settings, scope=body["scope"])
+        if scoped else _catalog_binding_generation_context(settings))
+    skipped_keys = {
+        (issue.get("work_key"), issue.get("press_key"))
+        for issue in bindings["issues"] if issue.get("blocking")
+    }
+    items = [
+        {**item, "target_exists": False} if (item.get("work_key"), item.get("press_key")) in skipped_keys
+        else item for item in original_items
+    ]
+    preview = _link_index_file_generation_preview(items)
+    preview["conflicts"].extend(bindings.get("scope_conflicts", []))
+    prepared: list[tuple[Path, Path, dict[str, Any]]] = []
+    planned_keys: set[str] = set()
+    state: list[dict[str, Any]] = []
+    existing_paths: list[Path] = []
+    for item in items:
+        if item.get("target_path") and item.get("target_exists"):
+            path = _safe_shortcut_path_from_rel(_shortcut_root_for_index_item(item), item.get("shortcut_relpath"))
+            if path.is_file():
+                existing_paths.append(path)
+    actual_targets = _windows_shortcut_targets(existing_paths)
+    already_exists = 0
+    duplicate_count = 0
+    for item in items:
+        target_text = _str_or_blank(item.get("target_path"))
+        root = _shortcut_root_for_index_item(item)
+        path = _safe_shortcut_path_from_rel(root, item.get("shortcut_relpath"))
+        row: dict[str, Any] = {
+            "work_key": item.get("work_key"), "press_key": item.get("press_key"), "name": item.get("name"),
+            "shortcut_path": str(path), "target_path": target_text,
+            "status": "skipped", "exists": path.exists(), "file_sha256": "",
+        }
+        if path.is_file():
+            try:
+                row["file_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+            except OSError as exc:
+                row["error"] = str(exc)
+                report_exception(exc, context={"stage": "快捷方式创建预检", "action": "读取现有快捷方式指纹", "shortcut_path": str(path), "target_path": target_text})
+        info = actual_targets.get(str(path.expanduser().resolve())) or {}
+        row["actual_target"] = str(info.get("target_path") or "")
+        state.append(row)
+        if not target_text or not item.get("target_exists"):
+            continue
+        key = _path_compare_key(path)
+        if key in planned_keys:
+            duplicate_count += 1
+            row["status"] = "duplicate"
+            continue
+        planned_keys.add(key)
+        if path.exists():
+            if path.is_file() and not row.get("error") and _path_compare_key(row["actual_target"]) == _path_compare_key(target_text):
+                already_exists += 1
+                row["status"] = "already_exists"
+            else:
+                row["status"] = "conflict"
+                if not path.is_file():
+                    reason = "快捷方式目标路径已被非普通文件占用，增量补建不会覆盖"
+                elif row.get("error"):
+                    reason = "无法读取现有快捷方式：" + str(row["error"])
+                elif not row["actual_target"]:
+                    reason = "现有快捷方式目标解析失败：" + str(info.get("error") or "未返回目标路径")
+                else:
+                    reason = f"现有快捷方式指向 {row['actual_target']}，数据库期望 {target_text}；增量补建不会覆盖"
+                preview["conflicts"].append(_index_issue(
+                    {**item, "shortcut_path": str(path), "target_path": target_text},
+                    "shortcut-existing-conflict", reason, stage="快捷方式创建预检", error=reason,
+                    actual_target_path=row["actual_target"],
+                ))
+            continue
+        row["status"] = "planned"
+        prepared.append((path, Path(target_text), item))
+    preview.update({
+        "scope": bindings.get("scope") if scoped else None,
+        "incremental": True, "items": state, "creatable": len(prepared),
+        "already_exists_count": already_exists, "duplicate_count": duplicate_count,
+        "conflict_count": len(preview["conflicts"]), "blocked_count": len(preview["conflicts"]),
+        "skipped_unbound_count": sum(issue.get("code") == "missing-catalog-binding" for issue in bindings["issues"]),
+        "skipped_unsafe_count": sum(issue.get("code") in {"invalid-catalog-binding", "unsafe-catalog-binding"} for issue in bindings["issues"]),
+        "index_db_exists": index_db_exists, "catalog_refreshed": True,
+        "catalog_bindings": {**bindings, "issues": [{**issue, "blocking": False, "skipped": True} for issue in bindings["issues"]],
+                             "summary": {**bindings["summary"], "blocking_issue_count": 0}},
+        "issues": [{**issue, "blocking": False, "skipped": True} for issue in bindings["issues"]] + preview["conflicts"],
+    })
+    preview["plan_id"] = hashlib.sha256(json.dumps({
+        "incremental": True, "items": state, "bindings": bindings,
+    }, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    if body.get("preview") is True:
+        return {"config": collection_link_index_config_json(), "file_generation": preview}
+    if preview["conflict_count"]:
+        for conflict in preview["conflicts"]:
+            report_progress("快捷方式创建被预检冲突阻止", detail=str(conflict.get("error") or ""), context=conflict)
+        raise ValueError("快捷方式补建计划存在冲突，数据库与快捷方式均未更改：" +
+                         "; ".join(item["error"] for item in preview["conflicts"][:5]))
+    report_progress("复核增量创建确认与计划版本", context={"stage": "执行前安全复核", "action": "检查确认参数及数据库和磁盘计划版本"})
+    if body.get("plan_id") != preview["plan_id"]:
+        raise ValueError("数据库或快捷方式已变化，请重新预检并确认；尚未创建快捷方式")
+    if body.get("confirm_incremental") is not True:
+        raise ValueError("补建快捷方式必须先预检并明确确认")
+    if not scoped:
+        _save_index_entries(items, catalog_root=_settings_catalog_root_key(settings))
+    created = 0
+    failed: list[dict[str, Any]] = []
+    for index, (path, target, item) in enumerate(prepared):
+        context = _index_issue({**item, "shortcut_path": str(path), "target_path": str(target)},
+                              "shortcut-create", "创建已确认的数据库快捷方式", stage="增量创建快捷方式",
+                              action="独占创建快捷方式，不覆盖已有文件")
+        report_progress("增量补建数据库快捷方式", completed=index, total=len(prepared), unit="快捷方式", detail=str(path), context=context)
+        try:
+            # Physical storage performs an exclusive final publish as well.
+            if path.exists():
+                raise FileExistsError("快捷方式在执行期间已出现，未覆盖")
+            _create_windows_shortcut(path, target)
+            created += 1
+        except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+            report_exception(exc, context=context)
+            failed.append({**context, "code": "shortcut-create-failed", "error": str(exc), "reason": str(exc), "error_type": type(exc).__name__})
+    report_progress("快捷方式补建结束", completed=len(prepared), total=len(prepared), unit="快捷方式")
+    return {
+        "config": collection_link_index_config_json(),
+        "file_generation": {**preview, "created": created, "removed_count": 0,
+                            "failed_count": len(failed), "failed": failed, "catalog_writes": [],
+                            "index_cache_updated": not scoped},
+    }
+
+
 def _generate_link_index_files_from_ui_body_unlocked(
     body: dict[str, Any],
     *,
     settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
+    if body.get("incremental") is True:
+        return _generate_incremental_link_index_files(body, settings=settings)
     report_progress("读取并校验快捷方式生成计划")
-    _, items, index_db_exists, bindings = _catalog_binding_generation_context(settings)
+    works, items, index_db_exists, bindings = _catalog_binding_generation_context(settings)
     preview = _link_index_file_generation_preview(items)
     binding_conflicts = [issue for issue in bindings.get("issues", []) if issue.get("blocking")]
     preview["conflicts"].extend(binding_conflicts)
     preview["conflict_count"] = len(preview["conflicts"])
     preview["catalog_bindings"] = bindings
+    preview["issues"] = [issue for issue in bindings["issues"] if not issue.get("blocking")] + preview["conflicts"]
     preview["unbound_count"] = int(bindings.get("summary", {}).get("unbound_candidate_count") or 0)
     preview["blocked_count"] = len(binding_conflicts)
     preview["index_db_exists"] = index_db_exists
@@ -3729,9 +3544,12 @@ def _generate_link_index_files_from_ui_body_unlocked(
             "file_generation": preview,
         }
     if preview["conflict_count"]:
+        for conflict in preview["conflicts"]:
+            report_progress("快捷方式创建被预检冲突阻止", detail=str(conflict.get("error") or ""), context=conflict)
         raise ValueError("快捷方式计划存在冲突，尚未清空或创建文件：" + "; ".join(
             conflict["error"] for conflict in preview["conflicts"][:5]
         ))
+    report_progress("复核重建确认与计划版本", context={"stage": "执行前安全复核", "action": "检查输出清理确认及数据库计划版本"})
     if body.get("plan_id") and body["plan_id"] != preview["plan_id"]:
         raise ValueError("数据库或输出计划已变化，请重新预检并确认；尚未清空或创建快捷方式")
     if preview["root_non_empty"] and (
@@ -3751,10 +3569,11 @@ def _generate_link_index_files_from_ui_body_unlocked(
             report_progress("备份已有快捷方式目录", detail=str(root))
             backup_paths.append(_backup_shortcut_root(root, body.get("backup_dir")))
     report_progress("同步最新快捷方式索引", completed=len(items), total=len(items), unit="条")
-    saved_works, _, binding_writes = _commit_catalog_mappings_and_index(bindings["mappings"], settings=settings)
-    # The persisted index may retain unconfirmed evidence for later repair.
-    # Actual shortcut creation must use only the just-saved canonical bindings.
-    items = _index_entries_from_works(saved_works, use_resource_index=False)
+    # Keep exactly the work/item snapshot that passed preview and plan-ID checks.
+    # Reloading here could silently widen the output scope after confirmation.
+    _save_index_entries(items, catalog_root=_settings_catalog_root_key(settings))
+    binding_writes: list[dict[str, Any]] = []
+    # The authoritative catalog is never changed by shortcut generation.
     for root in roots:
         if _shortcut_root_direct_entries(root):
             report_progress("清理已确认的快捷方式输出目录", detail=str(root))
@@ -3789,15 +3608,22 @@ def _generate_link_index_files_from_ui_body_unlocked(
             created_paths.add(shortcut_key)
             created += 1
         except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+            context = _index_issue(item, "shortcut-create-failed", str(exc), stage="创建快捷方式", action="创建已确认的快捷方式")
+            report_exception(exc, context=context)
             failed.append(
                 {
+                    **context,
                     "shortcut_relpath": rel,
                     "target_path": target_s,
                     "error": str(exc),
+                    "error_type": type(exc).__name__,
                 }
             )
     report_progress("快捷方式生成阶段结束", completed=len(items), total=len(items), unit="条目", detail=f"创建 {created}，失败 {len(failed)}，跳过 {skipped_empty_target + skipped_missing_target}")
-    payload = collection_link_index_payload(settings)
+    payload = _payload_from_works(
+        works, refresh_links=True, catalog_root=_settings_catalog_root_key(settings),
+        plan_override=items,
+    )
     payload["file_generation"] = {
         **preview,
         "output_root": str(roots[0]),
@@ -3809,7 +3635,7 @@ def _generate_link_index_files_from_ui_body_unlocked(
         "skipped_empty_target": skipped_empty_target,
         "skipped_missing_target": skipped_missing_target,
         "failed_count": len(failed),
-        "failed": failed[:50],
+        "failed": failed,
         "catalog_writes": binding_writes,
     }
     return payload
@@ -3829,13 +3655,7 @@ def generate_link_index_files_from_ui_body(
 
 
 def _path_under_any_root(path: Path, roots: list[Path]) -> bool:
-    for root in roots:
-        try:
-            path.relative_to(root.resolve())
-            return True
-        except ValueError:
-            continue
-    return False
+    return filesystem.path_under_any_root(path, roots)
 
 
 def _windows_shortcut_target(shortcut_path: Path) -> str:
@@ -3868,122 +3688,12 @@ def shortcut_target_matches(
 
 
 def _windows_shortcut_targets(shortcut_paths: list[Path]) -> dict[str, dict[str, Any]]:
-    paths = [p for p in shortcut_paths if p.suffix.lower() == ".lnk"]
-    if os.name != "nt" or not paths:
-        return {}
-    powershell_exe = os.environ.get(
-        "SystemRoot",
-        r"C:\Windows",
-    ) + r"\System32\WindowsPowerShell\v1.0\powershell.exe"
-    script = (
-        "[Console]::InputEncoding = [System.Text.Encoding]::UTF8\n"
-        "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n"
-        "$OutputEncoding = [System.Text.Encoding]::UTF8\n"
-        "$ErrorActionPreference = 'Stop'\n"
-        "$raw = [Console]::In.ReadToEnd()\n"
-        "$paths = $raw | ConvertFrom-Json\n"
-        "$typeDefinition = @'\n"
-        "using System;\n"
-        "using System.Text;\n"
-        "using System.Runtime.InteropServices;\n"
-        "namespace NimdaShortcutReader {\n"
-        "  [ComImport, Guid(\"00021401-0000-0000-C000-000000000046\")]\n"
-        "  public class ShellLink {}\n"
-        "  [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid(\"000214F9-0000-0000-C000-000000000046\")]\n"
-        "  public interface IShellLinkW {\n"
-        "    [PreserveSig] int GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);\n"
-        "    [PreserveSig] int GetIDList(out IntPtr ppidl);\n"
-        "    [PreserveSig] int SetIDList(IntPtr pidl);\n"
-        "    [PreserveSig] int GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);\n"
-        "    [PreserveSig] int SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);\n"
-        "    [PreserveSig] int GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);\n"
-        "    [PreserveSig] int SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);\n"
-        "    [PreserveSig] int GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);\n"
-        "    [PreserveSig] int SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);\n"
-        "    [PreserveSig] int GetHotkey(out short pwHotkey);\n"
-        "    [PreserveSig] int SetHotkey(short wHotkey);\n"
-        "    [PreserveSig] int GetShowCmd(out int piShowCmd);\n"
-        "    [PreserveSig] int SetShowCmd(int iShowCmd);\n"
-        "    [PreserveSig] int GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);\n"
-        "    [PreserveSig] int SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);\n"
-        "    [PreserveSig] int SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);\n"
-        "    [PreserveSig] int Resolve(IntPtr hwnd, uint fFlags);\n"
-        "    [PreserveSig] int SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);\n"
-        "  }\n"
-        "  [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid(\"0000010B-0000-0000-C000-000000000046\")]\n"
-        "  public interface IPersistFile {\n"
-        "    void GetClassID(out Guid pClassID);\n"
-        "    [PreserveSig] int IsDirty();\n"
-        "    [PreserveSig] int Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);\n"
-        "    [PreserveSig] int Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, bool fRemember);\n"
-        "    [PreserveSig] int SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);\n"
-        "    [PreserveSig] int GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);\n"
-        "  }\n"
-        "  public static class ShortcutReader {\n"
-        "    public static string Read(string shortcutPath) {\n"
-        "      IShellLinkW shellLink = (IShellLinkW)new ShellLink();\n"
-        "      IPersistFile persist = (IPersistFile)shellLink;\n"
-        "      int hr = persist.Load(shortcutPath, 0);\n"
-        "      Marshal.ThrowExceptionForHR(hr);\n"
-        "      StringBuilder path = new StringBuilder(32768);\n"
-        "      hr = shellLink.GetPath(path, path.Capacity, IntPtr.Zero, 0);\n"
-        "      Marshal.ThrowExceptionForHR(hr);\n"
-        "      return path.ToString();\n"
-        "    }\n"
-        "  }\n"
-        "}\n"
-        "'@\n"
-        "Add-Type -TypeDefinition $typeDefinition\n"
-        "$rows = foreach ($shortcutPath in $paths) {\n"
-        "  try {\n"
-        "    $target = [NimdaShortcutReader.ShortcutReader]::Read([string]$shortcutPath)\n"
-        "    [pscustomobject]@{ path = [string]$shortcutPath; target = [string]$target; error = '' }\n"
-        "  } catch {\n"
-        "    [pscustomobject]@{ path = [string]$shortcutPath; target = ''; error = [string]$_.Exception.Message }\n"
-        "  }\n"
-        "}\n"
-        "$json = $rows | ConvertTo-Json -Compress\n"
-        "[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))\n"
-    )
-    kwargs: dict[str, Any] = {}
-    if hasattr(subprocess, "CREATE_NO_WINDOW"):
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
-    proc = subprocess.run(
-        [powershell_exe, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-        input=json.dumps([str(p) for p in paths], ensure_ascii=False),
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=60,
-        **kwargs,
-    )
-    if proc.returncode != 0 or not proc.stdout.strip():
-        return {}
-    try:
-        decoded_stdout = base64.b64decode(proc.stdout.strip()).decode("utf-8")
-        raw_rows = json.loads(decoded_stdout)
-    except (ValueError, json.JSONDecodeError):
-        return {}
-    rows = raw_rows if isinstance(raw_rows, list) else [raw_rows]
-    out: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        path_s = str(row.get("path") or "")
-        if not path_s:
-            continue
-        out[str(Path(path_s).expanduser().resolve())] = {
-            "target_path": str(row.get("target") or ""),
-            "target_resolved": bool(row.get("target")),
-            "error": str(row.get("error") or ""),
-        }
-    return out
+    return windows_shortcuts.windows_shortcut_targets(shortcut_paths)
 
 
 def resolve_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     raw = body.get("path")
+    report_progress("校验待解析路径", context={"stage": "解析目录或快捷方式", "action": "检查路径范围与存在状态", "source_path": raw if isinstance(raw, str) else ""})
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("path 不能为空")
     p = Path(raw.strip()).expanduser().resolve()
@@ -3993,7 +3703,8 @@ def resolve_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]
     if not p.exists():
         raise FileNotFoundError(str(p))
     if p.is_file() and p.suffix.lower() == ".lnk":
-        target_s = _windows_shortcut_target(p)
+        with operation_context(stage="解析快捷方式", action="读取实际目标", shortcut_path=str(p)):
+            target_s = _windows_shortcut_target(p)
         if not target_s:
             raise FileNotFoundError(f"无法解析快捷方式目标：{p}")
         target = Path(target_s).expanduser().resolve()
@@ -4015,6 +3726,7 @@ def resolve_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]
 
 def open_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     raw = body.get("path")
+    report_progress("校验待打开路径", context={"stage": "打开目录", "action": "检查路径范围与存在状态", "source_path": raw if isinstance(raw, str) else ""})
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError("path 不能为空")
     p = Path(raw.strip()).expanduser().resolve()
@@ -4026,41 +3738,49 @@ def open_link_index_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     open_path = p
     resolved_from_shortcut = False
     if p.is_file() and p.suffix.lower() == ".lnk":
-        target_s = _windows_shortcut_target(p)
+        with operation_context(stage="打开快捷方式", action="读取实际目标", shortcut_path=str(p)):
+            target_s = _windows_shortcut_target(p)
         if not target_s:
             raise FileNotFoundError(f"无法解析快捷方式目标：{p}")
         target = Path(target_s).expanduser().resolve()
+        report_progress("核对快捷方式实际目标", context={"stage": "打开快捷方式", "action": "检查目标存在状态", "shortcut_path": str(p), "target_path": str(target)})
         if not target.exists():
             raise FileNotFoundError(str(target))
         open_path = target if target.is_dir() else target.parent
         resolved_from_shortcut = True
     elif p.is_file():
         open_path = p.parent
-    if os.name == "nt":
-        os.startfile(str(open_path))  # type: ignore[attr-defined]
-    else:
-        subprocess.Popen(["xdg-open", str(open_path)])
+    with operation_context(stage="打开目录", action="调用系统文件管理器", source_path=str(p), target_path=str(open_path)):
+        if os.name == "nt":
+            os.startfile(str(open_path))  # type: ignore[attr-defined]
+        else:
+            subprocess.Popen(["xdg-open", str(open_path)])
     return {"path": str(open_path), "source_path": str(p), "resolved_from_shortcut": resolved_from_shortcut}
 
 
 def open_collection_press_path_from_ui_body(body: dict[str, Any]) -> dict[str, Any]:
     work_raw = body.get("path", body.get("work_path"))
     press_raw = body.get("press_path")
+    report_progress("校验待打开压制目录", context={"stage": "打开作品压制目录", "action": "核对作品根目录与压制目录绑定",
+                    "source_path": work_raw if isinstance(work_raw, str) else "", "press_path": press_raw if isinstance(press_raw, str) else ""})
     if not isinstance(work_raw, str) or not work_raw.strip():
         raise ValueError("作品父路径不能为空")
     if not isinstance(press_raw, str) or not press_raw.strip():
         raise ValueError("压制路径不能为空")
     target = _target_for(_legacy_media_root(), work_raw.strip(), press_raw.strip())
+    report_progress("核对压制目录存在状态", context={"stage": "打开作品压制目录", "action": "检查目标范围与存在状态",
+                    "source_path": work_raw, "press_path": press_raw, "target_path": str(target)})
     roots = resource_roots()
     if not _path_under_any_root(target, roots):
         raise ValueError("只能打开资源库目录下的连接路径")
     if not target.exists():
         raise FileNotFoundError(str(target))
     open_path = target if target.is_dir() else target.parent
-    if os.name == "nt":
-        os.startfile(str(open_path))  # type: ignore[attr-defined]
-    else:
-        subprocess.Popen(["xdg-open", str(open_path)])
+    with operation_context(stage="打开作品压制目录", action="调用系统文件管理器", source_path=work_raw, target_path=str(open_path), press_path=press_raw):
+        if os.name == "nt":
+            os.startfile(str(open_path))  # type: ignore[attr-defined]
+        else:
+            subprocess.Popen(["xdg-open", str(open_path)])
     return {
         "path": str(open_path),
         "target_path": str(target),

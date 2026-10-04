@@ -18,9 +18,6 @@ Invoke-NimdaWorkspace -RepositoryRoot $repoRoot -Utf8PythonIO -Action {
     & $Python (Join-Path $repoRoot "apps\features\collection-detail\tests\benchmark_resource_cache.py")
     if ($LASTEXITCODE -ne 0) { throw "Resource-cache benchmark failed." }
 
-    & $Python (Join-Path $repoRoot "apps\features\media-directory-organizer\tests\test_matching_index.py") --benchmark
-    if ($LASTEXITCODE -ne 0) { throw "Organizer matching benchmark failed." }
-
     if (-not $SkipJavaScript) {
         $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
         if ($null -eq $nodeCommand) {

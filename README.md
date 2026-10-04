@@ -18,9 +18,9 @@ nimda/
         backend/              "收集情况" API/service
         frontend/             "收集情况" tab module
         tests/
-      media-directory-organizer/
-        backend/              Preview, classification, media/DB/shortcut coordination
-        frontend/             "目录整理" tab module
+      directory-organizer/
+        backend/              Disk-first per-child plans and organizer classes
+        frontend/             Editable previews, DB bindings and confirmations
         tests/
   config/
     framework/
@@ -42,12 +42,15 @@ nimda/
       collection-info/
         db/
         history/
+      directory-organizer/
+        history/              Append-only media execution receipts
 ```
 
 Rules:
 
-- Add a new tab as the same feature id under `apps/features/`,
-  `config/features/`, and `data/features/`.
+- Add a new tab under `apps/features/`; use the same feature id for any
+  independent configuration or runtime data under `config/features/` and
+  `data/features/`. Do not duplicate another feature's canonical settings/DB.
 - Keep framework shell behavior under `apps/framework`.
 - Keep page-specific backend and frontend behavior under `apps/features/<feature-id>`.
 - Keep global tab labels/order in `config/framework/app.yaml`.
@@ -60,7 +63,43 @@ Rules:
   into the configured shortcut directory tree. Editing happens in the collection list's
   press-summary items; the index tab is display/check only.
 
-See `docs/framework-design.md` for the framework/feature architecture contract.
+The vertical dependency is `页面展示聚合 → DB 数据 → 硬盘数据`:
+feature presenters/controllers compose views, catalog repositories own work data,
+and shared storage adapters own filesystem/Windows shortcut I/O. Work/press
+record counts and cached directory/file counts are separate metrics.
+
+The index directory view aggregates current work DB records with actual shortcut
+directories; its index cache is derived and rebuildable. The resource-library
+directory remains entirely based on physical-media scans, without injected DB rows.
+
+Unassociated `.lnk` files are listed explicitly with their full paths, targets
+and resolution states. Shared operation details show outcomes and errors, with
+time-partitioned UTF-8 `.log` files (`[date/time][level] details`) under
+`data/framework/logs/operations/`, with direct file opening and whole-file search. Logs remain
+available after restart. Common frontend/backend primitives are framework-owned;
+see `docs/operation-progress.md` and `docs/framework-design.md`.
+
+`GET /api/collection-detail/library-status` checks saved DB bindings against disk
+without scanning or writing. Missing bindings and offline drives are reported as
+unknown/unbound, not treated as absent resources. Shortcut generation uses saved
+DB mappings only; the UI supplements missing shortcuts without clearing existing
+files or silently registering works.
+
+The retired organizer remains removed. Its replacement, `directory-organizer`,
+starts from actual child directories and supports independent editable previews,
+manual/automatic strategies and confirmed sequential batches. It reuses the
+collection list's DB validation/save service and the index's scoped shortcut
+service; it has no separate work DB or duplicated configuration. Media and DB
+changes require a confirmed preview; shortcut creation requires its own concrete
+preview and confirmation. See `apps/features/directory-organizer/README.md` for
+the workflow and safety limits.
+
+Both DB-entry forms share `framework/frontend/src/common/enum-fields.js` and
+the canonical `/api/config` enum options/labels: domain, country and release type
+use selects; press format/group and markers use editable dropdown suggestions.
+The organizer's execute endpoint orchestrates media operations, then delegates
+DB edits through `catalog_edit_service` to the same `browse_save_yaml_from_ui_body`
+writer used by `/api/browse/save`; it does not bypass the original save service.
 
 ## Local Development
 
@@ -108,7 +147,7 @@ Run all framework/feature Python tests, JavaScript behavior tests and syntax che
 .\scripts\test.cmd
 ```
 
-Run the read-only API and synthetic resource/matching/frontend benchmarks:
+Run the read-only API and synthetic resource/frontend benchmarks:
 
 ```powershell
 .\scripts\benchmark.cmd -Python "D:\SoftIDE\Python\python.exe" -Rounds 3
@@ -139,7 +178,7 @@ change its layout. Desktop runtime and packaging use the same backend discovery
 in `work_catalog_yaml.layout`; feature frontend resources are discovered by the
 packaging script under `apps/features/*/frontend`.
 
-Source launch, organizer, test and benchmark entrypoints use
+Source launch, test and benchmark entrypoints use
 `scripts/lib/workspace.ps1` to discover all feature backends and pin the source
 workspace. The helper restores the caller's environment and working directory
 on success or failure, so a packaged app's environment cannot redirect a source

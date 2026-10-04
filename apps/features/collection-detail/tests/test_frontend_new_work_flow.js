@@ -5,8 +5,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { withCommonRuntime } = require("../../../framework/tests/frontend_runtime_fixture");
 
-const SHELL = path.resolve(__dirname, "../../../framework/frontend/src/legacy/shell.js");
+const SHELL = path.resolve(__dirname, "../frontend/table-controller.js");
 
 function setup() {
   const elements = new Map();
@@ -32,7 +33,7 @@ function setup() {
     },
   };
   const original = fs.readFileSync(SHELL, "utf8");
-  const marker = '  $file.addEventListener("change", function () {';
+  const marker = '  function mount() {';
   assert.ok(original.includes(marker), "shell startup marker must exist");
   const source = original.slice(0, original.indexOf(marker)) + `
     // Rendering is tested elsewhere. Keep this harness focused on the real
@@ -41,6 +42,7 @@ function setup() {
     fetchJson = function (url, options) { return window.testFetch(url, options); };
     window.hooks = {
       openNewWorkDialog, canAddNewWork, addPayloadRow, gatherBrowseSaveRows,
+      sourceHashForRow, removePayloadRow, deletedRowsForSave,
       doSaveBrowseYaml, syncSaveToolbar,
       beginBrowseLoad, finishBrowseLoad, loadDbCatalogPathsFromApi,
       loadAllDbCatalogFromDefault, uploadYamlFiles,
@@ -53,8 +55,18 @@ function setup() {
       setCatalogPaths(value) { lastCatalogYamlRels = value; },
       setEditing(value) { sheetEditMode = value; $chkEdit.checked = value; },
     };
-  })();`;
-  vm.runInNewContext(source, {
+  }
+  window.createTableFixture = createTableController;
+})();
+window.createTableFixture({
+  featureHost: { getActiveId() { return "collection-detail"; }, configure() {}, refresh() {} },
+  fetchJson(url, options) { return window.testFetch(url, options); },
+  setStatus(message, isError) {
+    const status = document.getElementById("status-line");
+    if (status) { status.textContent = message || ""; status.className = "status" + (isError ? " err" : ""); }
+  },
+});`;
+  vm.runInNewContext(withCommonRuntime(source), {
     window, document, console,
     localStorage: { getItem() { return null; }, setItem() {} },
   }, { filename: SHELL });
@@ -190,6 +202,83 @@ test("drafts without a materialized table row are still included in the save bod
   assert.equal(gathered.new_rows[0].name, "New work");
   assert.equal(gathered.new_rows[0].date.start, "20240930");
   assert.equal(gathered.new_rows[0].collectioned_ordered[0].press_group, "VCB");
+});
+
+test("existing saved rows use their exact loaded source version while new rows remain unversioned", () => {
+  const app = setup();
+  const first = { ...patch(), index_in_file: 0, yaml_source_rel: "first/catalog.yaml" };
+  const second = { ...patch(), index_in_file: 1, yaml_source_rel: "second\\catalog.yaml" };
+  const data = payload([first, second]);
+  data.sources_loaded = [
+    { relpath: "first/catalog.yaml", sha256: "A".repeat(64) },
+    { relpath: "second/catalog.yaml", sha256: "b".repeat(64) },
+    { relpath: "[JP][TVInfo][2024].yaml", sha256: "c".repeat(64) },
+  ];
+  app.setPayload(data);
+  app.elements.get("viewport").querySelector = () => ({ querySelector() { return null; }, querySelectorAll() { return []; } });
+  app.addPayloadRow(patch());
+  const gathered = app.gatherBrowseSaveRows();
+  assert.equal(gathered.rows.length, 2);
+  assert.equal(gathered.rows[0].source_sha256, "a".repeat(64));
+  assert.equal(gathered.rows[1].source_sha256, "b".repeat(64));
+  assert.equal(gathered.new_rows.length, 1);
+  assert.equal(Object.hasOwn(gathered.new_rows[0], "source_sha256"), false);
+  assert.equal(Object.hasOwn(first, "source_sha256"), false, "gathering must not mutate loaded rows");
+  assert.equal(app.sourceHashForRow({ yaml_source_rel: "catalog.yaml" }), "", "never fall back to basename");
+});
+
+test("deleted existing rows carry the loaded source hash without persisting serialization mutations", () => {
+  const app = setup();
+  const first = { ...patch(), index_in_file: 0, yaml_source_rel: "nested/catalog.yaml" };
+  const data = payload([first]);
+  data.sources_loaded = [{ relpath: "nested/catalog.yaml", sha256: "d".repeat(64) }];
+  app.setPayload(data);
+  assert.equal(app.removePayloadRow("nested\\catalog.yaml", 0), true);
+  const deleted = app.deletedRowsForSave();
+  assert.equal(deleted.length, 1);
+  assert.equal(deleted[0].source_sha256, "d".repeat(64));
+  deleted[0].source_sha256 = "mutated caller";
+  assert.equal(app.deletedRowsForSave()[0].source_sha256, "d".repeat(64));
+  app.addPayloadRow(patch());
+  const draft = data.profile_groups.flatMap(group => group.rows).find(row => row._isNew);
+  app.removePayloadRow(draft.yaml_source_rel, draft.index_in_file);
+  assert.equal(app.deletedRowsForSave().length, 1, "discarded new rows must not become DB deletions");
+});
+
+test("legacy source-less fixtures remain compatible for existing updates and deletes", () => {
+  const app = setup();
+  const first = { ...patch(), index_in_file: 0, yaml_source_rel: "fixture.yaml" };
+  app.setPayload(payload([first]));
+  app.elements.get("viewport").querySelector = () => ({ querySelector() { return null; }, querySelectorAll() { return []; } });
+  assert.equal(Object.hasOwn(app.gatherBrowseSaveRows().rows[0], "source_sha256"), false);
+  app.removePayloadRow(first.yaml_source_rel, first.index_in_file);
+  assert.equal(Object.hasOwn(app.deletedRowsForSave()[0], "source_sha256"), false);
+});
+
+test("a stale catalog save sends original source versions and preserves edits after rejection", async () => {
+  const app = setup();
+  const first = { ...patch(), name: "Unsaved edit", index_in_file: 0, yaml_source_rel: "fixture.yaml" };
+  const second = { ...patch(), name: "Pending deletion", index_in_file: 1, yaml_source_rel: "fixture.yaml" };
+  const data = payload([first, second]);
+  data.sources_loaded = [{ relpath: "fixture.yaml", sha256: "e".repeat(64) }];
+  app.setPayload(data);
+  app.setEditing(true);
+  app.elements.get("viewport").querySelector = () => ({ querySelector() { return null; }, querySelectorAll() { return []; } });
+  app.removePayloadRow(second.yaml_source_rel, second.index_in_file);
+  app.window.testFetch = async (url, options) => {
+    app.requests.push({ url, options });
+    return response({ ok: false, error: "数据库文件已变化，请重新加载或预览" }, 400);
+  };
+  await app.doSaveBrowseYaml();
+  assert.equal(app.requests.length, 1);
+  const sent = JSON.parse(app.requests[0].options.body);
+  assert.equal(sent.rows[0].source_sha256, "e".repeat(64));
+  assert.equal(sent.deleted_rows[0].source_sha256, "e".repeat(64));
+  assert.equal(sent.rows[0].name, "Unsaved edit");
+  assert.equal(app.getPayload(), data);
+  assert.equal(data.save.enabled, true);
+  assert.equal(app.deletedRowsForSave().length, 1);
+  assert.match(app.elements.get("status-line").textContent, /数据库文件已变化/);
 });
 
 test("saving is single-flight, freezes the table and prevents another new-work form until done", async () => {

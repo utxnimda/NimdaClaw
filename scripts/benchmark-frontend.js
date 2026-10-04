@@ -22,7 +22,9 @@ function loadFrontend(feature, hookSource, overrides = {}) {
   const marker = feature === "collection-detail" ? "  root.register({" : "  registry.register({";
   const original = fs.readFileSync(filename, "utf8");
   if (!original.includes(marker)) throw new Error("Frontend registration marker changed: " + filename);
-  const source = original.replace(marker, "  window.__captureTreeBenchmark(" + hookSource + ");\n" + marker);
+  const common = fs.readFileSync(path.join(ROOT, "apps/framework/frontend/src/common/runtime.js"), "utf8");
+  const source = common + '\nwindow.localStorage = localStorage;\n' +
+    original.replace(marker, "  window.__captureTreeBenchmark(" + hookSource + ");\n" + marker);
   vm.runInNewContext(source, {
     window, document, console, localStorage: { getItem() { return null; } },
     URLSearchParams, setTimeout, clearTimeout,
@@ -49,21 +51,6 @@ function resourceTreeFixture(rootCount = 20, width = 25) {
   return { tree, collapsed, count };
 }
 
-function organizerPlanFixture(routeCount = 40, filesPerRoute = 250) {
-  const plan = { assignments: [], moves: [] };
-  for (let index = 0; index < routeCount; index++) {
-    const source = "S:/Work/" + index;
-    const target = "S:/Work/Ready" + index;
-    plan.assignments.push({ route_id: "route" + index, source_dir: source,
-      target_dir: target, target_relpath: "Ready" + index });
-    for (let file = 0; file < filesPerRoute; file++) {
-      plan.moves.push({ route_id: "route" + index, source: source + "/" + file + ".mkv",
-        target: target + "/Disc/" + Math.floor(file / 10) + "/" + file + ".mkv", size: 10 });
-    }
-  }
-  return plan;
-}
-
 function measure(render) {
   let output;
   const elapsed = [];
@@ -84,11 +71,7 @@ function benchmark() {
   resource.collapse(fixture.collapsed);
   console.log(JSON.stringify({ benchmark: "collapsed_resource_tree", nodes: fixture.count,
     ...measure(() => resource.render(fixture.tree)) }));
-  const organizer = loadFrontend("media-directory-organizer", "{ render: renderAssignments }").hooks;
-  const plan = organizerPlanFixture();
-  console.log(JSON.stringify({ benchmark: "closed_assignment_details", assignments: plan.assignments.length,
-    moves: plan.moves.length, ...measure(() => organizer.render(plan)) }));
 }
 
-module.exports = { loadFrontend, resourceTreeFixture, organizerPlanFixture, measure };
+module.exports = { loadFrontend, resourceTreeFixture, measure };
 if (require.main === module) benchmark();

@@ -7,11 +7,15 @@ import unittest
 from unittest.mock import patch
 
 from starlette.datastructures import UploadFile
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 
-from work_catalog_yaml.api_runtime import ApiWorkQueue, WorkQueueBusy, WorkQueueClosed
+from work_catalog_yaml.api_runtime import (
+    ApiWorkQueue, WorkQueueBusy, WorkQueueClosed, install_api_queues, json_endpoint,
+)
 from work_catalog_yaml.jp_tv import browse_api
 from work_catalog_yaml.jp_tv.browse_app import build_jp_tv_browse_app
-from media_directory_organizer.service import MediaRollbackError
 
 
 async def request(app, path: str, *, body: bytes = b"", method: str = "GET", content_type: str = "application/json", headers=()):
@@ -157,6 +161,9 @@ class ApiQueueTest(unittest.IsolatedAsyncioTestCase):
 
 class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
+        settings_patch = patch.object(browse_api, "get_resolved_browse_settings", return_value=(None, None))
+        settings_patch.start()
+        self.addCleanup(settings_patch.stop)
         self.app = build_jp_tv_browse_app()
         self.lifespan = self.app.router.lifespan_context(self.app)
         await self.lifespan.__aenter__()
@@ -190,17 +197,17 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
         started, release = threading.Event(), threading.Event()
         calls = []
 
-        def execute(body):
+        def execute(body, *, settings):
             calls.append(body["id"])
             started.set()
             release.wait(3)
             return {"ok": True}
 
-        with patch.object(browse_api, "apply_organizer_from_ui_body", side_effect=execute):
-            active = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":1}'))
+        with patch.object(browse_api, "save_link_index_from_ui_body", side_effect=execute):
+            active = asyncio.create_task(request(self.app, "/api/collection-detail/link-index/save", method="POST", body=b'{"id":1}'))
             try:
                 self.assertTrue(await asyncio.to_thread(started.wait, 1))
-                status, payload = await request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":2}')
+                status, payload = await request(self.app, "/api/collection-detail/link-index/save", method="POST", body=b'{"id":2}')
                 self.assertEqual(status, 503)
                 self.assertEqual(payload["code"], "api-queue-full")
                 self.assertEqual(calls, [1])
@@ -208,7 +215,7 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
             finally:
                 release.set()
                 await active
-            status, _payload = await request(self.app, "/api/media-directory-organizer/apply", method="POST", body=b'{"id":3}')
+            status, _payload = await request(self.app, "/api/collection-detail/link-index/save", method="POST", body=b'{"id":3}')
             self.assertEqual(status, 200)
         self.assertEqual(calls, [1, 3])
 
@@ -218,7 +225,7 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
         main_thread = threading.get_ident()
         threads = []
 
-        def execute(body):
+        def execute(body, *, settings):
             threads.append(threading.get_ident())
             calls.append(body["id"])
             if body["id"] == 1:
@@ -226,10 +233,10 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
                 release.wait(3)
             return {"ok": True, "id": body["id"]}
 
-        with patch.object(browse_api, "apply_organizer_from_ui_body", side_effect=execute):
-            first = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", body=b'{"id":1}', method="POST"))
+        with patch.object(browse_api, "save_link_index_from_ui_body", side_effect=execute):
+            first = asyncio.create_task(request(self.app, "/api/collection-detail/link-index/save", body=b'{"id":1}', method="POST"))
             self.assertTrue(await asyncio.to_thread(started.wait, 1))
-            second = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", body=b'{"id":2}', method="POST"))
+            second = asyncio.create_task(request(self.app, "/api/collection-detail/link-index/save", body=b'{"id":2}', method="POST"))
             try:
                 for _ in range(30):
                     if self.app.state.api_disk_queue.snapshot()["queued"]:
@@ -248,13 +255,13 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([outcome[0] for outcome in outcomes], [200, 200])
 
     async def test_invalid_json_and_closed_queue_do_not_call_service(self) -> None:
-        with patch.object(browse_api, "apply_organizer_from_ui_body") as execute:
+        with patch.object(browse_api, "save_link_index_from_ui_body") as execute:
             for body in (b"broken", b"[]", b"null"):
-                status, payload = await request(self.app, "/api/media-directory-organizer/apply", body=body, method="POST")
+                status, payload = await request(self.app, "/api/collection-detail/link-index/save", body=body, method="POST")
                 self.assertEqual(status, 400)
                 self.assertFalse(payload["ok"])
             self.app.state.api_disk_queue.begin_shutdown()
-            status, payload = await request(self.app, "/api/media-directory-organizer/apply", body=b"{}", method="POST")
+            status, payload = await request(self.app, "/api/collection-detail/link-index/save", body=b"{}", method="POST")
             self.assertEqual(status, 503)
             execute.assert_not_called()
 
@@ -262,16 +269,16 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
         started, release = threading.Event(), threading.Event()
         calls = []
 
-        def execute(body):
+        def execute(body, *, settings):
             calls.append(body["id"])
             started.set()
             release.wait(3)
             return {"ok": True}
 
-        with patch.object(browse_api, "apply_organizer_from_ui_body", side_effect=execute):
-            first = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", body=b'{"id":1}', method="POST"))
+        with patch.object(browse_api, "save_link_index_from_ui_body", side_effect=execute):
+            first = asyncio.create_task(request(self.app, "/api/collection-detail/link-index/save", body=b'{"id":1}', method="POST"))
             self.assertTrue(await asyncio.to_thread(started.wait, 1))
-            second = asyncio.create_task(request(self.app, "/api/media-directory-organizer/apply", body=b'{"id":2}', method="POST"))
+            second = asyncio.create_task(request(self.app, "/api/collection-detail/link-index/save", body=b'{"id":2}', method="POST"))
             try:
                 for _ in range(30):
                     if self.app.state.api_disk_queue.snapshot()["queued"]:
@@ -295,29 +302,35 @@ class ApiSchedulingTest(unittest.IsolatedAsyncioTestCase):
         def suggest(_body):
             started.set()
             release.wait(3)
-            return {"ok": True}
+            return JSONResponse({"ok": True})
 
-        with patch.object(browse_api, "suggest_organizer_landing_from_ui_body", side_effect=suggest), patch.object(
-            browse_api, "organizer_config_payload", return_value={"ok": True}
-        ):
-            pending = asyncio.create_task(request(self.app, "/api/media-directory-organizer/landing/suggest", body=b"{}", method="POST"))
+        # The network adapter is framework infrastructure, not a reason to keep
+        # an obsolete feature or to add a production endpoint for testing.
+        provider_app = Starlette(routes=[
+            Route("/provider", endpoint=json_endpoint(network=True)(suggest), methods=["POST"]),
+            Route("/disk", endpoint=json_endpoint(lambda _body: JSONResponse({"ok": True})), methods=["POST"]),
+        ])
+        install_api_queues(provider_app)
+        pending = None
+        try:
+            pending = asyncio.create_task(request(provider_app, "/provider", body=b"{}", method="POST"))
             self.assertTrue(await asyncio.to_thread(started.wait, 1))
-            try:
-                status, payload = await asyncio.wait_for(request(self.app, "/api/media-directory-organizer/config"), 0.5)
-                self.assertEqual(status, 200)
-                self.assertTrue(payload["ok"])
-                self.assertFalse(pending.done())
-            finally:
-                release.set()
+            status, payload = await asyncio.wait_for(request(provider_app, "/disk", body=b"{}", method="POST"), 0.5)
+            self.assertEqual(status, 200)
+            self.assertTrue(payload["ok"])
+            self.assertFalse(pending.done())
+        finally:
+            release.set()
+            if pending is not None:
                 await pending
+            await asyncio.gather(provider_app.state.api_disk_queue.close(), provider_app.state.api_network_queue.close())
 
-    async def test_partial_recovery_contract_survives_worker_boundary(self) -> None:
-        error = MediaRollbackError("恢复失败", root="work", recovery_moves=[{"source": "old/a", "target": "new/a"}])
-        with patch.object(browse_api, "apply_organizer_from_ui_body", side_effect=error):
-            status, payload = await request(self.app, "/api/media-directory-organizer/apply", body=b"{}", method="POST")
-        self.assertEqual(status, 409)
-        self.assertEqual(payload["state"], "partial")
-        self.assertEqual(payload["media"]["recovery_moves"][0]["target"], "new/a")
+    async def test_save_error_contract_survives_worker_boundary(self) -> None:
+        with patch.object(browse_api, "save_link_index_from_ui_body", side_effect=PermissionError("保存被拒绝")):
+            status, payload = await request(self.app, "/api/collection-detail/link-index/save", body=b"{}", method="POST")
+        self.assertEqual(status, 403)
+        self.assertFalse(payload["ok"])
+        self.assertIn("保存被拒绝", payload["error"])
 
     async def test_uploaded_file_is_closed_before_invalid_yaml_response(self) -> None:
         closed = []

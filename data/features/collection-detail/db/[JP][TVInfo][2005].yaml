@@ -414,9 +414,12 @@
       collectioned:
       - press_format: DBRip
         press_group: FL
+        press_path: 魔法少女リリカルなのはA's_BDRip
       - press_format: DVDRip
         press_group: CK
+        press_path: 魔法少女リリカルなのはA's_DVDRip
       markers: []
+      path: V:/Japan/魔法少女リリカルなのは
   - type: country
     data: japan
   - type: name

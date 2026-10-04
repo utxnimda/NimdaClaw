@@ -7,6 +7,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const SOURCE = path.resolve(__dirname, "../frontend/new-work-dialog.js");
+const ENUM_FIELDS = path.resolve(__dirname, "../../../framework/frontend/src/common/enum-fields.js");
 
 function setup(extra = {}) {
   let document;
@@ -22,6 +23,8 @@ function setup(extra = {}) {
       this.textContent = "";
       this.className = "";
     }
+    get value() { return this._value || ""; }
+    set value(value) { this._value = this.tagName !== "select" || this.children.some(option => option.value === String(value)) ? String(value) : ""; }
     appendChild(child) { this.children.push(child); child.parent = this; return child; }
     remove() {
       if (this.parent) this.parent.children = this.parent.children.filter((child) => child !== this);
@@ -47,7 +50,9 @@ function setup(extra = {}) {
   const trigger = document.body.appendChild(new Element("button"));
   trigger.focus();
   const window = { document };
-  vm.runInNewContext(fs.readFileSync(SOURCE, "utf8"), { window, document, console }, { filename: SOURCE });
+  const context = vm.createContext({ window, document, console });
+  vm.runInContext(fs.readFileSync(ENUM_FIELDS, "utf8"), context, { filename: ENUM_FIELDS });
+  vm.runInContext(fs.readFileSync(SOURCE, "utf8"), context, { filename: SOURCE });
   const submissions = [];
   const closes = [];
   const options = {
@@ -93,6 +98,41 @@ test("a minimal work preserves enum defaults, has no blank presses, and restores
   assert.equal(app.dialog.open, false);
   assert.equal(app.document.activeElement, app.trigger);
   assert.deepEqual(app.closes, ["submit"]);
+});
+
+test("new-work enum controls use shared modes, configured labels, and compatible object choices", () => {
+  const app = setup({
+    enumOptions: {
+      domain: [{ value: "animation" }, "animation", "tv-series"],
+      country: [{ value: "japan" }, "korea"], release_type: ["tv", "movie"],
+      press_format: [{ value: "BDRip" }, "1080p"], press_group: ["VCB"], markers: ["complete"],
+    },
+    enumLabels: { country: { japan: "日本", korea: "韩国" }, press_format: { BDRip: "蓝光压制" } },
+    enumLabel: null,
+  });
+  for (const key of ["domain", "country", "release_type"]) assert.equal(app.field(key).tagName, "select");
+  assert.deepEqual(app.field("domain").children.map(node => node.value), ["animation", "tv-series"]);
+  assert.deepEqual(app.field("country").children.map(node => [node.value, node.textContent]), [["japan", "日本"], ["korea", "韩国"]]);
+  const format = app.nodes().find(node => (node.name || "").startsWith("press-format-"));
+  assert.equal(format.tagName, "input");
+  const list = app.nodes().find(node => node.id === format.attributes.list);
+  assert.equal(list.tagName, "datalist");
+  assert.deepEqual(list.children.map(node => [node.value, node.label]), [["BDRip", "蓝光压制"], ["1080p", "1080p"]]);
+  assert.ok(app.field("markers").attributes.list);
+});
+
+test("unknown enum defaults stay selectable and the shared form still accepts an empty press group", async () => {
+  const app = setup({ defaults: { domain: "historical-domain", country: "japan", release_type: "tv" } });
+  assert.equal(app.field("domain").value, "historical-domain");
+  assert.equal(app.field("domain").children[0].value, "historical-domain");
+  app.field("name").value = "无压制组作品";
+  const format = app.nodes().find(node => (node.name || "").startsWith("press-format-"));
+  const group = app.nodes().find(node => (node.name || "").startsWith("press-group-"));
+  assert.ok(group.attributes.list);
+  format.value = "CustomFormat";
+  await app.submit();
+  assert.equal(app.submissions[0].collectioned_ordered[0].press_format, "CustomFormat");
+  assert.equal(app.submissions[0].collectioned_ordered[0].press_group, "");
 });
 
 test("dates are stored compactly, preserving unknown values and rejecting shape and reversed complete dates", async () => {
@@ -242,4 +282,125 @@ test("copied paths remove invisible direction controls and wrapping quotes while
   assert.equal(app.submissions[0].path, "G:\\Video\\电视剧\\作品  名 A");
   assert.equal(app.submissions[0].collectioned_ordered[0].press_path, "作品  名 A_BDRip(VCB)\\_Disc");
   assert.doesNotMatch(JSON.stringify(app.submissions[0]), /[\u202a\u202c\u2066\u2069]/);
+});
+
+function initialWork() {
+  return { name: "预填作品", domain: "historical-domain", country: "korea", release_type: "tv", date: { start: "20260921", end: "XXXXXXXX" },
+    path: "U:/预填作品", markers: ["complete", "custom"], collectioned_ordered: [
+      { press_format: "BDRip", press_group: "", press_path: "BD", segment: "main", external: { id: "first", tags: [1, 2] } },
+      { press_format: "CustomFormat", press_group: "GroupB", press_path: "WEB", segment: "main", external: { id: "second", tags: [3] } },
+    ] };
+}
+
+test("initialData prefills basic fields, display dates and ordered main presses without losing empty groups or metadata", async () => {
+  const initialData = initialWork(), before = JSON.stringify(initialData), app = setup({ initialData });
+  assert.equal(app.field("name").value, initialData.name); assert.equal(app.field("country").value, "korea");
+  assert.equal(app.field("domain").value, "historical-domain");
+  assert.equal(app.field("domain").children[0].value, "historical-domain");
+  assert.equal(app.field("start").value, "2026-09-21"); assert.equal(app.field("end").value, "XXXX-XX-XX");
+  assert.equal(app.field("path").value, initialData.path); assert.equal(app.field("markers").value, "complete, custom");
+  const presses = app.nodes().filter(node => /^press-/.test(node.name || ""));
+  assert.deepEqual(presses.map(node => node.value), ["BDRip", "", "BD", "CustomFormat", "GroupB", "WEB"]);
+  await app.submit(); assert.deepEqual(app.submissions[0], initialData); assert.equal(JSON.stringify(initialData), before);
+  assert.notEqual(app.submissions[0].collectioned_ordered[0].external, initialData.collectioned_ordered[0].external);
+});
+
+test("editing only a name preserves original marker separators, duplicates and whitespace with or without hints", async () => {
+  for (const hideHints of [false, true]) {
+    const initialData = initialWork();
+    initialData.markers = ["Blu-ray, Remaster", "A;B", "重复", "重复", "换\n行", "  保留空格  "];
+    const original = initialData.markers.slice(), app = setup({ initialData, hideHints });
+    app.field("name").value = "只修改作品名";
+    await app.submit();
+    assert.equal(app.submissions[0].name, "只修改作品名");
+    assert.deepEqual(app.submissions[0].markers, original);
+    assert.deepEqual(initialData.markers, original);
+    assert.notEqual(app.submissions[0].markers, initialData.markers);
+  }
+});
+
+test("explicit marker edits keep normal separator parsing, deduplication and clearing", async () => {
+  for (const hideHints of [false, true]) {
+    for (const value of ["new，other;new\nthird； new", ""]) {
+      const initialData = initialWork(); initialData.markers = ["A,B", "A,B", "C;D"];
+      const app = setup({ initialData, hideHints }); app.field("markers").value = value;
+      await app.submit();
+      assert.deepEqual(app.submissions[0].markers, value ? ["new", "other", "third"] : []);
+      assert.deepEqual(initialData.markers, ["A,B", "A,B", "C;D"]);
+    }
+  }
+});
+
+test("restoring initial marker text and retrying a rejected callback preserve the original marker snapshot", async () => {
+  const initialData = initialWork(); initialData.markers = ["A,B", "C;D", "C;D"];
+  const attempts = [], app = setup({ initialData, hideHints: true, onSubmit(patch) {
+    attempts.push(JSON.parse(JSON.stringify(patch.markers)));
+    if (attempts.length === 1) { patch.markers.pop(); throw Error("草稿已变化"); }
+  } });
+  const initialText = app.field("markers").value;
+  app.field("markers").value = "temporary";
+  app.field("markers").value = initialText;
+  initialData.markers.push("external mutation after opening");
+  await app.submit(); assert.equal(app.dialog.open, true);
+  await app.submit();
+  assert.deepEqual(attempts, [["A,B", "C;D", "C;D"], ["A,B", "C;D", "C;D"]]);
+});
+
+test("removing and adding prefilled press rows keeps extension metadata attached to its own row", async () => {
+  const initialData = initialWork(), app = setup({ initialData });
+  await app.click("移除");
+  let pressFields = app.nodes().filter(node => /^press-/.test(node.name || "")); pressFields[0].value = "EditedSecond"; pressFields[1].value = "";
+  await app.click("+ 添加压制版本");
+  pressFields = app.nodes().filter(node => /^press-/.test(node.name || "")); pressFields[3].value = "AddedThird"; pressFields[5].value = "Third";
+  await app.submit();
+  assert.deepEqual(app.submissions[0].collectioned_ordered, [
+    { press_format: "EditedSecond", press_group: "", press_path: "WEB", segment: "main", external: { id: "second", tags: [3] } },
+    { press_format: "AddedThird", press_group: "", press_path: "Third", segment: "main" },
+  ]);
+  assert.equal(initialData.collectioned_ordered[0].external.id, "first"); assert.equal(initialData.collectioned_ordered[1].press_format, "CustomFormat");
+});
+
+test("explicit empty initial enum values stay empty rather than inheriting new-work defaults", async () => {
+  const initialData = { ...initialWork(), country: "", domain: "", release_type: "" }, app = setup({ initialData });
+  for (const key of ["country", "domain", "release_type"]) { assert.equal(app.field(key).value, ""); assert.equal(app.field(key).children[0].value, ""); }
+  await app.submit(); assert.equal(app.submissions.length, 0); assert.match(app.error().textContent, /请先选择/);
+  app.field("country").value = "japan"; app.field("domain").value = "animation"; app.field("release_type").value = "tv";
+  await app.submit(); assert.equal(app.submissions[0].country, "japan"); assert.equal(initialData.country, "");
+});
+
+test("custom dialog labels and hideHints simplify draft editing without hiding errors or discard confirmation", async () => {
+  const app = setup({ initialData: initialWork(), title: "编辑整理草稿", description: "仅更新未保存草稿", submitLabel: "应用到整理草稿", targetLabel: "目录整理", hideHints: true });
+  assert.equal(app.nodes().find(node => node.tagName === "h2").textContent, "编辑整理草稿");
+  assert.ok(app.button("应用到整理草稿")); assert.equal(app.dialog.attributes["aria-describedby"], undefined);
+  assert.ok(app.nodes().filter(node => node.className === "new-work-hint" || node.className === "new-work-target").every(node => node.hidden));
+  app.field("name").value = ""; await app.submit(); assert.equal(app.error().hidden, false); assert.match(app.error().textContent, /请填写作品名/);
+  await app.dialog.emit("cancel"); assert.equal(app.discardPanel().hidden, false); assert.equal(app.dialog.open, true);
+  await app.click("继续填写"); assert.equal(app.field("name").value, "");
+  await app.click("取消"); await app.click("放弃填写"); assert.equal(app.submissions.length, 0); assert.deepEqual(app.closes, ["discard"]);
+  const visible = setup({ initialData: initialWork(), title: "自定义标题", description: "简短说明", targetLabel: "草稿目标" });
+  assert.ok(visible.nodes().some(node => node.textContent === "简短说明" && !node.hidden));
+  assert.ok(visible.nodes().some(node => node.textContent === "写入位置：草稿目标"));
+});
+
+test("cancelling an unchanged prefilled draft needs no discard confirmation and never submits", async () => {
+  const app = setup({ initialData: initialWork() });
+  await app.dialog.emit("cancel"); assert.equal(app.dialog.open, false); assert.equal(app.discardPanel().hidden, true);
+  assert.equal(app.submissions.length, 0); assert.deepEqual(app.closes, ["cancel"]); assert.equal(app.document.activeElement, app.trigger);
+});
+
+test("a retry retains the custom submit label and snapshots metadata independently from rejected callbacks", async () => {
+  const initialData = initialWork(), attempts = [], app = setup({ initialData, submitLabel: "应用草稿", onSubmit(patch) {
+    attempts.push(JSON.parse(JSON.stringify(patch)));
+    if (attempts.length === 1) { patch.collectioned_ordered[0].external.id = "mutated-by-callback"; throw Error("草稿版本已变化"); }
+  } });
+  await app.submit(); assert.equal(app.dialog.open, true); assert.equal(app.button("应用草稿").disabled, false); assert.match(app.error().textContent, /草稿版本已变化/);
+  await app.submit(); assert.deepEqual(attempts[0], attempts[1]); assert.equal(initialData.collectioned_ordered[0].external.id, "first");
+});
+
+test("prefilled press rows without a segment default to main and continuation input is rejected explicitly", async () => {
+  const initialData = initialWork(); delete initialData.collectioned_ordered[0].segment;
+  const app = setup({ initialData }); await app.submit(); assert.equal(app.submissions[0].collectioned_ordered[0].segment, "main");
+  const unsupported = initialWork(); unsupported.collectioned_ordered[1].segment = "continuation";
+  assert.throws(() => setup({ initialData: unsupported }), /仅编辑主收集.*补充收集/);
+  assert.throws(() => setup({ initialData: { ...initialWork(), collectioned_ordered: [null] } }), /压制初始数据必须是对象/);
 });

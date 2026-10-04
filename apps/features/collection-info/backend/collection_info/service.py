@@ -9,7 +9,7 @@ from typing import Any
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.layout import feature_config_path, feature_data_root, resolve_workspace_path
 from work_catalog_yaml.persistence import FileWrite, commit_file_writes, directory_write_transaction, history_snapshot_name
-from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.operation_progress import operation_context, report_exception, report_progress
 from work_catalog_yaml.yaml_io import dump_yaml_string, load_yaml
 
 _FINISH_DIR_ENV = "JP_TV_COLLECTION_FINISH_DIR"
@@ -177,10 +177,11 @@ def normalize_collection_record(
 
 
 def _load_records_from_path(path: Path, *, allowed_years: set[str] | None) -> list[dict[str, Any]]:
-    report_progress("读取收集情况数据库", detail=str(path))
+    report_progress("读取收集情况数据库", detail=str(path), context={"stage": "读取收集情况", "action": "读取数据库文件", "source_path": str(path)})
     if not path.is_file():
         return [_default_record()]
-    raw = load_yaml(path)
+    with operation_context(stage="读取收集情况", action="解析收集情况YAML", source_path=str(path)):
+        raw = load_yaml(path)
     records_raw: Any
     if isinstance(raw, dict):
         records_raw = raw.get("records")
@@ -198,11 +199,18 @@ def _load_records_from_path(path: Path, *, allowed_years: set[str] | None) -> li
 def collection_records_payload(settings: JpTvBrowseSettings) -> dict[str, Any]:
     finish_dir = collection_finish_dir()
     warning = ""
+    issues: list[dict[str, Any]] = []
     years: list[dict[str, str]] = []
     try:
-        years = scan_finish_years(finish_dir)
+        with operation_context(stage="读取收集情况", action="扫描完成年份目录", source_path=str(finish_dir)):
+            years = scan_finish_years(finish_dir)
     except OSError as exc:
         warning = f"cannot scan finish dir: {exc}"
+        context = {"stage": "读取收集情况", "action": "扫描完成年份目录", "source_path": str(finish_dir)}
+        report_exception(exc, context=context)
+        issues.append({**context, "path": str(finish_dir), "code": "finish-directory-unavailable",
+                       "message": "无法读取完成年份目录；仍保留并显示数据库中已有收集记录",
+                       "reason": str(exc), "error_type": type(exc).__name__})
     path = collection_records_path(settings)
     # Directory availability is a UI hint, not authority over saved history.
     # A disconnected disk or removed year folder must not silently erase data.
@@ -213,6 +221,7 @@ def collection_records_payload(settings: JpTvBrowseSettings) -> dict[str, Any]:
         "path": str(path),
         "finish_dir": str(finish_dir),
         "warning": warning,
+        "issues": issues,
         "years": years,
         "records": records,
     }
@@ -240,21 +249,25 @@ def save_collection_records_from_ui_body(
     settings: JpTvBrowseSettings,
 ) -> dict[str, Any]:
     finish_dir = collection_finish_dir()
-    records = _records_from_body(body, allowed_years=None)
     target = collection_records_path(settings)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    with operation_context(stage="保存收集情况", action="校验记录", target_path=str(target)):
+        records = _records_from_body(body, allowed_years=None)
+    with operation_context(stage="保存收集情况", action="准备数据库目录", target_path=str(target.parent)):
+        target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "version": 1,
         "finish_dir": str(finish_dir),
         "records": records,
     }
-    report_progress("等待收集情况写入锁", detail=str(target))
+    report_progress("等待收集情况写入锁", detail=str(target), context={"stage": "保存收集情况", "action": "等待写入锁", "target_path": str(target)})
     with directory_write_transaction(target.parent, lock_filename=".nimda-collection-info.lock"):
-        previous = target.read_bytes() if target.is_file() else None
+        with operation_context(stage="保存收集情况", action="读取修改前快照", source_path=str(target)):
+            previous = target.read_bytes() if target.is_file() else None
         history_file = history_snapshot_name(target) if previous is not None else ""
         history_path = collection_records_history_root(settings) / history_file if history_file else None
-        report_progress("备份并保存收集情况", detail=str(target))
-        commit_file_writes([FileWrite(target, dump_yaml_string(payload).encode("utf-8"), previous, history_path)])
+        report_progress("备份并保存收集情况", detail=str(target), context={"stage": "保存收集情况", "action": "写入历史备份与数据库", "target_path": str(target), "history_path": str(history_path or "")})
+        with operation_context(stage="保存收集情况", action="原子保存，失败则回滚", target_path=str(target), history_path=str(history_path or "")):
+            commit_file_writes([FileWrite(target, dump_yaml_string(payload).encode("utf-8"), previous, history_path)])
     report_progress("收集情况保存完成", completed=len(records), total=len(records), unit="记录")
     return {
         "path": str(target),

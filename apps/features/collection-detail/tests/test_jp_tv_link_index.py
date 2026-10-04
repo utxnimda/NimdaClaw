@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import base64
 import json
+import stat
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from collection_detail import link_index as link_index_mod
@@ -213,65 +215,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 create.assert_not_called()
             self.assertEqual(existing.read_text(encoding="utf-8"), "keep")
 
-    def test_scoped_shortcuts_reject_duplicate_path_with_different_targets(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
-            db, media, finish = root / "DB", root / "media", root / "Finish"
-            db.mkdir()
-            targets = [media / "A", media / "B"]
-            for target in targets:
-                target.mkdir(parents=True)
-            items = [{"shortcut_root": str(finish), "shortcut_relpath": "same.lnk", "shortcut_path": str(finish / "same.lnk"), "target_path": str(target)} for target in targets]
-            with (
-                patch.object(link_index_mod, "_feature_config", return_value={"paths": {"shortcut_root": str(finish), "resource_roots": [str(media)]}}),
-                patch.object(link_index_mod, "_create_windows_shortcut") as create,
-            ):
-                with self.assertRaisesRegex(FileExistsError, "同一个快捷方式路径"):
-                    link_index_mod.apply_scoped_shortcuts_for_work(items, settings=_settings(db))
-                create.assert_not_called()
-            self.assertFalse(finish.exists())
 
-    def test_scoped_shortcut_apply_wraps_entire_process_transaction_in_catalog_lock(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            db = Path(td) / "DB"
-            db.mkdir()
-            settings = _settings(db)
-            events: list[str] = []
-
-            class TransactionProbe:
-                def __enter__(self) -> None:
-                    events.append("enter")
-
-                def __exit__(self, *_args: object) -> None:
-                    events.append("exit")
-
-            def apply_probe(
-                items: list[dict[str, object]],
-                *,
-                settings: JpTvBrowseSettings,
-            ) -> dict[str, object]:
-                self.assertEqual(items, [])
-                self.assertEqual(settings.filesystem_root, db)
-                self.assertEqual(events, ["enter"])
-                return {"ok": True}
-
-            with (
-                patch.object(
-                    link_index_mod,
-                    "catalog_write_transaction",
-                    return_value=TransactionProbe(),
-                ) as transaction,
-                patch.object(
-                    link_index_mod,
-                    "_apply_scoped_shortcuts_for_work_process_locked",
-                    side_effect=apply_probe,
-                ),
-            ):
-                result = link_index_mod.apply_scoped_shortcuts_for_work([], settings=settings)
-
-            self.assertEqual(result, {"ok": True})
-            transaction.assert_called_once_with(db)
-            self.assertEqual(events, ["enter", "exit"])
 
     def setUp(self) -> None:
         self._index_db_temp = tempfile.TemporaryDirectory()
@@ -290,10 +234,19 @@ class JpTvLinkIndexTest(unittest.TestCase):
         )
         self._feature_data_root_patch.start()
         self.addCleanup(self._feature_data_root_patch.stop)
+        default_config = patch.object(link_index_mod, "_feature_config", return_value={
+            "paths": {"media_root": str(Path(self._index_db_temp.name) / "media"),
+                      "shortcut_root": str(Path(self._index_db_temp.name) / "finish")}
+        })
+        default_config.start()
+        self._default_config_patch = default_config
+        self.addCleanup(default_config.stop)
+        self._actual_shortcut_targets = link_index_mod._windows_shortcut_targets
+        target_reader = patch.object(link_index_mod, "_windows_shortcut_targets", return_value={})
+        target_reader.start()
+        self.addCleanup(target_reader.stop)
         link_index_mod._SHORTCUT_SCAN_CACHE["signature"] = None
         link_index_mod._SHORTCUT_SCAN_CACHE["leaves"] = []
-        link_index_mod._LINK_INDEX_LITE_PAYLOAD_CACHE["signature"] = None
-        link_index_mod._LINK_INDEX_LITE_PAYLOAD_CACHE["payload"] = None
         link_index_mod._FEATURE_CONFIG_CACHE["signature"] = None
         link_index_mod._FEATURE_CONFIG_CACHE["data"] = None
 
@@ -306,7 +259,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
         ):
             self.assertTrue(cache_path.is_relative_to(isolated))
 
-    def test_generate_index_persists_safe_bindings_and_preserves_unknown_catalog_fields(self) -> None:
+    def test_generate_index_never_auto_binds_catalog_from_resource_cache(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             fp, settings, cfg, target, resources = _binding_case(root)
@@ -316,51 +269,49 @@ class JpTvLinkIndexTest(unittest.TestCase):
             before = fp.read_bytes()
             with patch.object(link_index_mod, "_feature_config", return_value=cfg), patch.object(
                 link_index_mod, "_resource_fix_items_from_cache", return_value=resources,
-            ), patch.object(link_index_mod, "_create_windows_shortcut") as create:
+            ) as resource_cache, patch.object(link_index_mod, "_create_windows_shortcut") as create:
                 preview = generate_link_index_from_ui_body({"preview": True}, settings=settings)
-                self.assertEqual(preview["catalog_bindings"]["summary"]["mapped_press_count"], 1)
-                self.assertEqual(fp.read_bytes(), before)
-                self.assertFalse(link_index_mod._link_index_db_path().exists())
+                self.assertEqual(preview["catalog_bindings"]["summary"]["mapped_press_count"], 0)
+                self.assertTrue(any(issue["code"] == "missing-catalog-binding" for issue in preview["catalog_bindings"]["issues"]))
                 result = generate_link_index_from_ui_body({}, settings=settings)
                 create.assert_not_called()
-                indexed = load_yaml(link_index_mod._link_index_db_path())["items"][0]
-            updated = load_yaml(fp)
-            collection = updated[0]["attributes"][1]["data"]
-            self.assertEqual(Path(collection["path"]), target.parent)
-            self.assertEqual(collection["collectioned"][0]["press_path"], target.name)
-            self.assertEqual(updated[0]["custom"], {"keep": [1, 2, 3]})
-            self.assertEqual(indexed["target_source"], "catalog")
-            self.assertEqual(Path(indexed["target_path"]), target)
-            self.assertEqual(Path(indexed["work_path"]), target.parent)
-            self.assertEqual(indexed["press_path"], target.name)
-            self.assertEqual(len(result["writes"]), 1)
-            self.assertEqual((root / "History" / result["writes"][0]["history_file"]).read_bytes(), before)
+                resource_cache.assert_not_called()
+            self.assertEqual(fp.read_bytes(), before)
+            self.assertEqual(result["writes"], [])
+            self.assertEqual(result["generated"][0]["target_path"], "")
+            self.assertEqual(load_yaml(fp)[0]["custom"], {"keep": [1, 2, 3]})
 
-    def test_shortcut_preview_is_read_only_and_apply_binds_catalog_before_creating(self) -> None:
+    def test_shortcut_generation_waits_for_explicit_catalog_binding(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             fp, settings, cfg, target, resources = _binding_case(root)
             before = fp.read_bytes()
-            created = []
-
-            def create_after_binding(link: Path, destination: Path) -> None:
-                collection = load_yaml(fp)[0]["attributes"][1]["data"]
-                self.assertEqual(Path(collection["path"]) / collection["collectioned"][0]["press_path"], destination)
-                self.assertEqual(load_yaml(link_index_mod._link_index_db_path())["items"][0]["target_source"], "catalog")
-                created.append((link, destination))
-
             with patch.object(link_index_mod, "_feature_config", return_value=cfg), patch.object(
                 link_index_mod, "_resource_fix_items_from_cache", return_value=resources,
-            ), patch.object(link_index_mod, "_create_windows_shortcut", side_effect=create_after_binding):
-                preview = generate_link_index_files_from_ui_body({"preview": True}, settings=settings)["file_generation"]
-                self.assertEqual(preview["creatable"], 1)
-                self.assertEqual(preview["catalog_bindings"]["summary"]["mapped_press_count"], 1)
+            ), patch.object(link_index_mod, "_create_windows_shortcut") as create:
+                preview = generate_link_index_files_from_ui_body({"preview": True, "incremental": True}, settings=settings)["file_generation"]
+                self.assertEqual(preview["creatable"], 0)
+                self.assertEqual(preview["skipped_unbound_count"], 1)
+                result = generate_link_index_files_from_ui_body({
+                    "incremental": True, "confirm_incremental": True, "plan_id": preview["plan_id"],
+                }, settings=settings)
+                self.assertEqual(result["file_generation"]["created"], 0)
                 self.assertEqual(fp.read_bytes(), before)
-                self.assertFalse(link_index_mod._link_index_db_path().exists())
                 self.assertFalse((root / "finish").exists())
-                result = generate_link_index_files_from_ui_body({"plan_id": preview["plan_id"]}, settings=settings)
+                create.assert_not_called()
+                entry = link_index_mod._load_link_index_db()["items"][0]
+                link_index_mod.apply_link_index_target_fixes_from_ui_body({"refresh_payload": False, "items": [{
+                    "source": "index_db", "entry_key": entry["entry_key"], "target_path": str(target),
+                }]}, settings=settings)
+                bound_bytes = fp.read_bytes()
+                preview = generate_link_index_files_from_ui_body({"preview": True, "incremental": True}, settings=settings)["file_generation"]
+                self.assertEqual(preview["creatable"], 1)
+                result = generate_link_index_files_from_ui_body({
+                    "incremental": True, "confirm_incremental": True, "plan_id": preview["plan_id"],
+                }, settings=settings)
                 self.assertEqual(result["file_generation"]["created"], 1)
-                self.assertEqual(created[0][1], target)
+                self.assertEqual(fp.read_bytes(), bound_bytes)
+                create.assert_called_once()
 
     def test_unrelated_index_target_is_blocked_before_catalog_index_or_output_changes(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -417,6 +368,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
             fp, settings, cfg, target, resources = _binding_case(root)
             other = target.parent / "Other_BDRip(VCB)"
             other.mkdir()
+            fp.write_text(_catalog_yaml_mapped("Binding Work", target.parent.as_posix(), target.name), encoding="utf-8")
             with patch.object(link_index_mod, "_feature_config", return_value=cfg), patch.object(
                 link_index_mod, "_resource_fix_items_from_cache", return_value=resources,
             ), patch.object(link_index_mod, "_create_windows_shortcut") as create:
@@ -430,7 +382,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 self.assertEqual(link_index_mod._link_index_db_path().read_bytes(), before_index)
                 create.assert_not_called()
 
-    def test_index_commit_failure_rolls_back_catalog_binding_batch(self) -> None:
+    def test_index_commit_failure_never_changes_catalog(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             fp, settings, cfg, _, resources = _binding_case(root)
@@ -447,7 +399,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
                         raise OSError("simulated index commit failure")
                     original_write(target, content)
 
-                with patch.object(persistence, "atomic_write_bytes", side_effect=fail_index):
+                with patch.object(link_index_mod, "_save_link_index_db", side_effect=OSError("simulated index commit failure")):
                     with self.assertRaisesRegex(OSError, "index commit failure"):
                         generate_link_index_from_ui_body({}, settings=settings)
                 self.assertEqual(fp.read_bytes(), before_catalog)
@@ -481,14 +433,14 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 history = list((root / "History").glob("link-index__saved-*.yaml"))
                 self.assertEqual(len(history), 1)
                 self.assertEqual(history[0].read_bytes(), original_index)
-                preview = generate_link_index_files_from_ui_body({"preview": True}, settings=settings)["file_generation"]
+                preview = generate_link_index_files_from_ui_body({"preview": True, "incremental": True}, settings=settings)["file_generation"]
                 self.assertEqual(preview["creatable"], 1)
-                self.assertEqual(preview["unbound_count"], 1)
-                self.assertTrue(any(issue["code"] == "index-target-format-only" for issue in preview["catalog_bindings"]["issues"]))
-                result = generate_link_index_files_from_ui_body({"plan_id": preview["plan_id"]}, settings=settings)
+                self.assertEqual(preview["skipped_unbound_count"], 1)
+                self.assertTrue(any(issue["code"] == "missing-catalog-binding" for issue in preview["catalog_bindings"]["issues"]))
+                result = generate_link_index_files_from_ui_body({"incremental": True, "confirm_incremental": True, "plan_id": preview["plan_id"]}, settings=settings)
                 self.assertEqual(result["file_generation"]["created"], 1)
                 self.assertEqual(created, [target])
-                self.assertEqual(load_yaml(index_path)["items"][1]["target_source"], "resource_format_fallback")
+                self.assertEqual(load_yaml(index_path)["items"][1]["target_path"], "")
                 self.assertNotIn("path", load_yaml(fp)[1]["attributes"][1]["data"])
 
     def test_previous_index_target_requires_complete_work_and_press_identity_at_every_layer(self) -> None:
@@ -556,10 +508,10 @@ class JpTvLinkIndexTest(unittest.TestCase):
                     before_catalog, before_index = fp.read_bytes(), link_index_mod._link_index_db_path().read_bytes()
                     preview = generate_link_index_files_from_ui_body({"preview": True}, settings=settings)["file_generation"]
                     self.assertGreater(preview["blocked_count"], 0)
-                    expected = "history-index-duplicate" if duplicate else "history-index-identity-conflict"
-                    self.assertTrue(any(issue["code"] == expected for issue in preview["catalog_bindings"]["issues"]))
-                    with self.assertRaisesRegex(ValueError, "冲突"):
-                        generate_link_index_from_ui_body({}, settings=settings)
+                    self.assertTrue(any(issue["code"] == "missing-catalog-binding" for issue in preview["catalog_bindings"]["issues"]))
+                    refreshed = generate_link_index_from_ui_body({}, settings=settings)
+                    self.assertEqual(refreshed["generated"][0]["target_path"], "")
+                    before_index = link_index_mod._link_index_db_path().read_bytes()
                     with self.assertRaisesRegex(ValueError, "冲突"):
                         generate_link_index_files_from_ui_body({}, settings=settings)
                     self.assertEqual(fp.read_bytes(), before_catalog)
@@ -843,6 +795,70 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertEqual(cached[0]["target_path"], str(target))
             self.assertTrue(cached[0]["target_exists"])
 
+    def test_readonly_shortcut_observer_refreshes_target_facts_without_cache_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            finish, target = root / "finish", root / "target"
+            finish.mkdir()
+            target.mkdir()
+            shortcut = finish / "Known.lnk"
+            shortcut.write_text("fixture", encoding="utf-8")
+            cfg = {"paths": {"shortcut_root": str(finish)}}
+            infos = {str(shortcut): {"target_path": str(target), "target_resolved": True}}
+            with (
+                patch.object(link_index_mod, "_feature_config", return_value=cfg),
+                patch.object(link_index_mod, "_windows_shortcut_targets", return_value=infos) as reader,
+                patch.object(link_index_mod, "_save_shortcut_scan_cache", side_effect=AssertionError("GET cannot publish")),
+                patch.object(link_index_mod, "_load_shortcut_scan_cache", side_effect=AssertionError("GET uses memory only")),
+            ):
+                first = link_index_mod._scan_shortcut_leaves(publish_cache=False)
+                self.assertTrue(first[0]["target_exists"])
+                target.rmdir()
+                cached = link_index_mod._scan_shortcut_leaves(publish_cache=False)
+                self.assertFalse(cached[0]["target_exists"])
+                self.assertEqual(reader.call_count, 1)
+                forced = link_index_mod._scan_shortcut_leaves(publish_cache=False, refresh_targets=True)
+                self.assertFalse(forced[0]["target_exists"])
+                self.assertEqual(reader.call_count, 2)
+
+    def test_shortcut_observer_skips_reparse_roots_subtrees_and_link_files(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            finish = root / "finish"
+            blocked = finish / "blocked"
+            blocked.mkdir(parents=True)
+            good = finish / "Good.lnk"
+            alias = finish / "Alias.lnk"
+            hidden = blocked / "Hidden.lnk"
+            for item in (good, alias, hidden):
+                item.write_text("fixture", encoding="utf-8")
+            original_lstat = Path.lstat
+            original_iterdir = Path.iterdir
+
+            def guarded_lstat(path: Path, *args, **kwargs):
+                if path == blocked:
+                    return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
+                if path == alias:
+                    return SimpleNamespace(st_mode=stat.S_IFREG, st_file_attributes=0x400)
+                return original_lstat(path, *args, **kwargs)
+
+            def guarded_iterdir(path: Path):
+                if path == blocked:
+                    raise AssertionError("unsafe subtree must not be entered")
+                return original_iterdir(path)
+
+            with (
+                patch.object(link_index_mod, "_feature_config", return_value={"paths": {"shortcut_root": str(finish)}}),
+                patch.object(Path, "lstat", guarded_lstat),
+                patch.object(Path, "iterdir", guarded_iterdir),
+                patch.object(link_index_mod, "_windows_shortcut_targets", return_value={}) as reader,
+            ):
+                leaves = link_index_mod._scan_shortcut_leaves(publish_cache=False)
+                self.assertEqual([item["shortcut_path"] for item in leaves], [str(good)])
+                reader.assert_called_once_with([good])
+                with patch.object(link_index_mod, "_feature_config", return_value={"paths": {"shortcut_root": str(blocked)}}):
+                    self.assertEqual(link_index_mod._scan_shortcut_leaves(publish_cache=False), [])
+
     def test_windows_shortcut_targets_decodes_unicode_target_paths(self) -> None:
         shortcut = Path(r"C:\Links\BDRip(VCB).lnk")
         target = r"Y:\涼宮ハルヒの憂鬱\涼宮ハルヒの憂鬱 2009_BDRip(VCB)"
@@ -861,7 +877,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
         )()
 
         with patch("collection_detail.link_index.subprocess.run", return_value=proc):
-            result = link_index_mod._windows_shortcut_targets([shortcut])
+            result = self._actual_shortcut_targets([shortcut])
 
         self.assertEqual(result[str(shortcut.resolve())]["target_path"], target)
         self.assertTrue(result[str(shortcut.resolve())]["target_resolved"])
@@ -970,6 +986,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertEqual(disc_1["size"], 1)
 
     def test_save_resource_library_roots_writes_feature_config(self) -> None:
+        self._default_config_patch.stop()
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             cfg_path = root / "config.yaml"
@@ -1009,7 +1026,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertEqual(result["config"]["resource_roots"], [str(lib_a.resolve()), str(lib_b.resolve())])
             self.assertEqual(result["config"]["resource_excludes"][str(lib_a.resolve())], ["$recycle", "System Volume Information"])
 
-    def test_missing_shortcut_target_gets_resource_library_fix_candidate(self) -> None:
+    def test_resource_cache_never_auto_binds_missing_catalog_path(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "db"
@@ -1045,15 +1062,15 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 scan_resource_libraries_payload()
                 payload = generate_link_index_from_ui_body({}, settings=st)
 
-            self.assertEqual(payload["plan_summary"]["ready"], 1)
+            self.assertEqual(payload["plan_summary"]["ready"], 0)
             self.assertEqual(payload["plan_summary"]["target_fixable"], 0)
             tree_link = _find_link_by_relpath(payload["tree"], "[2099]/[20990101][20990331] Air Gear/BDRip.lnk")
             self.assertIsNotNone(tree_link)
             assert tree_link is not None
-            self.assertEqual(tree_link["target_path"], str(fixed_target.resolve()))
+            self.assertEqual(tree_link["target_path"], "")
             self.assertEqual(tree_link["source"], "index_db")
 
-    def test_resource_fix_uses_db_default_match_for_remaining_group(self) -> None:
+    def test_resource_group_matches_do_not_become_authoritative_bindings(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "db"
@@ -1109,7 +1126,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 scan_resource_libraries_payload()
                 payload = generate_link_index_from_ui_body({}, settings=st)
 
-            self.assertEqual(payload["plan_summary"]["ready"], 2)
+            self.assertEqual(payload["plan_summary"]["ready"], 0)
             self.assertEqual(payload["plan_summary"]["target_fixable"], 0)
             plain_node = _find_link_by_relpath(payload["tree"], f"[2099]/[20990101][20990331] {work_name}/BDRip(CASO).lnk")
             vcb_node = _find_link_by_relpath(payload["tree"], f"[2099]/[20990101][20990331] {work_name}/BDRip(VCB).lnk")
@@ -1117,8 +1134,8 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertIsNotNone(vcb_node)
             assert plain_node is not None
             assert vcb_node is not None
-            self.assertEqual(plain_node["target_path"], str(fixed_plain.resolve()))
-            self.assertEqual(vcb_node["target_path"], str(fixed_vcb.resolve()))
+            self.assertEqual(plain_node["target_path"], "")
+            self.assertEqual(vcb_node["target_path"], "")
 
     def test_format_only_resource_fallback_remains_unbound_until_confirmed(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -1191,8 +1208,8 @@ class JpTvLinkIndexTest(unittest.TestCase):
 
             self.assertEqual(payload["plan_summary"]["ready"], 0)
             self.assertEqual(payload["plan_summary"]["target_fixable"], 0)
-            self.assertEqual(payload["catalog_bindings"]["summary"]["unbound_candidate_count"], 2)
-            self.assertTrue(any(issue["code"] == "index-target-format-only" for issue in payload["catalog_bindings"]["issues"]))
+            self.assertEqual(payload["catalog_bindings"]["summary"]["blocking_issue_count"], 2)
+            self.assertTrue(any(issue["code"] == "missing-catalog-binding" for issue in payload["catalog_bindings"]["issues"]))
             plain_node = _find_link_by_relpath(payload["tree"], f"[2099]/[20990101][20990331] {work_name}/BDRip(VCB).lnk")
             self.assertIsNotNone(plain_node)
             assert plain_node is not None
@@ -1348,49 +1365,6 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 "[2099]/[20990101][20990331] Mapped Work/BDRip(VCB).lnk",
             )
 
-    def test_scoped_shortcut_preview_compacts_iso_and_preserves_compact_dates(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
-            media_root = root / "media"
-            target = media_root / "Mapped Work" / "Mapped Work_BDRip"
-            target.mkdir(parents=True)
-            cfg = {
-                "paths": {
-                    "resource_roots": [str(media_root)],
-                    "shortcut_root": str(root / "finish"),
-                }
-            }
-            press = {
-                "press_format": "BDRip",
-                "press_group": "VCB",
-                "press_path": target.name,
-                "target_path": str(target),
-            }
-
-            with patch.object(link_index_mod, "_feature_config", return_value=cfg):
-                for start, end in (
-                    ("2099-01-01", "2099-03-31"),
-                    ("20990101", "20990331"),
-                ):
-                    with self.subTest(start=start, end=end):
-                        planned = link_index_mod.preview_scoped_shortcuts_for_work(
-                            {
-                                "name": "Mapped Work",
-                                "path": str(target.parent),
-                                "date": {"start": start, "end": end},
-                                "domain": "animation",
-                                "country": "japan",
-                                "release_type": "tv",
-                            },
-                            [press],
-                        )
-
-                        self.assertEqual(
-                            planned[0]["shortcut_relpath"],
-                            "[2099]/[20990101][20990331] Mapped Work/BDRip(VCB).lnk",
-                        )
-                        self.assertEqual(planned[0]["index_entry"]["begin_date"], "20990101")
-                        self.assertEqual(planned[0]["index_entry"]["end_date"], "20990331")
 
     def test_save_and_generate_write_catalog_path_and_press_path(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -1826,7 +1800,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertEqual(payload["plan_summary"]["total"], 3)
             self.assertEqual(payload["plan_summary"]["ready"], 1)
             self.assertEqual(payload["plan_summary"]["empty_target_path"], 2)
-            self.assertEqual(payload["plan_summary"]["unmapped_on_disk"], 0)
+            self.assertEqual(payload["plan_summary"]["unmapped_on_disk"], 1)
             self.assertFalse(payload["disk_summary"]["db_match_cached"])
             self.assertEqual(payload["mapping_summary"]["unconfigured_press"], 2)
 
@@ -1867,7 +1841,7 @@ class JpTvLinkIndexTest(unittest.TestCase):
             assert tree_link is not None
             self.assertEqual(tree_link["target_path"], "")
 
-    def test_payload_marks_db_linked_when_existing_shortcut_targets_same_db_path(self) -> None:
+    def test_same_target_alias_does_not_satisfy_a_different_planned_shortcut(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "db"
@@ -1903,16 +1877,16 @@ class JpTvLinkIndexTest(unittest.TestCase):
             ):
                 payload = collection_link_index_payload(st)
 
-            self.assertEqual(payload["plan_summary"]["unmapped_on_disk"], 0)
+            self.assertEqual(payload["plan_summary"]["unmapped_on_disk"], 1)
             tree_link = _find_link_by_relpath(payload["tree"], "[2098]/Mapped Work/BDRip-VCB.lnk")
             self.assertIsNotNone(tree_link)
             assert tree_link is not None
             self.assertFalse(tree_link["shortcut_exists"])
-            self.assertTrue(tree_link["link_exists"])
-            self.assertTrue(tree_link["db_linked"])
+            self.assertFalse(tree_link["link_exists"])
+            self.assertFalse(tree_link["db_linked"])
             self.assertEqual(tree_link["target_path"], str(target))
 
-    def test_generate_renames_target_matched_shortcut_inside_existing_directory(self) -> None:
+    def test_generate_preserves_physical_alias_without_renaming_it(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "db"
@@ -1953,10 +1927,10 @@ class JpTvLinkIndexTest(unittest.TestCase):
             self.assertEqual(result["index_db"]["item_count"], 1)
             self.assertEqual(result["plan_summary"]["renamed"], 0)
             self.assertEqual(result["plan_summary"]["created"], 0)
-            self.assertEqual(result["plan_summary"]["unmapped_on_disk"], 0)
+            self.assertEqual(result["plan_summary"]["unmapped_on_disk"], 1)
             self.assertEqual(result["plan"][0]["shortcut_relpath"], "[2098]/[20980101][20980331] Mapped Work/BDRip(VCB).lnk")
 
-    def test_lite_payload_uses_cached_tree_without_reloading_works(self) -> None:
+    def test_lite_payload_reloads_current_catalog_without_page_payload_cache(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             db = root / "db"
@@ -1975,12 +1949,14 @@ class JpTvLinkIndexTest(unittest.TestCase):
                 first = collection_link_index_payload(st, lite=True)
 
             with patch("collection_detail.link_index._feature_config", return_value=cfg), patch(
-                "collection_detail.link_index._load_catalog_works",
-                side_effect=AssertionError("cached lite payload should not reload DB works"),
-            ):
+                "collection_detail.link_index.CatalogRepository.load_works",
+                autospec=True,
+                side_effect=link_index_mod.CatalogRepository.load_works,
+            ) as read_catalog:
                 second = collection_link_index_payload(st, lite=True)
 
-            self.assertIs(first, second)
+            self.assertEqual(read_catalog.call_count, 1)
+            self.assertIsNot(first, second)
             self.assertNotIn("works", second)
             self.assertNotIn("plan", second)
 

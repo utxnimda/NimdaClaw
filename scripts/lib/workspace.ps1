@@ -1,4 +1,4 @@
-# Shared source-workspace setup for launch, organizer and test entrypoints.
+# Shared source-workspace setup for launch, benchmark and test entrypoints.
 # Dot-source this file; no environment or working-directory mutation occurs here.
 
 function Get-NimdaBackendRoots {

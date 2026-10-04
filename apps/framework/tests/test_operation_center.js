@@ -62,6 +62,9 @@ function setup(fetcher = async () => response({ ok: true })) {
     static now() { return now; }
   }
   const window = { document, location: { href: "http://127.0.0.1:57357/", origin: "http://127.0.0.1:57357" }, crypto: { randomUUID() { return "operation-" + ++nextId; } } };
+  const windowListeners = {};
+  window.addEventListener = (name, callback) => { (windowListeners[name] ||= []).push(callback); };
+  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, "../frontend/src/common/operation-result.js"), "utf8"), { window });
   vm.runInNewContext(fs.readFileSync(SOURCE, "utf8"), {
     window, document, console, URL, Headers, AbortController, Date: ClockDate,
     fetch(url, options) { calls.push({ url, options }); return fetcher(url, options); },
@@ -70,6 +73,7 @@ function setup(fetcher = async () => response({ ok: true })) {
   }, { filename: SOURCE });
   async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
   return { center: window.NimdaOperationCenter, document, calls, timers,
+    emitWindow(name, event) { (windowListeners[name] || []).forEach((callback) => callback(event)); },
     async advance(ms) {
       now += ms;
       for (let i = 0; i < 100; i++) {
@@ -99,7 +103,8 @@ test("manual lifecycle has bounded, escaped text history and no estimated percen
   job.finish("完成核对");
   assert.equal(app.task().status, "succeeded");
   assert.equal(app.task().events.at(-1).message, "完成核对");
-  assert.equal(app.calls.length, 0);
+  assert.equal(app.calls.length, 1);
+  assert.equal(app.calls[0].url, "/api/operations/client-events");
   for (let i = 0; i < 65; i++) app.center.start("任务" + i).finish();
   assert.equal(app.center.snapshot().length, 60);
   const many = app.center.start("大量日志");
@@ -170,7 +175,7 @@ test("network failure keeps outcome unknown, rethrows original error, and never 
     }
     throw networkError;
   });
-  await assert.rejects(app.center.fetchJson("/api/media-directory-organizer/apply", { method: "POST" }), (error) => error === networkError);
+  await assert.rejects(app.center.fetchJson("/api/collection-detail/link-index/save", { method: "POST" }), (error) => error === networkError);
   assert.equal(app.task().status, "unknown");
   assert.match(app.task().message, /不要直接重复提交/);
   await app.advance(1000);
@@ -180,7 +185,7 @@ test("network failure keeps outcome unknown, rethrows original error, and never 
   assert.equal(app.task().finished_at, null);
   await app.advance(1000);
   assert.equal(app.task().status, "succeeded");
-  assert.equal(app.calls.filter((call) => call.url === "/api/media-directory-organizer/apply").length, 1);
+  assert.equal(app.calls.filter((call) => call.url === "/api/collection-detail/link-index/save").length, 1);
 });
 
 test("polling is globally serial, cursored, deduplicated, and never tracked recursively", async () => {
@@ -228,12 +233,12 @@ test("404 progress falls back after a bounded number while leaving the original 
 test("closing details never cancels work and delegated prefix actions select matching tasks", async () => {
   const original = deferred();
   const app = setup(() => original.promise);
-  const pending = app.center.fetchJson("/api/media-directory-organizer/preview");
+  const pending = app.center.fetchJson("/api/collection-detail/link-index/preview");
   const selected = app.task().id;
   app.center.start("其它模块", { path: "/api/browse/default" });
   const trigger = app.document.body.appendChild(app.document.createElement("button"));
   trigger.setAttribute("data-operation-details", "");
-  trigger.setAttribute("data-operation-prefix", "/api/media-directory-organizer/");
+  trigger.setAttribute("data-operation-prefix", "/api/collection-detail/link-index/");
   trigger.focus();
   app.document.emit("click", { target: trigger });
   assert.equal(app.center.selectedId, selected);
@@ -319,4 +324,177 @@ test("rendered timeline stays chronological and periodic updates do not reparent
   app.center.ui.history.insertBefore = (...args) => { moves++; return insert(...args); };
   app.center.render();
   assert.equal(moves, 0);
+});
+
+test("results show exact problems and counts without retaining arbitrary DB payloads", async () => {
+  const app = setup(async () => response({ ok: true, summary: { created: 2, failed: 1 },
+    errors: [{ code: "target-missing", message: "目标目录不存在", path: "S:/作品/BDRip" }],
+    works: [{ secret: "whole-database-must-not-be-retained" }] }));
+  await app.center.fetchJson("/api/collection-detail/link-index/generate-files", { method: "POST" });
+  app.center.open(app.task().id);
+  assert.equal(app.task().status, "warning");
+  assert.equal(app.task().result.counters.find((row) => row.label === "已创建").value, 2);
+  assert.equal(app.task().result.details[0].path, "S:/作品/BDRip");
+  assert.doesNotMatch(JSON.stringify(app.center.snapshot()), /whole-database/);
+  assert.ok(app.all().some((node) => node.textContent.includes("target-missing")));
+});
+
+test("historical logs restore results and show actual file content with bounded read-only paging", async () => {
+  const app = setup(async (url) => {
+    if (url.startsWith("/api/operations?")) return response({ ok: true, operations: [{ id: "old-job", title: "/api/browse/save",
+      status: "failed", message: "写入失败", started_at: "2026-10-02T01:00:00Z", finished_at: "2026-10-02T01:00:03Z",
+      events: [], log: { available: true, path: "E:/Project/nimda/data/framework/logs/operations/2026-10-02/example.jsonl" },
+      result: { summary: "写入失败", counters: [], details: [{ level: "error", message: "权限不足" }], truncated: 0 } }], next_cursor: "older" });
+    if (url.includes("/old-job/log?")) return response({ ok: true, log: { path: "example.jsonl", content: '<script>not executable</script>\n{"event":"failed"}', next_offset: 100, eof: false } });
+    return response({ ok: true });
+  });
+  await app.center.loadHistory(false);
+  app.center.open("old-job");
+  assert.equal(app.center.ui.readLog.disabled, false);
+  assert.match(app.center.ui.logPath.textContent, /2026-10-02/);
+  await app.center.loadLog("old-job", false);
+  assert.match(app.center.ui.logContent.textContent, /not executable/);
+  assert.equal(app.all().filter((node) => node.tagName === "script").length, 0);
+  await app.center.loadLog("old-job", true);
+  assert.ok(app.calls.some((call) => call.url.includes("offset=100&limit=65536")));
+  await app.center.loadHistory(true);
+  assert.ok(app.calls.some((call) => call.url.includes("before=older")));
+  assert.equal(app.calls.some((call) => call.options.method === "POST"), false);
+});
+
+test("client preflight errors have their own persistent record and cannot overwrite running server jobs", async () => {
+  const original = deferred();
+  const app = setup((url) => url === "/api/browse/save" ? original.promise : Promise.resolve(response({ ok: true })));
+  const saving = app.center.fetchJson("/api/browse/save", { method: "POST" });
+  const serverId = app.task().id;
+  app.center.notice("作品名不能为空", true);
+  const errorTask = app.task();
+  assert.notEqual(errorTask.id, serverId);
+  assert.equal(errorTask.status, "failed");
+  assert.equal(app.center.get(serverId).status, "running");
+  const saved = app.calls.find((call) => call.url === "/api/operations/client-events");
+  assert.equal(JSON.parse(saved.options.body).message, "作品名不能为空");
+  assert.match(JSON.parse(saved.options.body).details, /作品名不能为空/);
+  original.resolve(response({ ok: true }));
+  await saving;
+});
+
+test("log errors are visible and history pagination does not accumulate unbounded remote tasks", async () => {
+  let page = 0;
+  const app = setup(async (url) => {
+    if (url.startsWith("/api/operations?")) return response({ ok: true, operations: [{ id: "history-" + ++page, title: "旧记录", status: "succeeded", events: [] }], next_cursor: "next" });
+    return response({ ok: false, error: "日志文件不可读取" }, 404);
+  });
+  for (let i = 0; i < 8; i++) await app.center.loadHistory(i > 0);
+  assert.equal(app.center.tasks.length, 1);
+  app.center.open("history-8");
+  await app.center.loadLog("history-8", false);
+  assert.match(app.center.ui.logStatus.textContent, /日志文件不可读取/);
+});
+
+test("transient final status failures retry reads and recover the durable log metadata", async () => {
+  let polls = 0;
+  const app = setup(async (url) => {
+    if (url.startsWith("/api/operations/")) {
+      if (++polls === 1) return response({ error: "temporarily unavailable" }, 503);
+      return response({ ok: true, operation: { status: "succeeded", events: [], log: { available: true, path: "completed.jsonl" } } });
+    }
+    return response({ ok: true });
+  });
+  await app.center.fetchJson("/api/browse/default");
+  await app.advance(500);
+  assert.equal(polls, 1);
+  assert.equal(app.center.get(app.task().id).watch, true);
+  await app.advance(1000);
+  assert.equal(polls, 2);
+  assert.equal(app.task().log.path, "completed.jsonl");
+  assert.equal(app.calls.filter((call) => call.url === "/api/browse/default").length, 1);
+});
+
+test("restoring running history resumes status polling rather than leaving it stuck", async () => {
+  const app = setup(async (url) => url.startsWith("/api/operations?")
+    ? response({ ok: true, operations: [{ id: "restored-job", title: "扫描", status: "running", events: [] }], next_cursor: null })
+    : response({ ok: true, operation: { status: "succeeded", message: "扫描完成", events: [] } }));
+  await app.center.loadHistory(false);
+  assert.equal(app.center.get("restored-job").watch, true);
+  await app.advance(1);
+  assert.equal(app.center.get("restored-job").status, "succeeded");
+});
+
+test("uncaught page errors and asynchronous failures enter persistent processing details", async () => {
+  const app = setup();
+  app.emitWindow("error", { error: new Error("render failed") });
+  app.emitWindow("unhandledrejection", { reason: new Error("asynchronous failure") });
+  await app.flush();
+  assert.equal(app.center.snapshot().length, 2);
+  assert.ok(app.center.snapshot().every((task) => task.status === "failed"));
+  assert.match(app.center.snapshot()[0].message, /render failed/);
+  assert.equal(app.calls.filter((call) => call.url === "/api/operations/client-events").length, 2);
+});
+
+test("whole-file log search continues beyond displayed bytes and jumps to matching line", async () => {
+  let searches = 0;
+  const app = setup(async (url) => {
+    if (url.includes("/log/search")) return response({ ok: true, search: ++searches === 1
+      ? { matches: [], next_offset: 8388608, eof: false, total_bytes: 9000000 }
+      : { matches: [{ line: 102, offset: 8500000, text: "[2026-10-03][ERROR] <script>path denied</script>" }], next_offset: 9000000, eof: true, total_bytes: 9000000 } });
+    return response({ ok: true, log: { path: "test.log", content: "[2026-10-03][ERROR] path denied", next_offset: 8500044, eof: true } });
+  });
+  const job = app.center.start("测试", { server: true });
+  app.center.open(job.id);
+  await app.center.searchLog(job.id, false, "ERROR");
+  assert.match(app.center.ui.searchStatus.textContent, /尚未搜完整个文件/);
+  assert.equal(app.center.ui.moreSearch.disabled, false);
+  await app.center.searchLog(job.id, true, "ERROR");
+  assert.match(app.calls[1].url, /offset=8388608/);
+  assert.match(app.center.ui.searchStatus.textContent, /已到当前文件末尾/);
+  assert.equal(app.center.ui.moreSearch.disabled, true);
+  const hit = app.center.ui.searchMatches.children[0].children[0];
+  assert.match(hit.textContent, /第 102 行/);
+  assert.equal(app.all().filter((el) => el.tagName === "script").length, 0);
+  hit.emit("click"); await app.flush();
+  assert.match(app.calls[2].url, /offset=8500000/);
+  assert.match(app.center.ui.logContent.textContent, /path denied/);
+});
+
+test("newer search wins over stale response and task switching preserves input", async () => {
+  const old = deferred();
+  const app = setup(async (url) => url.includes("q=old") ? old.promise : response({ ok: true, search: { matches: [{ line: 3, text: "new", offset: 30 }], next_offset: 33, eof: true, total_bytes: 33 } }));
+  const job = app.center.start("搜索", { server: true }); app.center.open(job.id);
+  const pending = app.center.searchLog(job.id, false, "old");
+  await app.center.searchLog(job.id, false, "new");
+  old.resolve(response({ ok: true, search: { matches: [{ line: 1, text: "old", offset: 0 }], next_offset: 3, eof: true } }));
+  await pending;
+  assert.match(app.center.ui.searchMatches.children[0].children[0].textContent, /new/);
+  const other = app.center.start("另一个", { server: true }); app.center.open(other.id); app.center.open(job.id);
+  assert.equal(app.center.ui.searchInput.value, "new");
+});
+
+test("open actual log uses POST with only operation id and exposes download fallback", async () => {
+  const app = setup(async () => response({ ok: false, error: "未关联 .log 编辑器" }, 503));
+  const job = app.center.start("日志", { server: true }); app.center.open(job.id);
+  await app.center.openLogFile(job.id);
+  assert.equal(app.calls[0].url, "/api/operations/" + job.id + "/log/open");
+  assert.equal(app.calls[0].options.method, "POST");
+  assert.equal(app.calls[0].options.body, undefined);
+  assert.match(app.center.ui.logStatus.textContent, /未关联 .log 编辑器/);
+  assert.match(app.center.ui.logStatus.textContent, /仍可下载/);
+  assert.match(app.center.ui.downloadLog.href, /\/log\/file\?download=1$/);
+});
+
+test("warning rows and event context retain exact object, cause, paths and code location safely", async () => {
+  const app = setup(async () => response({ ok: true, issues: [{ level: "warning", message: "无法创建快捷方式", action: "创建快捷方式", stage: "写入 .lnk", source_path: "U:/作品", target_path: "E:/链接.lnk", work_key: "jp-2005-1", press_key: "BDRip", reason: "权限不足", expected: false, actual: 0, location: { file: "shortcuts.py", line: 88, function: "create" }, secret: "do-not-log" }] }));
+  await app.center.fetchJson("/api/collection-detail/link-index/generate-files");
+  assert.equal(app.task().status, "warning");
+  assert.equal(app.task().result.details[0].press_key, "BDRip");
+  assert.equal(app.task().result.details[0].actual, "0");
+  app.center.open(app.task().id);
+  const rendered = app.all().map((el) => el.textContent).join("\n");
+  for (const expected of ["权限不足", "写入 .lnk", "U:/作品", "E:/链接.lnk", "shortcuts.py:88", "jp-2005-1"]) assert.ok(rendered.includes(expected));
+  assert.doesNotMatch(JSON.stringify(app.center.snapshot()), /do-not-log/);
+  const task = app.center.get(app.task().id);
+  app.center.merge(task, { status: "warning", events: [{ seq: 1, message: "处理失败", context: { stage: "读数据库", reason: "bad yaml", location: { file: "read.py", line: 12 } } }] });
+  app.center.render();
+  assert.equal(app.task().events.at(-1).context.stage, "读数据库");
+  assert.match(app.all().map((el) => el.textContent).join("\n"), /read.py:12/);
 });

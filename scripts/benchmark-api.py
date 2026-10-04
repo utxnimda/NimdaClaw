@@ -23,16 +23,15 @@ from work_catalog_yaml.layout import ensure_feature_backend_paths
 
 ensure_feature_backend_paths()
 
-from work_catalog_yaml.jp_tv import browse_api
+from collection_detail import web as browse_api
 from work_catalog_yaml.jp_tv.browse_settings import get_resolved_browse_settings
 from work_catalog_yaml import yaml_io
-from media_directory_organizer.catalog import MediaCatalog
+from collection_detail.catalog_repository import CatalogRepository
 
 
 def load_catalog():
     settings, _ = get_resolved_browse_settings()
-    catalog = MediaCatalog.load(settings.filesystem_root, domain="", country="")
-    return repr(catalog.works).encode("utf-8")
+    return repr(CatalogRepository(settings).load_works()).encode("utf-8")
 
 
 def main() -> None:

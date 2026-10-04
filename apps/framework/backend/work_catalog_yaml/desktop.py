@@ -18,7 +18,6 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
@@ -147,25 +146,11 @@ def configure_desktop_workspace(application_root: Path, workspace_root: Path | N
 
 
 def _configure_desktop_logging(root: Path) -> Path:
-    log_dir = root / "data" / "framework" / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / "desktop.log"
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-    if not any(
-        isinstance(item, RotatingFileHandler)
-        and Path(getattr(item, "baseFilename", "")).resolve() == log_path.resolve()
-        for item in root_logger.handlers
-    ):
-        handler = RotatingFileHandler(
-            log_path,
-            maxBytes=2 * 1024 * 1024,
-            backupCount=3,
-            encoding="utf-8",
-        )
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
-        root_logger.addHandler(handler)
-    return log_path
+    from work_catalog_yaml.common.application_logging import configure_application_logging
+
+    handler = configure_application_logging(root / "data" / "framework" / "logs" / "application",
+                                            filename="desktop.log")
+    return Path(handler.baseFilename)
 
 
 def _bind_desktop_socket(host: str, preferred_port: int) -> socket.socket:
@@ -470,6 +455,17 @@ def run_desktop(
             background_color="#101827",
             text_select=True,
         )
+        from work_catalog_yaml.common.native_dialogs import set_directory_picker
+
+        def pick_directory(initial):
+            from work_catalog_yaml.paths import normalize_copied_path
+            directory = normalize_copied_path(initial)
+            if directory and not Path(directory).is_dir():
+                directory = ""
+            selected = window.create_file_dialog(webview.FOLDER_DIALOG, directory=directory, allow_multiple=False)
+            return selected[0] if selected else ""
+
+        set_directory_picker(pick_directory)
         window.events.closed += lambda *_args: server.stop()
         webview.start(
             gui="edgechromium",
@@ -486,6 +482,8 @@ def run_desktop(
         _show_error("Nimda 启动失败", f"{exc}\n\n日志：{log_path}")
         return 1
     finally:
+        from work_catalog_yaml.common.native_dialogs import set_directory_picker
+        set_directory_picker(None)
         if server is not None:
             server.stop()
             atexit.unregister(server.stop)

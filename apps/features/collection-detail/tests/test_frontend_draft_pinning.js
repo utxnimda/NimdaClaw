@@ -5,8 +5,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { withCommonRuntime } = require("../../../framework/tests/frontend_runtime_fixture");
 
-const SHELL = path.resolve(__dirname, "../../../framework/frontend/src/legacy/shell.js");
+const SHELL = path.resolve(__dirname, "../frontend/table-controller.js");
 
 function setup() {
   const elements = new Map();
@@ -27,7 +28,7 @@ function setup() {
   };
   elements.get("viewport").querySelectorAll = selector => selector === "tbody tr.sheet-row" ? window.filterRows : [];
   const original = fs.readFileSync(SHELL, "utf8");
-  const marker = '  $file.addEventListener("change", function () {';
+  const marker = '  function mount() {';
   assert.ok(original.includes(marker), "shell startup must remain excluded from the fixture");
   const source = original.slice(0, original.indexOf(marker)) + `
     // Load real shell behavior without application startup or actual API access.
@@ -59,8 +60,18 @@ function setup() {
       getState() { return { sortKey: sheetSortKey, sortDir: sheetSortDir,
         filters: persistedSheetFilters, deleted: deletedSheetRows, enums: enumEditorDraft }; },
     };
-  })();`;
-  vm.runInNewContext(source, {
+  }
+  window.createTableFixture = createTableController;
+})();
+window.createTableFixture({
+  featureHost: { getActiveId() { return "collection-detail"; }, configure() {}, refresh() {} },
+  fetchJson(url, options) { return window.testFetch(url, options); },
+  setStatus(message, isError) {
+    const status = document.getElementById("status-line");
+    if (status) { status.textContent = message || ""; status.className = "status" + (isError ? " err" : ""); }
+  },
+});`;
+  vm.runInNewContext(withCommonRuntime(source), {
     window, document, console,
     localStorage: { getItem() { return null; }, setItem() {} },
   }, { filename: SHELL });

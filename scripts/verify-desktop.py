@@ -28,6 +28,7 @@ from work_catalog_yaml.yaml_io import load_yaml_string
 OPTIONAL_MODULES = frozenset({
     "work_catalog_yaml.__main__", "work_catalog_yaml.cli", "work_catalog_yaml.catalog",
     "work_catalog_yaml.paths", "work_catalog_yaml.scan", "work_catalog_yaml.jp_tv.browse_save",
+    "work_catalog_yaml.jp_tv.browse_api",
     "work_catalog_yaml.jp_tv.collection_records", "work_catalog_yaml.jp_tv.link_index",
 })
 

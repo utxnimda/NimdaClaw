@@ -5,8 +5,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { withCommonRuntime } = require("../../../framework/tests/frontend_runtime_fixture");
 
-const SHELL = path.resolve(__dirname, "../../../framework/frontend/src/legacy/shell.js");
+const SHELL = path.resolve(__dirname, "../frontend/table-controller.js");
 
 function setup() {
   const editCheckbox = { checked: false };
@@ -21,7 +22,7 @@ function setup() {
     addEventListener() {},
   };
   const window = { document, addEventListener() {} };
-  const marker = '  $file.addEventListener("change", function () {';
+  const marker = '  function mount() {';
   const original = fs.readFileSync(SHELL, "utf8");
   assert.ok(original.includes(marker), "shell startup marker must exist");
   // Exercise real shell functions, but never start config reads or load actual data.
@@ -32,8 +33,18 @@ function setup() {
       beginInlineScalarEdit, sheetColumnHardMin, sheetHeaderNeedCap,
       setEditing(value) { sheetEditMode = value; },
     };
-  })();`;
-  vm.runInNewContext(source, {
+  }
+  window.createTableFixture = createTableController;
+})();
+window.createTableFixture({
+  featureHost: { getActiveId() { return "collection-detail"; }, configure() {}, refresh() {} },
+  fetchJson(url, options) { return window.testFetch(url, options); },
+  setStatus(message, isError) {
+    const status = document.getElementById("status-line");
+    if (status) { status.textContent = message || ""; status.className = "status" + (isError ? " err" : ""); }
+  },
+});`;
+  vm.runInNewContext(withCommonRuntime(source), {
     window, document, console,
     localStorage: { getItem() { return null; }, setItem() {} },
   }, { filename: SHELL });

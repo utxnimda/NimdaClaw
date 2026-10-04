@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
+const { withCommonRuntime } = require("../../../framework/tests/frontend_runtime_fixture");
 
 const FRONTEND = path.resolve(__dirname, "../frontend/index.js");
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -54,7 +55,7 @@ function setup(options = {}) {
     },
     ...options.context,
   };
-  vm.runInNewContext(fs.readFileSync(FRONTEND, "utf8"), { window, document, console }, { filename: FRONTEND });
+  vm.runInNewContext(withCommonRuntime(fs.readFileSync(FRONTEND, "utf8")), { window, document, console }, { filename: FRONTEND });
   const feature = window.JpTvBrowseFeatureRegistry.features[0];
   feature.init(context);
   feature.activate(context);

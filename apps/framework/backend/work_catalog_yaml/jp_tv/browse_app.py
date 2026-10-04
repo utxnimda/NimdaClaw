@@ -13,10 +13,14 @@ from starlette.routing import Mount, Route, Router
 from starlette.staticfiles import StaticFiles
 
 from work_catalog_yaml.api_runtime import api_health, api_lifespan, install_api_queues
-from work_catalog_yaml.operation_progress import api_operation_progress
-from work_catalog_yaml.layout import feature_frontend_root, framework_frontend_root
+from work_catalog_yaml.operation_progress import (api_operation_progress, api_operation_history, api_operation_log,
+    api_operation_log_search, api_operation_log_file, api_operation_log_open, api_client_operation)
+from work_catalog_yaml.layout import ensure_feature_backend_paths, feature_frontend_root, framework_frontend_root, workspace_root
 from work_catalog_yaml.jp_tv.browse_security import is_loopback_hostname, mutation_source_is_allowed
-from work_catalog_yaml.jp_tv import browse_api as api
+ensure_feature_backend_paths()
+from collection_detail import web as api
+from collection_info import web as info_api
+from directory_organizer import web as organizer_api
 
 
 def _resolve_browse_static_dir() -> Path:
@@ -70,7 +74,7 @@ class _BrowseLocalApiSecurityMiddleware(BaseHTTPMiddleware):
             "HEAD",
             "OPTIONS",
         }
-        is_progress_request = request.url.path.startswith("/api/operations/") or (
+        is_progress_request = request.url.path == "/api/operations" or request.url.path.startswith("/api/operations/") or (
             request.url.path.startswith("/api") and "x-nimda-operation-id" in request.headers
         )
         if is_api_mutation or is_progress_request:
@@ -95,16 +99,26 @@ class _BrowseLocalApiSecurityMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-def build_jp_tv_browse_app() -> Starlette:
+def build_jp_tv_browse_app(*, operation_log_root: Path | None = None) -> Starlette:
     static_dir = str(_resolve_browse_static_dir())
     collection_detail_frontend = str(_resolve_feature_frontend_dir("collection-detail"))
     collection_info_frontend = str(_resolve_feature_frontend_dir("collection-info"))
-    media_directory_organizer_frontend = str(
-        _resolve_feature_frontend_dir("media-directory-organizer")
-    )
+    organizer_frontend = str(_resolve_feature_frontend_dir("directory-organizer"))
     jp_tv_browse_api = Router(
         routes=[
             Route("/health", endpoint=api_health, methods=["GET"]),
+            Route("/directory-organizer/scan", endpoint=organizer_api.scan, methods=["POST"]),
+            Route("/directory-organizer/preview", endpoint=organizer_api.preview, methods=["POST"]),
+            Route("/directory-organizer/execute", endpoint=organizer_api.execute, methods=["POST"]),
+            Route("/directory-organizer/catalog", endpoint=organizer_api.catalog_search, methods=["POST"]),
+            Route("/directory-organizer/shortcuts", endpoint=organizer_api.shortcut_action, methods=["POST"]),
+            Route("/directory-organizer/choose-directory", endpoint=organizer_api.choose_folder, methods=["POST"]),
+            Route("/operations", endpoint=api_operation_history, methods=["GET"]),
+            Route("/operations/client-events", endpoint=api_client_operation, methods=["POST"]),
+            Route("/operations/{operation_id}/log/search", endpoint=api_operation_log_search, methods=["GET"]),
+            Route("/operations/{operation_id}/log/file", endpoint=api_operation_log_file, methods=["GET"]),
+            Route("/operations/{operation_id}/log/open", endpoint=api_operation_log_open, methods=["POST"]),
+            Route("/operations/{operation_id}/log", endpoint=api_operation_log, methods=["GET"]),
             Route("/operations/{operation_id}", endpoint=api_operation_progress, methods=["GET"]),
             Route("/config", endpoint=api._get_config_api, methods=["GET"]),
             Route("/browse/default", endpoint=api._get_browse_default_api, methods=["GET"]),
@@ -116,10 +130,15 @@ def build_jp_tv_browse_app() -> Starlette:
                 methods=["POST"],
             ),
             Route("/config/enum-edits", endpoint=api._post_config_enum_edits_api, methods=["POST"]),
-            Route("/collection-info", endpoint=api._get_collection_records_api, methods=["GET"]),
-            Route("/collection-info", endpoint=api._post_collection_records_api, methods=["POST"]),
-            Route("/collection-records", endpoint=api._get_collection_records_api, methods=["GET"]),
-            Route("/collection-records", endpoint=api._post_collection_records_api, methods=["POST"]),
+            Route("/collection-info", endpoint=info_api._get_collection_records_api, methods=["GET"]),
+            Route("/collection-info", endpoint=info_api._post_collection_records_api, methods=["POST"]),
+            Route("/collection-records", endpoint=info_api._get_collection_records_api, methods=["GET"]),
+            Route("/collection-records", endpoint=info_api._post_collection_records_api, methods=["POST"]),
+            Route(
+                "/collection-detail/library-status",
+                endpoint=api._get_collection_detail_library_status_api,
+                methods=["GET"],
+            ),
             Route(
                 "/collection-detail/link-index",
                 endpoint=api._get_collection_detail_link_index_api,
@@ -195,61 +214,12 @@ def build_jp_tv_browse_app() -> Starlette:
                 endpoint=api._get_collection_detail_resource_libraries_search_api,
                 methods=["GET"],
             ),
-            Route(
-                "/media-directory-organizer/config",
-                endpoint=api._get_media_directory_organizer_config_api,
-                methods=["GET"],
-            ),
-            Route(
-                "/media-directory-organizer/preview",
-                endpoint=api._post_media_directory_organizer_preview_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/apply",
-                endpoint=api._post_media_directory_organizer_apply_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/suggest",
-                endpoint=api._post_media_directory_organizer_landing_suggest_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/preview",
-                endpoint=api._post_media_directory_organizer_landing_preview_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/apply",
-                endpoint=api._post_media_directory_organizer_landing_apply_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/shortcuts/preview",
-                endpoint=api._post_media_directory_organizer_landing_shortcuts_preview_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/shortcuts/apply",
-                endpoint=api._post_media_directory_organizer_landing_shortcuts_apply_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/repair/preview",
-                endpoint=api._post_media_directory_organizer_catalog_shortcut_repair_preview_api,
-                methods=["POST"],
-            ),
-            Route(
-                "/media-directory-organizer/landing/repair/apply",
-                endpoint=api._post_media_directory_organizer_catalog_shortcut_repair_apply_api,
-                methods=["POST"],
-            ),
             Route("/browse", endpoint=api._post_browse_api, methods=["POST"]),
         ],
     )
     routes = [
         Mount("/api", app=jp_tv_browse_api),
+        Mount("/features/directory-organizer", app=StaticFiles(directory=organizer_frontend), name="directory_organizer_frontend"),
         Mount(
             "/features/collection-detail",
             app=StaticFiles(directory=collection_detail_frontend),
@@ -259,11 +229,6 @@ def build_jp_tv_browse_app() -> Starlette:
             "/features/collection-info",
             app=StaticFiles(directory=collection_info_frontend),
             name="collection_info_frontend",
-        ),
-        Mount(
-            "/features/media-directory-organizer",
-            app=StaticFiles(directory=media_directory_organizer_frontend),
-            name="media_directory_organizer_frontend",
         ),
         Mount(
             "/",
@@ -279,8 +244,8 @@ def build_jp_tv_browse_app() -> Starlette:
             Middleware(_BrowseNoCacheStaticMiddleware),
         ],
     )
-    install_api_queues(app)
+    install_api_queues(app, operation_log_root=operation_log_root)
     return app
 
 
-app = build_jp_tv_browse_app()
+app = build_jp_tv_browse_app(operation_log_root=workspace_root() / "data" / "framework" / "logs" / "operations")

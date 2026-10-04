@@ -398,8 +398,8 @@ class ProgressApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 404)
         self.assertIn(b"no-store", headers[b"cache-control"])
         self.assertEqual((await request(self.app, "/api/operations/bad-id"))[0], 400)
-        with patch.object(browse_api, "organizer_config_payload", return_value={"ok": True}) as service:
-            endpoint = "/api/media-directory-organizer/config"
+        with patch.object(browse_api, "resource_libraries_cached_payload", return_value={"ok": True}) as service:
+            endpoint = "/api/collection-detail/resource-libraries/cache"
             self.assertEqual((await request(self.app, endpoint, headers=[(b"x-nimda-operation-id", b"bad-id")]))[0], 400)
             service.assert_not_called()
             tracked_headers = [(b"x-nimda-operation-id", valid_id.encode())]
@@ -412,8 +412,8 @@ class ProgressApiTest(unittest.IsolatedAsyncioTestCase):
             service.assert_called_once()
 
     async def test_untracked_requests_remain_compatible(self):
-        with patch.object(browse_api, "organizer_config_payload", return_value={"ok": True, "example": 1}):
-            status, payload, _headers = await request(self.app, "/api/media-directory-organizer/config")
+        with patch.object(browse_api, "resource_libraries_cached_payload", return_value={"ok": True, "example": 1}):
+            status, payload, _headers = await request(self.app, "/api/collection-detail/resource-libraries/cache")
         self.assertEqual(status, 200)
         self.assertEqual(payload, {"ok": True, "example": 1})
         self.assertEqual(len(self.app.state.operation_registry._operations), 0)

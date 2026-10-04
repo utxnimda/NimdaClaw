@@ -1,28 +1,6 @@
 (function () {
-  function ensureFeatureRegistry() {
-    var registry = window.JpTvBrowseFeatureRegistry || {};
-    if (!Array.isArray(registry.features)) registry.features = [];
-    registry.register = function (feature) {
-      if (!feature || !feature.id) return;
-      var features = Array.isArray(this.features) ? this.features : (this.features = []);
-      for (var i = 0; i < features.length; i++) {
-        if (features[i] && features[i].id === feature.id) {
-          if (features[i] !== feature && typeof features[i].dispose === "function") {
-            try {
-              features[i].dispose();
-            } catch (_e) {}
-          }
-          features[i] = feature;
-          return;
-        }
-      }
-      features.push(feature);
-    };
-    window.JpTvBrowseFeatureRegistry = registry;
-    return registry;
-  }
-
-  var root = ensureFeatureRegistry();
+  var common = window.NimdaCommon;
+  var root = common.ensureFeatureRegistry(window);
 
   var featureCtx = null;
   var featureActive = true;
@@ -31,9 +9,12 @@
   var subtabBound = false;
   var linkIndexState = null;
   var linkIndexLoading = false;
+  var linkIndexFileGenerationBusy = false;
   var linkIndexOperationNotice = null;
   var linkIndexSelectedPath = "";
   var linkIndexCollapsedPaths = {};
+  var linkIndexUnmappedPage = 0;
+  var UNMAPPED_PAGE_SIZE = 25;
   var linkIndexTooltipEl = null;
   var linkIndexTooltipTarget = null;
   var linkIndexTooltipPosition = null;
@@ -64,18 +45,11 @@
   var resourceSearchSerial = 0;
 
   function readPreference(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch (_e) {
-      return null;
-    }
+    return common.readPreference(key);
   }
 
   function writePreference(key, value) {
-    try {
-      if (value === null) localStorage.removeItem(key);
-      else localStorage.setItem(key, value);
-    } catch (_e) {}
+    return common.writePreference(key, value);
   }
 
   function resourceRequestCurrent(serial) {
@@ -97,11 +71,7 @@
 
   function esc(s) {
     if (ctx().esc) return ctx().esc(s);
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    return common.escapeHtml(s);
   }
 
   function setStatus(msg, isErr) {
@@ -134,6 +104,7 @@
     linkIndexLoading = false;
     linkIndexOperationNotice = null;
     linkIndexSelectedPath = "";
+    linkIndexUnmappedPage = 0;
     hideLinkTooltip();
   }
 
@@ -174,11 +145,7 @@
 
   async function fetchJson(url, opts) {
     if (ctx().fetchJson) return ctx().fetchJson(url, opts);
-    var res = await fetch(url, opts || {});
-    var data = await res.json().catch(function () {
-      return {};
-    });
-    return { res: res, data: data };
+    return common.fetchJson(url, opts);
   }
 
   function slot() {
@@ -249,10 +216,13 @@
 
   function summaryText(data) {
     var summary = (data && data.plan_summary) || {};
+    var diskSummary = (data && data.disk_summary) || {};
     return (
-      "索引 " +
+      "DB 压制索引 " +
       (summary.total || 0) +
-      " 项，空路径 " +
+      " 项，实际快捷方式 " +
+      (diskSummary.shortcut_leaves || 0) +
+      " 个，空路径 " +
       (summary.empty_target_path || 0) +
       " 项，磁盘未关联 " +
       (summary.unmapped_on_disk || 0) +
@@ -332,10 +302,13 @@
       (summary.existing_root_count || 0) +
       " / " +
       (summary.root_count || 0) +
-      "，系列 " +
+      "，一级目录 " +
       (summary.series_count || 0) +
-      "，资源 " +
-      (summary.item_count || 0) +
+      "，物理目录 " +
+      (summary.dir_count || 0) +
+      "，文件 " +
+      (summary.file_count || 0) +
+      "（不是 DB 作品数）" +
       (summary.truncated ? "，已达到上限 " + (summary.max_dirs || 0) : "")
     );
   }
@@ -901,6 +874,9 @@
     var labels = {
       ready: "已配置",
       missing_target: "目标丢失",
+      missing_catalog_binding: "DB 缺少目录绑定",
+      target_mismatch: "快捷方式指向不一致",
+      shortcut_target_unknown: "快捷方式目标未确认",
       duplicate_shortcut: "快捷方式冲突",
       invalid_path: "路径非法",
       failed: "生成失败",
@@ -1106,12 +1082,18 @@
   }
 
   function linkOpenAttrs(node) {
-    var shortcutPath = (node && (node.matched_shortcut_path || node.shortcut_path || node.path || node.open_path)) || "";
-    var targetPath = (node && (node.shortcut_target_path || node.target_path)) || "";
-    if (node && node.source === "index_db") shortcutPath = "";
-    var hasShortcut = !!(node && shortcutPath);
-    var openPath = hasShortcut ? shortcutPath : (node && (node.open_path || node.target_path || shortcutPath || node.path)) || "";
-    var canOpen = !!(node && openPath && (hasShortcut || linkHasExistingTarget(node)));
+    // Planned DB shortcut paths are not evidence that a shortcut exists on disk.
+    var observedShortcut = !!(node && (node.shortcut_exists === true ||
+      (node.shortcut_exists !== false && node.matched_shortcut_path)));
+    var shortcutPath = observedShortcut ? (node.matched_shortcut_path || node.shortcut_path || node.path || "") : "";
+    var hasShortcut = !!shortcutPath;
+    var targetPath = (node && (hasShortcut ? (node.shortcut_target_path || node.target_path) : node.target_path)) || "";
+    var targetExists = !!(node && (hasShortcut
+      ? (node.shortcut_target_exists === true || (node.shortcut_target_exists == null && node.target_exists === true))
+      : node.target_exists === true));
+    var openPath = hasShortcut ? shortcutPath : targetPath;
+    // Real shortcuts may be lazily resolved; only a resolved missing target disables them.
+    var canOpen = !!(openPath && (hasShortcut ? (node.target_resolved !== true || targetExists) : targetExists));
     return (
       ' data-link-index-open="' +
       esc(openPath) +
@@ -1120,12 +1102,13 @@
       '" data-link-target-path="' +
       esc(targetPath) +
       '" data-target-exists="' +
-      esc(node && node.target_exists === true ? "1" : "0") +
+      esc(targetExists ? "1" : "0") +
       '" data-can-open="' +
       esc(canOpen ? "1" : "0") +
       '" data-link-target-error="' +
       esc((node && node.target_error) || "") +
-      '"'
+      '"' +
+      (canOpen ? "" : " disabled")
     );
   }
 
@@ -1349,19 +1332,34 @@
   function renderWarnings(data) {
     if (!data || !data.ok) return "";
     var summary = data.plan_summary || {};
-    var items = [];
-    if (summary.unmapped_on_disk) {
-      items.push("实际索引目录中有 " + summary.unmapped_on_disk + " 个 .lnk 未在 DB 中找到关联。");
-    }
-    if (!items.length) return "";
+    var items = Array.isArray(data.unmapped_shortcuts) ? data.unmapped_shortcuts : [];
+    var count = items.length || Number(summary.unmapped_on_disk || 0);
+    if (!count) return "";
+    var pageCount = Math.max(1, Math.ceil(items.length / UNMAPPED_PAGE_SIZE));
+    linkIndexUnmappedPage = Math.max(0, Math.min(pageCount - 1, linkIndexUnmappedPage));
+    var start = linkIndexUnmappedPage * UNMAPPED_PAGE_SIZE;
+    var rows = items.slice(start, start + UNMAPPED_PAGE_SIZE).map(function (item, index) {
+      var resolved = !!item.target_resolved;
+      var status = !resolved ? "目标未解析" : item.target_exists ? "目标目录存在" : "目标目录不存在";
+      return '<tr><td>' + esc(String(start + index + 1)) + '</td><td><code>' +
+        esc(item.shortcut_path || "路径未知") + '</code></td><td><code>' +
+        esc(item.target_path || "未解析") + '</code></td><td>' +
+        esc(item.shortcut_exists === false ? "快捷方式已不存在" : "快捷方式存在") + '<br>' +
+        esc(status) + (item.target_error ? '<br><span class="is-error">' + esc(item.target_error) + '</span>' : "") +
+        '</td></tr>';
+    }).join("");
+    var pager = pageCount > 1 ? '<div class="link-index-actions"><button type="button" class="btn secondary sm" data-link-index-unmapped-page="' +
+      (linkIndexUnmappedPage - 1) + '"' + (linkIndexUnmappedPage === 0 ? " disabled" : "") + '>上一页</button><span>' +
+      esc("第 " + (linkIndexUnmappedPage + 1) + " / " + pageCount + " 页，共 " + items.length + " 项；每页 " + UNMAPPED_PAGE_SIZE + " 项") +
+      '</span><button type="button" class="btn secondary sm" data-link-index-unmapped-page="' +
+      (linkIndexUnmappedPage + 1) + '"' + (linkIndexUnmappedPage + 1 === pageCount ? " disabled" : "") + '>下一页</button></div>' : "";
     return (
-      '<div class="link-index-warnings">' +
-      items
-        .map(function (item) {
-          return "<p>" + esc(item) + "</p>";
-        })
-        .join("") +
-      "</div>"
+      '<details class="link-index-warnings" open><summary>' +
+      esc("实际索引目录中有 " + count + " 个 .lnk 未在 DB 中找到关联。") + '</summary>' +
+      '<p class="muted">按完整快捷方式路径与 DB 计划匹配；指向相同目录的额外快捷方式也会列出。此处仅展示，不会修改文件。</p>' +
+      (items.length ? '<div class="link-index-list-files"><table class="link-index-files-table"><thead><tr><th>序号</th><th>完整快捷方式路径</th><th>实际目标目录</th><th>实际状态 / 解析错误</th></tr></thead><tbody>' +
+        rows + '</tbody></table></div>' + pager : '<p>当前响应没有具体明细，请点击“重读”获取。</p>') +
+      '</details>'
     );
   }
 
@@ -1376,18 +1374,20 @@
         "<div><h2>索引目录</h2>" +
         '<p class="link-index-summary">' +
         esc(linkIndexLoading ? "读取中..." : loaded ? summaryText(data) : "未读取") +
-        "</p></div>" +
+        '</p></div>' +
         '<div class="link-index-actions">' +
-        '<button type="button" class="btn secondary sm" data-link-index-action="reload">重读</button>' +
+        '<button type="button" class="btn secondary sm" data-link-index-action="reload"' +
+        (linkIndexFileGenerationBusy ? " disabled" : "") +
+        '>重读</button>' +
         '<button type="button" class="btn secondary sm" data-link-index-action="validate"' +
-        (loaded ? "" : " disabled") +
+        (loaded && !linkIndexFileGenerationBusy ? "" : " disabled") +
         ">重新校验索引</button>" +
         '<button type="button" class="btn sm" data-link-index-action="generate"' +
-        (loaded ? "" : " disabled") +
-        ">重新生成索引</button>" +
+        (loaded && !linkIndexFileGenerationBusy ? "" : " disabled") +
+        ">重建索引缓存</button>" +
         '<button type="button" class="btn sm" data-link-index-action="generate-files"' +
-        (loaded ? "" : " disabled") +
-        ">生成目录文件</button>" +
+        (loaded && !linkIndexFileGenerationBusy ? "" : " disabled") +
+        ">补建快捷方式</button>" +
         "</div></div>" +
         renderLinkIndexOperationNotice() +
         (loaded ? renderWarnings(data) + renderIndexBrowser(data) : "") +
@@ -1413,7 +1413,7 @@
     linkIndexLoading = true;
     setLinkIndexNotice("", false);
     renderLinkIndexPanel();
-    setStatus(refreshLinks ? "链接重新确认中..." : "索引目录读取中...", false);
+    setStatus(refreshLinks ? "实际索引目录刷新中..." : "索引目录读取中...", false);
     var params = new URLSearchParams();
     params.set("lite", "1");
     if (refreshLinks) params.set("refresh_links", "1");
@@ -1438,9 +1438,10 @@
       return;
     }
     linkIndexState = out.data;
+    linkIndexUnmappedPage = 0;
     if (resourceRootDrafts === null) ensureResourceRootDrafts(linkIndexState);
     renderLinkIndexPanel();
-    setStatus(refreshLinks ? "链接确认已更新。" : "", false);
+    setStatus(refreshLinks ? "实际索引目录观察已更新。" : "", false);
   }
 
   async function loadResourceScanCache() {
@@ -1641,17 +1642,17 @@
 
   async function generateLinkIndex() {
     var summary = linkIndexState ? summaryText(linkIndexState) : "";
-    if (!window.confirm("将根据当前作品 DB 重新生成索引 DB。\n" + summary)) return;
-    setLinkIndexNotice("索引 DB 生成中，请稍等...", false);
+    if (!window.confirm("将根据当前作品 DB 重建索引缓存，不改写作品 DB 或创建快捷方式。\n" + summary)) return;
+    setLinkIndexNotice("索引缓存重建中，请稍等...", false);
     renderLinkIndexPanel();
-    setStatus("索引 DB 生成中...", false);
+    setStatus("索引缓存重建中...", false);
     var out = await fetchJson("/api/collection-detail/link-index/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({}),
     });
     if (!out.res.ok || !out.data || !out.data.ok) {
-      var genErr = (out.data && out.data.error) || "索引 DB 生成失败。";
+      var genErr = (out.data && out.data.error) || "索引缓存重建失败。";
       setLinkIndexNotice(genErr, true);
       renderLinkIndexPanel();
       setStatus(genErr, true);
@@ -1661,108 +1662,99 @@
     linkIndexState = Object.assign({}, linkIndexState || {}, out.data);
     var generatedCount = (out.data.index_db && Number(out.data.index_db.item_count || 0)) || Number((out.data.plan_summary || {}).total || 0);
     var emptyCount = Number((out.data.plan_summary || {}).empty_target_path || 0);
-    var generatedMsg = "索引 DB 已重新生成：共 " + generatedCount + " 项，空路径 " + emptyCount + " 项。";
+    var generatedMsg = "索引缓存已重建：共 " + generatedCount + " 项，空路径 " + emptyCount + " 项。";
     setLinkIndexNotice(generatedMsg, false);
     renderLinkIndexPanel();
     setStatus(generatedMsg, false);
   }
 
   async function generateLinkIndexFiles() {
-    setLinkIndexNotice("索引输出目录预检中...", false);
-    renderLinkIndexPanel();
-    setStatus("索引输出目录预检中...", false);
-    var previewOut = await fetchJson("/api/collection-detail/link-index/generate-files", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ preview: true }),
-    });
-    if (!previewOut.res.ok || !previewOut.data || !previewOut.data.ok) {
-      var previewErr = (previewOut.data && previewOut.data.error) || "索引输出目录预检失败。";
-      setLinkIndexNotice(previewErr, true);
+    if (linkIndexFileGenerationBusy || !linkIndexPanelActive()) return;
+    linkIndexFileGenerationBusy = true;
+    var serial = linkIndexRequestSerial;
+    function current() { return serial === linkIndexRequestSerial && linkIndexPanelActive(); }
+    function publish(message, isError) {
+      if (!current()) return;
+      setLinkIndexNotice(message, isError);
       renderLinkIndexPanel();
-      setStatus(previewErr, true);
-      return;
+      setStatus(message, isError);
     }
-    var info = previewOut.data.file_generation || {};
-    var outputRoot = Array.isArray(info.output_roots) ? info.output_roots.join("\n") : (info.output_root || "");
-    var body = { plan_id: info.plan_id || "" };
-    if (info.root_non_empty) {
-      var sample = Array.isArray(info.existing_sample) && info.existing_sample.length
-        ? "\n\n现有项目示例：\n" + info.existing_sample.slice(0, 8).join("\n")
-        : "";
-      if (
-        !window.confirm(
-          "索引输出目录不是空目录，继续生成会先清空该目录。\n\n目录：" +
-            outputRoot +
-            "\n现有直接子项：" +
-            (info.existing_count || 0) +
-            sample +
-            "\n\n第一次确认：是否继续？"
-        )
-      ) {
-        setLinkIndexNotice("已取消生成目录文件。", false);
-        renderLinkIndexPanel();
-        setStatus("已取消生成目录文件。", false);
+    try {
+      publish("快捷方式补建预检中...", false);
+      var previewOut = await fetchJson("/api/collection-detail/link-index/generate-files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ preview: true, incremental: true }),
+      });
+      if (!current()) return;
+      if (!previewOut.res.ok || !previewOut.data || !previewOut.data.ok) {
+        publish((previewOut.data && previewOut.data.error) || "快捷方式预检失败。", true);
         return;
       }
-      if (
-        !window.confirm(
-          "第二次确认：将清空索引输出目录后重新生成目录文件。\n\n目录：" +
-            outputRoot +
-            "\n\n确认清空并继续生成？"
-        )
-      ) {
-        setLinkIndexNotice("已取消生成目录文件。", false);
-        renderLinkIndexPanel();
-        setStatus("已取消生成目录文件。", false);
+      var info = previewOut.data.file_generation || {};
+      if (info.incremental !== true || typeof info.plan_id !== "string" || !info.plan_id.trim()) {
+        publish("服务端尚未支持安全增量补建，请更新服务后重试；未执行生成。", true);
         return;
       }
-      body.confirm_clear = true;
-      body.confirm_clear_twice = true;
-      if (window.confirm("是否在清空前备份当前索引输出目录？")) {
-        var backupDir = window.prompt("请输入备份保存目录。系统会在其中创建带时间戳的子目录；留空则不备份。", "");
-        if (backupDir === null) {
-          setLinkIndexNotice("已取消生成目录文件。", false);
-          renderLinkIndexPanel();
-          setStatus("已取消生成目录文件。", false);
-          return;
-        }
-        backupDir = String(backupDir || "").trim();
-        if (backupDir) body.backup_dir = backupDir;
+      var creatable = Number(info.creatable || 0);
+      var conflictCount = Number(info.conflict_count || 0);
+      if (!Number.isInteger(creatable) || creatable < 0 || !Number.isInteger(conflictCount) || conflictCount < 0) {
+        publish("快捷方式预检计数无效，未执行补建。", true);
+        return;
       }
+      var counts = "待创建 " + creatable +
+        "，已存在 " + (info.already_exists_count || 0) +
+        "，未绑定 DB " + (info.skipped_unbound_count || 0) +
+        "，目录缺失/不可用 " + (info.skipped_missing_target || 0) +
+        "，不安全路径 " + (info.skipped_unsafe_count || 0) +
+        "，冲突 " + conflictCount + "。";
+      if (conflictCount) {
+        var conflicts = Array.isArray(info.conflicts) ? info.conflicts : [];
+        var details = conflicts.slice(0, 5).map(function (item) {
+          return String(item.shortcut_path || item.target_path || "") + "：" + String(item.error || "目标冲突");
+        }).join("\n");
+        publish("预检存在冲突，未创建或覆盖快捷方式。" + counts + (details ? "\n" + details : ""), true);
+        return;
+      }
+      if (!creatable) {
+        publish("预检完成，无需补建。" + counts, false);
+        return;
+      }
+      var outputRoot = Array.isArray(info.output_roots) ? info.output_roots.join("\n") : (info.output_root || "");
+      if (!window.confirm(
+        "仅基于已保存的 DB 目录绑定补建缺少的快捷方式。\n" + counts +
+        "\n\n输出目录：\n" + outputRoot +
+        "\n\n不会移动媒体、修改作品 DB、清空目录或覆盖已有文件。\n确认补建？"
+      )) {
+        publish("已取消补建快捷方式。", false);
+        return;
+      }
+      if (!current()) return;
+      publish("快捷方式补建中，请稍等...", false);
+      var out = await fetchJson("/api/collection-detail/link-index/generate-files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ incremental: true, plan_id: info.plan_id, confirm_incremental: true }),
+      });
+      if (!current()) return;
+      if (!out.res.ok || !out.data || !out.data.ok) {
+        publish((out.data && out.data.error) || "快捷方式补建失败。", true);
+        return;
+      }
+      linkIndexState = Object.assign({}, linkIndexState || {}, out.data);
+      var result = out.data.file_generation || {};
+      var msg = "快捷方式补建完成：创建 " + (result.created || 0) +
+        " 个，已有 " + (result.already_exists_count || 0) +
+        " 个，未绑定 " + (result.skipped_unbound_count || 0) +
+        " 个，目标缺失/不可用 " + (result.skipped_missing_target || 0) +
+        " 个" + (result.failed_count ? "，失败 " + result.failed_count + " 个" : "") + "；未删除或覆盖已有文件。";
+      publish(msg, !!result.failed_count);
+    } catch (error) {
+      publish("快捷方式补建失败：" + (error && error.message ? error.message : String(error)), true);
+    } finally {
+      linkIndexFileGenerationBusy = false;
+      if (linkIndexPanelActive()) renderLinkIndexPanel();
     }
-    setLinkIndexNotice("目录文件生成中，请稍等...", false);
-    renderLinkIndexPanel();
-    setStatus("目录文件生成中...", false);
-    var out = await fetchJson("/api/collection-detail/link-index/generate-files", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify(body),
-    });
-    if (!out.res.ok || !out.data || !out.data.ok) {
-      var err = (out.data && out.data.error) || "目录文件生成失败。";
-      setLinkIndexNotice(err, true);
-      renderLinkIndexPanel();
-      setStatus(err, true);
-      return;
-    }
-    if (!linkIndexPanelActive()) return;
-    linkIndexState = Object.assign({}, linkIndexState || {}, out.data);
-    var result = out.data.file_generation || {};
-    var msg =
-      "目录文件生成完成：创建 " +
-      (result.created || 0) +
-      " 个，空路径跳过 " +
-      (result.skipped_empty_target || 0) +
-      " 个，目标缺失跳过 " +
-      (result.skipped_missing_target || 0) +
-      " 个" +
-      (result.failed_count ? "，失败 " + result.failed_count + " 个" : "") +
-      (result.backup_path ? "，已备份到 " + result.backup_path : "") +
-      "。";
-    setLinkIndexNotice(msg, !!result.failed_count);
-    renderLinkIndexPanel();
-    setStatus(msg, !!result.failed_count);
   }
 
   async function validateLinkIndex() {
@@ -1828,7 +1820,7 @@
     var shortcutRelpath = btn.getAttribute("data-link-index-fix-relpath") || "";
     var currentTargetPath = btn.getAttribute("data-link-index-fix-current-target") || "";
     if (!targetPath || (!shortcutPath && !shortcutRelpath)) {
-      window.alert("这个修复候选缺少索引定位信息。");
+      setStatus("这个修复候选缺少索引定位信息。", true);
       return;
     }
     if (!window.confirm("将索引目标修复为：\n" + targetPath + "\n\n继续吗？")) return;
@@ -1851,12 +1843,12 @@
   async function openLinkIndexPath(btn) {
     var canOpen = btn.getAttribute("data-can-open") === "1";
     if (btn.getAttribute("data-target-exists") === "0" && !canOpen) {
-      window.alert("目标目录不存在，链接可能已经丢失。");
+      setStatus("目标目录不存在，链接可能已经丢失。", true);
       return;
     }
     var p = btn.getAttribute("data-link-index-open") || "";
     if (!p) {
-      window.alert("没有可打开的路径。");
+      setStatus("没有可打开的路径。", true);
       return;
     }
     var out = await fetchJson("/api/collection-detail/link-index/open", {
@@ -1865,7 +1857,7 @@
       body: JSON.stringify({ path: p }),
     });
     if (!out.res.ok || !out.data || !out.data.ok) {
-      window.alert((out.data && out.data.error) || "打开失败。");
+      setStatus((out.data && out.data.error) || "打开失败。", true);
       return;
     }
     setStatus("已请求打开目录。", false);
@@ -2110,6 +2102,13 @@
         }
         return;
       }
+      var unmappedPage = t.closest("[data-link-index-unmapped-page]");
+      if (unmappedPage && linkRoot && linkRoot.contains(unmappedPage)) {
+        var requestedPage = Number(unmappedPage.getAttribute("data-link-index-unmapped-page"));
+        if (Number.isFinite(requestedPage)) linkIndexUnmappedPage = Math.max(0, Math.floor(requestedPage));
+        renderLinkIndexPanel();
+        return;
+      }
       var browserAction = t.closest("[data-link-index-browser-action]");
       if (browserAction && linkRoot && linkRoot.contains(browserAction)) {
         var browserActionName = browserAction.getAttribute("data-link-index-browser-action");
@@ -2214,15 +2213,16 @@
       var openBtn = t.closest("[data-link-index-open]");
       if (openBtn && linkRoot && linkRoot.contains(openBtn)) {
         openLinkIndexPath(openBtn).catch(function (e) {
-          window.alert("打开失败：" + (e.message || String(e)));
+          setStatus("打开失败：" + (e.message || String(e)), true);
         });
         return;
       }
       var btn = t.closest("[data-link-index-action]");
       if (!btn || !linkRoot || !linkRoot.contains(btn)) return;
       var action = btn.getAttribute("data-link-index-action");
+      if (linkIndexFileGenerationBusy) return;
       if (action === "reload") {
-        loadLinkIndex().catch(function (e) {
+        loadLinkIndex({ refreshLinks: true }).catch(function (e) {
           setStatus("索引目录读取失败：" + (e.message || String(e)), true);
         });
       } else if (action === "validate") {
@@ -2234,14 +2234,14 @@
         });
       } else if (action === "generate") {
         generateLinkIndex().catch(function (e) {
-          var genMsg = "索引 DB 生成失败：" + (e.message || String(e));
+          var genMsg = "索引缓存重建失败：" + (e.message || String(e));
           setLinkIndexNotice(genMsg, true);
           renderLinkIndexPanel();
           setStatus(genMsg, true);
         });
       } else if (action === "generate-files") {
         generateLinkIndexFiles().catch(function (e) {
-          var filesMsg = "目录文件生成失败：" + (e.message || String(e));
+          var filesMsg = "快捷方式补建失败：" + (e.message || String(e));
           setLinkIndexNotice(filesMsg, true);
           renderLinkIndexPanel();
           setStatus(filesMsg, true);

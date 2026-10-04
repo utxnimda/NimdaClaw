@@ -1830,3 +1830,23 @@
     data: japan
   - type: name
     data: 猫物語（黒）
+- attributes:
+  - type: name
+    data: 魔法少女リリカルなのは The Movie 2nd A's
+  - type: country
+    data: japan
+  - type: date
+    data:
+      start: '20120714'
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: movie
+      path: V:/Japan/魔法少女リリカルなのは
+      markers: []
+      collectioned:
+      - press_format: BDRip
+        press_group: CK
+        press_path: 魔法少女リリカルなのは Movie_BDRip
+      continuations: []

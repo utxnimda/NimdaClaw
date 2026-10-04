@@ -1,0 +1,62 @@
+.nimda-directory-browser { border: 1px solid var(--border-color, #aeb7bf); background: var(--surface-color, #fff); color: var(--text-color, #303740); font: 12px/1.35 var(--app-font-family, Verdana, Arial, sans-serif); }
+.nimda-directory-browser *, .nimda-directory-browser *::before, .nimda-directory-browser *::after { box-sizing: border-box; }
+.nimda-directory-browser-title { padding: 7px 10px; border-bottom: 1px solid var(--border-color, #b9c1c8); background: var(--surface-muted, #edf1f4); font-weight: 700; }
+.nimda-directory-split { display: grid; grid-template-columns: minmax(195px, 36%) minmax(0, 1fr); height: min(34rem, 62vh); min-height: 240px; }
+.nimda-directory-tree, .nimda-directory-content { display: flex; flex-direction: column; min-width: 0; min-height: 220px; }
+.nimda-directory-tree { border-right: 1px solid var(--border-color, #b9c1c8); }
+.nimda-directory-tree-toolbar { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 5px; min-height: 34px; padding: 5px 7px; border-bottom: 1px solid #bdc5cd; background: var(--surface-muted, #f1f3f5); white-space: nowrap; }
+.nimda-directory-actions { display: flex; gap: 4px; }
+.nimda-directory-actions .nimda-directory-tool { padding-right: 4px; padding-left: 4px; }
+.nimda-directory-browser button { font: inherit; cursor: pointer; }
+.nimda-directory-browser button:focus-visible { outline: 2px solid #4386bf; outline-offset: -1px; }
+.nimda-directory-browser button:disabled { opacity: .5; cursor: default; }
+.nimda-directory-tool { min-height: 23px; padding: 2px 7px; border: 1px solid #adb8c2; border-radius: 2px; background: linear-gradient(#fff, #edf0f3); color: #303740; white-space: nowrap; }
+.nimda-directory-tool:hover:not(:disabled) { border-color: #7299ba; background: #e8f1f9; }
+.nimda-directory-tree-scroll, .nimda-directory-content-scroll { flex: 1 1 0; min-width: 0; overflow: visible; }
+.nimda-directory-tree-scroll { min-height: 104px; }
+.nimda-directory-content-scroll { min-height: 55px; }
+.nimda-directory-tree-header { display: flex; flex: 0 0 26px; align-items: center; justify-content: space-between; gap: 8px; height: 26px; padding: 4px 9px; border-bottom: 1px solid #c9bd9d; background: #fff0cd; color: #535047; font-size: 11px; white-space: nowrap; }
+.nimda-directory-tree-context { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nimda-directory-tree-row { display: flex; align-items: center; gap: 4px; min-width: 0; height: 26px; padding-right: 9px; }
+.nimda-directory-tree-row:hover { background: #eef5fb; }
+.nimda-directory-tree-row.is-selected { background: #dcecff; color: #184d7b; box-shadow: inset 2px 0 #4c8ec3; }
+.nimda-directory-toggle, .nimda-directory-toggle-spacer { box-sizing: border-box; display: inline-flex; flex: 0 0 15px; align-items: center; justify-content: center; width: 15px; height: 15px; }
+.nimda-directory-toggle { padding: 0; border: 1px solid #9aa8b4; border-radius: 1px; background: #fff; color: #41515e; font-size: 12px !important; line-height: 1; }
+.nimda-directory-toggle-spacer::before { content: ""; width: 8px; border-top: 1px dotted #adb8c3; }
+.nimda-directory-select { display: inline-flex; flex: 1; align-items: center; gap: 6px; min-height: 24px; min-width: 0; padding: 1px 3px; border: 0; background: transparent; color: inherit; text-align: left; white-space: nowrap; }
+.nimda-directory-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.nimda-directory-tree-count { min-width: 2.4em; margin-left: 7px; color: #647382; text-align: right; font-variant-numeric: tabular-nums; }
+.nimda-directory-icon { position: relative; box-sizing: border-box; display: inline-block; flex: 0 0 auto; vertical-align: middle; }
+.nimda-directory-icon.is-folder { width: 15px; height: 11px; margin-top: 3px; border: 1px solid #b28736; border-radius: 1px; background: linear-gradient(#ffdf8f, #efc464); }
+.nimda-directory-icon.is-folder::before { content: ""; position: absolute; left: 0; top: -4px; width: 7px; height: 3px; border: 1px solid #b28736; border-bottom: 0; border-radius: 1px 1px 0 0; background: #f7d68b; }
+.nimda-directory-icon.is-open { transform: skewX(-9deg); background: #ffe4a3; }
+.nimda-directory-icon.is-file { width: 12px; height: 15px; margin-right: 7px; border: 1px solid #9aabb8; border-radius: 1px; background: linear-gradient(135deg, #fff 72%, #dce5ec 72%); }
+.nimda-directory-content-header { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; min-height: 42px; padding: 5px 8px; border-bottom: 1px solid #bdc5cd; background: var(--surface-muted, #f4f6f8); }
+.nimda-directory-location { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.nimda-directory-current-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nimda-directory-current-stats { overflow: hidden; color: #6c7781; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.nimda-directory-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.nimda-directory-table th { height: 26px; padding: 0 8px; border-bottom: 1px solid #b7c0c8; background: #edf1f4; text-align: left; font-weight: 600; line-height: 25px; white-space: nowrap; }
+.nimda-directory-table th:first-child { width: auto; }
+.nimda-directory-table th:nth-child(2) { width: 60px; }
+.nimda-directory-table th:nth-child(3) { width: 72px; }
+.nimda-directory-table th:nth-child(4) { width: 55px; text-align: right; }
+.nimda-directory-table td { height: 28px; padding: 0 8px; border-bottom: 1px solid #e7ebef; overflow: hidden; line-height: 27px; white-space: nowrap; text-overflow: ellipsis; vertical-align: middle; }
+.nimda-directory-file-row { height: 28px; }
+.nimda-directory-file-row:hover { background: #f1f7fc; }
+.nimda-directory-entry-name { color: #303c46; }
+.nimda-directory-enter, .nimda-directory-entry-label { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; height: 27px; white-space: nowrap; }
+.nimda-directory-enter { padding: 0; border: 0; background: transparent; color: #245e8b; text-align: left; }
+.nimda-directory-entry-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nimda-directory-entry-status { color: #697989; font-size: 11px; }
+.nimda-directory-entry-count { text-align: right; font-variant-numeric: tabular-nums; }
+.nimda-directory-pager { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 7px; min-height: 34px; padding: 5px 8px; border-top: 1px solid #c1c9d1; background: var(--surface-muted, #f5f7f9); color: #626f7a; font-size: 11px; white-space: nowrap; }
+.nimda-directory-pager > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nimda-directory-tree-pager { justify-content: space-between; gap: 3px; padding-right: 5px; padding-left: 5px; }
+.nimda-directory-tree-pager .nimda-directory-tool { padding-right: 4px; padding-left: 4px; }
+.nimda-directory-empty { padding: 14px !important; color: #75828d; text-align: left; }
+@media (max-width: 650px) {
+  .nimda-directory-split { grid-template-columns: 1fr; height: auto; min-height: 0; }
+  .nimda-directory-tree { height: clamp(230px, 45vh, 330px); border-right: 0; border-bottom: 1px solid #b9c1c8; }
+  .nimda-directory-content { height: clamp(220px, 50vh, 360px); }
+}

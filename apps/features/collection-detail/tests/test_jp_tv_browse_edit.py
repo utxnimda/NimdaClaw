@@ -11,9 +11,11 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 from collection_detail import save as catalog_save
 from work_catalog_yaml import persistence
+from work_catalog_yaml.operation_progress import OperationRegistry, execute_operation
 from work_catalog_yaml.paths import normalize_copied_path
 
 from work_catalog_yaml.jp_tv.browse_save import (
@@ -72,6 +74,27 @@ def _catalog_yaml(*names: str, press_format: str = "A") -> str:
 
 
 class JpTvBrowseEditTest(unittest.TestCase):
+    def test_invalid_row_save_records_exact_file_record_and_stage_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            source = db / "works.yaml"
+            source.write_text(_catalog_yaml("Fixture"), encoding="utf-8")
+            before = source.read_bytes()
+            registry = OperationRegistry()
+            operation = registry.register(str(uuid4()), "保存作品数据库")
+            body = {"rows": [{"yaml_source_rel": source.name, "index_in_file": 7, "name": "Fixture"}]}
+            with self.assertRaisesRegex(ValueError, "index_in_file 越界"):
+                execute_operation(registry, operation, browse_save_yaml_from_ui_body, body, settings=_settings(db, source))
+            details = registry.snapshot(operation.id)["result"]["details"]
+            failure = next(item for item in details if item.get("error_type") == "ValueError")
+            self.assertEqual(failure["yaml_source_rel"], source.name)
+            self.assertEqual(failure["index_in_file"], 7)
+            self.assertEqual(failure["source_path"], str(source))
+            self.assertEqual(failure["action"], "校验并更新作品记录")
+            self.assertTrue(failure["location"]["line"])
+            self.assertEqual(source.read_bytes(), before)
+
     def test_save_empty_press_group_preserves_record_fields_and_exact_history(self) -> None:
         for empty_group in ("", "----"):
             with self.subTest(press_group=empty_group), tempfile.TemporaryDirectory() as td:
@@ -416,7 +439,7 @@ class JpTvBrowseEditTest(unittest.TestCase):
                 [
                     ("collection-detail", "作品数据", 10),
                     ("collection-info", "收集情况", 20),
-                    ("media-directory-organizer", "目录整理", 30),
+                    ("directory-organizer", "目录整理", 30),
                 ],
             )
 

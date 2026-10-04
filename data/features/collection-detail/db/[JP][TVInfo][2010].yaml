@@ -1291,3 +1291,22 @@
     data: japan
   - type: name
     data: ひだまりスケッチ×☆☆☆ 特別編
+- attributes:
+  - type: name
+    data: 魔法少女リリカルなのは The Movie 1st
+  - type: country
+    data: japan
+  - type: date
+    data:
+      start: '20100123'
+      end: ''
+  - type: collection-type
+    data:
+      domain: animation
+      release_type: movie
+      path: V:/Japan/魔法少女リリカルなのは
+      markers: []
+      collectioned:
+      - press_format: BDRip
+        press_group: CK
+        press_path: 魔法少女リリカルなのは Movie_BDRip

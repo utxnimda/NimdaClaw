@@ -5,9 +5,11 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 from collection_info import service
 from work_catalog_yaml import persistence
+from work_catalog_yaml.operation_progress import OperationRegistry, execute_operation
 from work_catalog_yaml.jp_tv.browse_settings import JpTvBrowseSettings
 from work_catalog_yaml.jp_tv.collection_records import (
     collection_records_payload,
@@ -31,6 +33,41 @@ def _settings(db: Path) -> JpTvBrowseSettings:
 
 
 class JpTvCollectionRecordsTest(unittest.TestCase):
+    def test_offline_year_scan_reports_stage_path_and_original_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            db = root / "DB"
+            db.mkdir()
+            finish = root / "OfflineFinish"
+            registry = OperationRegistry()
+            operation = registry.register(str(uuid4()), "读取收集情况")
+            with patch.dict(os.environ, {"JP_TV_COLLECTION_FINISH_DIR": str(finish)}), \
+                 patch.object(service, "scan_finish_years", side_effect=PermissionError("fixture denied")):
+                result = execute_operation(registry, operation, collection_records_payload, _settings(db))
+            issue = result["issues"][0]
+            self.assertEqual(issue["source_path"], str(finish))
+            self.assertEqual(issue["reason"], "fixture denied")
+            self.assertEqual(issue["action"], "扫描完成年份目录")
+            details = registry.snapshot(operation.id)["result"]["details"]
+            self.assertTrue(any(item.get("error_type") == "PermissionError" and item.get("source_path") == str(finish) for item in details))
+            self.assertEqual(registry.snapshot(operation.id)["status"], "warning")
+
+    def test_save_failure_records_exact_database_target(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "DB"
+            db.mkdir()
+            registry = OperationRegistry()
+            operation = registry.register(str(uuid4()), "保存收集情况")
+            with patch.object(service, "commit_file_writes", side_effect=OSError("fixture disk full")):
+                with self.assertRaisesRegex(OSError, "fixture disk full"):
+                    execute_operation(registry, operation, save_collection_records_from_ui_body,
+                                      {"record": {"completed_years": ["2024"]}}, settings=_settings(db))
+            details = registry.snapshot(operation.id)["result"]["details"]
+            failure = next(item for item in details if item.get("error_type") == "OSError")
+            self.assertEqual(failure["target_path"], str(service.collection_records_path(_settings(db))))
+            self.assertEqual(failure["action"], "原子保存，失败则回滚")
+            self.assertFalse(service.collection_records_path(_settings(db)).exists())
+
     def test_year_names_require_paired_brackets(self) -> None:
         for raw in ("[2024", "2024]", "[[2024]]", "2024\nextra"):
             with self.subTest(raw=raw):

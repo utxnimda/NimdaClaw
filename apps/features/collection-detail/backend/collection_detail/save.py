@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import hashlib
+import copy
+import json
 import os
 import re
 import shutil
@@ -36,7 +38,7 @@ from work_catalog_yaml.jp_tv.validate import (
 )
 from work_catalog_yaml.layout import feature_data_root
 from work_catalog_yaml.input_validation import parse_record_index
-from work_catalog_yaml.operation_progress import report_progress
+from work_catalog_yaml.operation_progress import operation_context, report_progress
 from work_catalog_yaml.paths import normalize_copied_path
 from work_catalog_yaml.persistence import (
     FileWrite,
@@ -221,6 +223,8 @@ def _row_ref_from_body_item(raw: Any, *, label: str) -> tuple[str, int]:
 
 
 def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
+    if "raw_record" in patch:
+        return normalize_raw_record(patch["raw_record"])
     date_patch = patch.get("date") or {}
     start = date_patch.get("start") if isinstance(date_patch, dict) else ""
     end = date_patch.get("end") if isinstance(date_patch, dict) else ""
@@ -271,6 +275,11 @@ def _new_work_from_row_patch(patch: dict[str, Any]) -> dict[str, Any]:
 def _apply_row_patch_to_work(work: Any, patch: dict[str, Any]) -> None:
     if not isinstance(work, dict):
         raise ValueError("作品必须为对象")
+    if "raw_record" in patch:
+        replacement = normalize_raw_record(patch["raw_record"], previous=work)
+        work.clear()
+        work.update(replacement)
+        return
 
     attrs = _find_attr_list(work)
     if attrs is None:
@@ -297,7 +306,7 @@ def _apply_row_patch_to_work(work: Any, patch: dict[str, Any]) -> None:
             if normalized != previous:
                 normalize_air_date(normalized, validate_calendar=True)
             normalized_dates[field] = normalized
-        _set_scalar_attr(work, "date", normalized_dates)
+        _set_scalar_attr(work, "date", {**previous_dates, **normalized_dates})
 
     name_raw = patch.get("name")
     if isinstance(name_raw, str):
@@ -320,7 +329,154 @@ def _apply_row_patch_to_work(work: Any, patch: dict[str, Any]) -> None:
             path=patch.get("path"),
             markers=markers_raw,
         )
-        _set_scalar_attr(work, "collection-type", coll_data)
+        previous_collection = next((a.get("data") for a in attrs
+                                    if isinstance(a, dict) and a.get("type") == "collection-type"
+                                    and isinstance(a.get("data"), dict)), {})
+        _set_scalar_attr(work, "collection-type", _preserve_collection_extensions(previous_collection, coll_data, ordered_raw))
+
+
+def catalog_record_sha256(record: Any) -> str:
+    """Stable identity for one raw record, independent of neighboring edits."""
+    from collection_detail.work_detail import json_work_record
+    return hashlib.sha256(json.dumps(json_work_record(record), ensure_ascii=False, sort_keys=True,
+                                     separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _preserve_collection_extensions(previous: dict[str, Any], updated: dict[str, Any], ordered: Any = None) -> dict[str, Any]:
+    """Table patches own known columns, never extension metadata they cannot show."""
+    managed = {"domain", "release_type", "path", "markers", "collectioned", "continuations"}
+    result = {**{key: copy.deepcopy(value) for key, value in previous.items() if key not in managed}, **updated}
+
+    ordered = [row for row in (ordered if isinstance(ordered, list) else []) if isinstance(row, dict)
+               and (str(row.get("press_format") or "").strip() or str(row.get("press_group") or "").strip())]
+
+    def merge_rows(old: Any, new: Any, incoming: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        old = old if isinstance(old, list) else []
+        new = new if isinstance(new, list) else []
+        used: set[int] = set()
+        merged = []
+        for position, row in enumerate(new):
+            original = incoming[position].get("_source_press_index") if position < len(incoming) else None
+            exact = [i for i, candidate in enumerate(old) if i not in used and isinstance(candidate, dict)
+                     and all(candidate.get(key, "") == row.get(key, "")
+                             for key in ("press_format", "press_group", "press_path"))]
+            if original is not None:
+                if type(original) is not int or original < 0 or original >= len(old) or original in used:
+                    raise ValueError("压制记录来源序号已变化或重复，请重新加载收集列表")
+                index = original
+            else:
+                index = exact[0] if len(exact) == 1 else position if len(old) == len(new) and position not in used else None
+            base = old[index] if index is not None and index < len(old) and isinstance(old[index], dict) else {}
+            if index is not None:
+                used.add(index)
+            extras = {key: copy.deepcopy(value) for key, value in base.items()
+                      if key not in {"press_format", "press_group", "press_path"}}
+            merged.append({**extras, **row})
+        return merged
+
+    result["collectioned"] = merge_rows(previous.get("collectioned"), updated.get("collectioned"),
+                                        [row for row in ordered if row.get("segment") != "continuation"])
+    old_blocks = previous.get("continuations") or []
+    if "continuations" in result:
+        blocks = []
+        continuation_indices = sorted({int(row.get("continuation_index") or 0) for row in ordered if row.get("segment") == "continuation"})
+        for index, block in enumerate(result["continuations"]):
+            source_index = continuation_indices[index] if index < len(continuation_indices) else index
+            old = old_blocks[source_index] if 0 <= source_index < len(old_blocks) and isinstance(old_blocks[source_index], dict) else {}
+            extras = {key: copy.deepcopy(value) for key, value in old.items() if key not in {"title", "collectioned"}}
+            incoming = [row for row in ordered if row.get("segment") == "continuation"
+                        and int(row.get("continuation_index") or 0) == source_index]
+            blocks.append({**extras, **block, "collectioned": merge_rows(old.get("collectioned"), block.get("collectioned"), incoming)})
+        result["continuations"] = blocks
+    return result
+
+
+def normalize_raw_record(raw: Any, *, previous: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Validate the full JSON-editable record without discarding extension fields."""
+    from collection_detail.catalog_repository import clean_relative_catalog_path
+    from collection_detail.work_detail import json_work_record
+
+    if not isinstance(raw, dict):
+        raise ValueError("raw_record 必须为完整作品对象")
+    try:
+        record = json_work_record(raw)
+    except (ValueError, TypeError, RecursionError) as exc:
+        raise ValueError("作品记录必须为有限、无循环的 JSON 数据") from exc
+    attrs = record.get("attributes")
+    if not isinstance(attrs, list):
+        raise ValueError("作品记录缺少 attributes 数组")
+    by_type: dict[str, dict[str, Any]] = {}
+    for attr in attrs:
+        if not isinstance(attr, dict) or not isinstance(attr.get("type"), str):
+            raise ValueError("attributes 每项必须包含字符串 type")
+        typ = attr["type"]
+        if typ in {"name", "country", "date", "collection-type"}:
+            if typ in by_type:
+                raise ValueError(f"作品记录存在重复属性：{typ}")
+            by_type[typ] = attr
+    for typ in ("name", "country", "date", "collection-type"):
+        if typ not in by_type:
+            raise ValueError(f"作品记录缺少必要属性：{typ}")
+    for typ in ("name", "country"):
+        if not isinstance(by_type[typ].get("data"), str) or not by_type[typ]["data"].strip():
+            raise ValueError(f"作品 {typ} 不能为空")
+        by_type[typ]["data"] = by_type[typ]["data"].strip()
+    prior_attrs = {a.get("type"): a.get("data") for a in (previous or {}).get("attributes", []) if isinstance(a, dict)}
+    dates = by_type["date"].get("data")
+    if not isinstance(dates, dict):
+        raise ValueError("date.data 必须为对象")
+    for field in ("start", "end"):
+        value = normalize_air_date(dates.get(field))
+        prior = prior_attrs.get("date")
+        try:
+            previous_value = normalize_air_date(prior.get(field)) if isinstance(prior, dict) else None
+        except ValueError:
+            previous_value = None
+        if value != previous_value:
+            normalize_air_date(value, validate_calendar=True)
+        dates[field] = value
+    coll = by_type["collection-type"].get("data")
+    if not isinstance(coll, dict):
+        raise ValueError("collection-type.data 必须为对象")
+    if "path" in coll:
+        coll["path"] = normalize_copied_path(coll["path"]).replace("\\", "/")
+        if ".." in coll["path"].split("/"):
+            raise ValueError("path 包含非法路径片段")
+    blocks = [coll]
+    continuations = coll.get("continuations", [])
+    if not isinstance(continuations, list) or not all(isinstance(block, dict) for block in continuations):
+        raise ValueError("continuations 必须为对象数组")
+    blocks.extend(continuations)
+    for block in blocks:
+        rows = block.get("collectioned", [])
+        if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+            raise ValueError("collectioned 必须为压制记录对象数组")
+        for row in rows:
+            for key in ("press_format", "press_group"):
+                if not isinstance(row.get(key), str):
+                    raise ValueError(f"压制记录 {key} 必须为字符串（无压制组请使用空字符串）")
+                row[key] = row[key].strip()
+            if not row["press_format"]:
+                raise ValueError("压制记录 press_format 不能为空")
+            if "press_path" in row:
+                row["press_path"] = clean_relative_catalog_path(row["press_path"], label="press_path")
+    load_jp_tv_entries_from_yaml([record])
+    return record
+
+
+def _assert_record_version(patch: dict[str, Any], work: Any, source: bytes | None, *, label: str) -> None:
+    expected = patch.get("source_sha256")
+    record_hash = patch.get("record_sha256")
+    if "raw_record" in patch and (not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None):
+        raise ValueError(f"{label}: 完整记录修改缺少有效 source_sha256，请重新加载")
+    if expected is not None:
+        if not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None:
+            raise ValueError(f"{label}: source_sha256 无效")
+        current_record = catalog_record_sha256(work)
+        if record_hash is not None and record_hash != current_record:
+            raise ValueError(f"{label}: 作品记录已变化，请重新预览")
+        if hashlib.sha256(source or b"").hexdigest() != expected and record_hash != current_record:
+            raise ValueError(f"{label}: 数据库文件已变化，请重新加载或预览")
 
 
 def _browse_save_yaml_from_ui_body_unlocked(
@@ -328,6 +484,7 @@ def _browse_save_yaml_from_ui_body_unlocked(
     *,
     settings: JpTvBrowseSettings,
     now: datetime | None = None,
+    dry_run: bool = False,
 ) -> list[tuple[Path, str]]:
     """校验 body，按 ``yaml_source_rel`` 写回一至多个数据文件并写入 ``History/`` 快照。
 
@@ -368,6 +525,7 @@ def _browse_save_yaml_from_ui_body_unlocked(
     by_rel: dict[str, dict[int, dict[str, Any]]] = {}
     new_by_rel: dict[str, list[dict[str, Any]]] = {}
     delete_by_rel: dict[str, set[int]] = {}
+    delete_versions: dict[tuple[str, int], dict[str, Any]] = {}
 
     for ri, rp in enumerate(rows):
         rel_s, ii = _row_ref_from_body_item(rp, label=f"rows[{ri}]")
@@ -382,6 +540,11 @@ def _browse_save_yaml_from_ui_body_unlocked(
     for ni, nr in enumerate(new_rows):
         if not isinstance(nr, dict):
             raise ValueError(f"new_rows[{ni}] 须为对象")
+        if "raw_record" in nr:
+            record = normalize_raw_record(nr["raw_record"])
+            entry = load_jp_tv_entries_from_yaml([record])[0]
+            nr = {**nr, "raw_record": record, "country": entry_country_slug(entry),
+                  "date": {"start": entry_air_dates(entry)[0]}}
         date_patch = nr.get("date")
         start = date_patch.get("start") if isinstance(date_patch, dict) else ""
         # New rows have no existing file identity. Derive the destination on the
@@ -396,6 +559,7 @@ def _browse_save_yaml_from_ui_body_unlocked(
         if clip is not None and len(singles) == 1 and tgt_probe.resolve() != clip.resolve():
             raise ValueError("deleted_rows 内含与当前打开的 YAML 不一致的 yaml_source_rel")
         delete_by_rel.setdefault(rel_s, set()).add(ii)
+        delete_versions[(rel_s, ii)] = dr
 
     sorted_rels = sorted(set(by_rel.keys()) | set(new_by_rel.keys()) | set(delete_by_rel.keys()))
     if not sorted_rels:
@@ -404,11 +568,14 @@ def _browse_save_yaml_from_ui_body_unlocked(
     out: list[tuple[Path, str]] = []
     staged: list[FileWrite] = []
     for file_index, rel_s in enumerate(sorted_rels):
-        report_progress("校验并准备数据库文件", completed=file_index, total=len(sorted_rels), unit="文件", detail=rel_s)
+        report_progress("校验并准备数据库文件", completed=file_index, total=len(sorted_rels), unit="文件", detail=rel_s,
+                        context={"stage": "保存作品数据库", "action": "准备并校验文件", "yaml_source_rel": rel_s,
+                                 "target_path": str(settings.filesystem_root / rel_s)})
         target = resolve_safe_yaml_under_root(settings.filesystem_root, rel_s).expanduser().resolve()
         new_seq = new_by_rel.get(rel_s, [])
         target_existed = target.is_file()
-        previous = target.read_bytes() if target_existed else None
+        with operation_context(stage="保存作品数据库", action="读取修改前快照", source_path=str(target), yaml_source_rel=rel_s):
+            previous = target.read_bytes() if target_existed else None
         if target_existed:
             _assert_save_target_allowed(target, settings)
             raw_text = previous.decode("utf-8")
@@ -425,17 +592,23 @@ def _browse_save_yaml_from_ui_body_unlocked(
             if ii in delete_set:
                 continue
             rp = idx_map[ii]
-            if ii < 0 or ii >= len(works):
-                raise ValueError(f"{rel_s}: index_in_file 越界：{ii}")
-            _apply_row_patch_to_work(works[ii], rp)
+            with operation_context(stage="保存作品数据库", action="校验并更新作品记录", source_path=str(target),
+                                   yaml_source_rel=rel_s, index_in_file=ii, object=str(rp.get("name") or "")):
+                if ii < 0 or ii >= len(works):
+                    raise ValueError(f"{rel_s}: index_in_file 越界：{ii}")
+                _assert_record_version(rp, works[ii], previous, label=f"{rel_s}#{ii}")
+                _apply_row_patch_to_work(works[ii], rp)
 
         for ii in sorted(delete_set, reverse=True):
             if ii < 0 or ii >= len(works):
                 raise ValueError(f"{rel_s}: 删除 index_in_file 越界：{ii}")
+            _assert_record_version(delete_versions[(rel_s, ii)], works[ii], previous, label=f"{rel_s}#{ii}")
             del works[ii]
 
         for nr in new_seq:
-            works.append(_new_work_from_row_patch(nr))
+            with operation_context(stage="保存作品数据库", action="校验并新增作品记录", target_path=str(target),
+                                   yaml_source_rel=rel_s, index_in_file=len(works), object=str(nr.get("name") or "")):
+                works.append(_new_work_from_row_patch(nr))
 
         new_text = dump_yaml_string(doc)
         try:
@@ -451,8 +624,14 @@ def _browse_save_yaml_from_ui_body_unlocked(
         out.append((target, hist_name))
         report_progress("数据库文件校验完成", completed=file_index + 1, total=len(sorted_rels), unit="文件", detail=rel_s)
 
+    if dry_run:
+        return out
     report_progress("备份并原子写入数据库", completed=0, total=len(staged), unit="文件")
-    commit_file_writes(staged)
+    for write in staged:
+        report_progress("数据库文件已通过校验，准备纳入原子提交", context={"stage": "保存作品数据库", "action": "准备写入与历史备份",
+                        "target_path": str(write.target), "history_path": str(write.history_path or "")})
+    with operation_context(stage="保存作品数据库", action="批量原子提交，失败则回滚", target_path=str(settings.filesystem_root), operation_count=len(staged)):
+        commit_file_writes(staged)
     report_progress("数据库写入完成", completed=len(staged), total=len(staged), unit="文件")
     return out
 
@@ -469,6 +648,11 @@ def browse_save_yaml_from_ui_body(
     with catalog_write_transaction(settings.filesystem_root):
         report_progress("准备校验数据库修改")
         return _browse_save_yaml_from_ui_body_unlocked(body, settings=settings, now=now)
+
+
+def preview_save_yaml_from_ui_body(body: dict[str, Any], *, settings: JpTvBrowseSettings) -> list[tuple[Path, str]]:
+    """Run exact save validation without locks, backups or filesystem writes."""
+    return _browse_save_yaml_from_ui_body_unlocked(body, settings=settings, dry_run=True)
 
 
 _ISO_DATE_RE = re.compile(r"^(?P<year>(?:19|20)\d{2})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
@@ -643,8 +827,8 @@ def _existing_catalog_match(
                 continue
             if allow_shared_path_with_different_name and path_matches and not name_matches:
                 # A family root may intentionally contain several distinct works.  This
-                # opt-in is only used by the organizer's explicit "append independent"
-                # flow; a normalized-name match remains fail-closed below.
+                # explicit opt-in permits independent DB records sharing a root;
+                # a normalized-name match remains fail-closed below.
                 continue
             if name_matches != path_matches:
                 raise ValueError(

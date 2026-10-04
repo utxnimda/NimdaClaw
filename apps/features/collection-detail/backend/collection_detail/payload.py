@@ -7,6 +7,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, TypedDict
 
+from collection_detail.catalog_repository import ordered_press_rows, sanitize_collection_rows
+
 
 from work_catalog_yaml.jp_tv.validate import (
     TV_JP_PRESS_FORMAT_KEY,
@@ -19,8 +21,6 @@ from work_catalog_yaml.jp_tv.validate import (
     entry_display_name,
     entry_domain_slug,
     entry_release_type_slug,
-    jp_tv_press_pair_from_row,
-    strip_tv_jp_tag_decoration,
 )
 
 
@@ -30,21 +30,7 @@ def jp_tv_collection_type_profile_key(entry: JpTvEntry) -> str:
 
 
 def _sanitize_collection_rows(raw: Any) -> list[dict[str, str]]:
-    if not isinstance(raw, list):
-        return []
-    rows: list[dict[str, str]] = []
-    for row in raw:
-        if isinstance(row, dict):
-            pr = jp_tv_press_pair_from_row(row)
-            if pr:
-                row_out = {
-                    TV_JP_PRESS_FORMAT_KEY: strip_tv_jp_tag_decoration(pr[0]),
-                    TV_JP_PRESS_GROUP_KEY: strip_tv_jp_tag_decoration(pr[1]),
-                }
-                if isinstance(row.get(TV_JP_PRESS_PATH_KEY), str) and row[TV_JP_PRESS_PATH_KEY].strip():
-                    row_out[TV_JP_PRESS_PATH_KEY] = row[TV_JP_PRESS_PATH_KEY].strip().replace("\\", "/")
-                rows.append(row_out)
-    return rows
+    return sanitize_collection_rows(raw)
 
 
 def _continuations_plain(coll: dict[str, Any]) -> list[dict[str, Any]]:
@@ -67,35 +53,14 @@ def _continuations_plain(coll: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_collectioned_ordered(coll: dict[str, Any]) -> list[dict[str, Any]]:
-    """主行 collectioned 在前，其后按顺序追加每条续行的 collectioned；每项带 segment 元数据便于前端贴标签区分。"""
-    seq: list[dict[str, Any]] = []
-    for row in _sanitize_collection_rows(coll.get("collectioned")):
-        seq.append({**row, "segment": "main", "continuation_index": None, "continuation_title": None})
-
-    raw = coll.get("continuations")
-    if isinstance(raw, list):
-        for bi, blk in enumerate(raw):
-            if not isinstance(blk, dict):
-                continue
-            title = (
-                str(blk["title"]).strip()
-                if isinstance(blk.get("title"), str) and str(blk["title"]).strip()
-                else None
-            )
-            rows = _sanitize_collection_rows(blk.get("collectioned"))
-            if not rows and not title:
-                continue
-            for row in rows:
-                seq.append(
-                    {
-                        **row,
-                        "segment": "continuation",
-                        "continuation_index": bi,
-                        "continuation_title": title,
-                    },
-                )
-
-    return seq
+    """Present the domain's normalized main and continuation collection rows."""
+    rows = ordered_press_rows(coll)
+    positions: dict[tuple[str, Any], int] = {}
+    for row in rows:
+        identity = (str(row.get("segment") or "main"), row.get("continuation_index"))
+        row["_source_press_index"] = positions.get(identity, 0)
+        positions[identity] = row["_source_press_index"] + 1
+    return rows
 
 
 class JpTvBrowsePresenter(ABC):

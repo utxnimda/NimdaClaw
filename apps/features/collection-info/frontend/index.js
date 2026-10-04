@@ -1,28 +1,5 @@
 (function () {
-  function ensureFeatureRegistry() {
-    var registry = window.JpTvBrowseFeatureRegistry || {};
-    if (!Array.isArray(registry.features)) registry.features = [];
-    registry.register = function (feature) {
-      if (!feature || !feature.id) return;
-      var features = Array.isArray(this.features) ? this.features : (this.features = []);
-      for (var i = 0; i < features.length; i++) {
-        if (features[i] && features[i].id === feature.id) {
-          if (features[i] !== feature && typeof features[i].dispose === "function") {
-            try {
-              features[i].dispose();
-            } catch (_e) {}
-          }
-          features[i] = feature;
-          return;
-        }
-      }
-      features.push(feature);
-    };
-    window.JpTvBrowseFeatureRegistry = registry;
-    return registry;
-  }
-
-  var root = ensureFeatureRegistry();
+  var root = window.NimdaCommon.ensureFeatureRegistry(window);
 
   var collectionRecordsPayload = null;
   var collectionYearChoices = null;
@@ -79,11 +56,7 @@
 
   function esc(s) {
     if (ctx().esc) return ctx().esc(s);
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    return window.NimdaCommon.escapeHtml(s);
   }
 
   function defaultEnumValue(enumKey, fallback) {

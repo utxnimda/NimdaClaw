@@ -12,7 +12,9 @@ import threading
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import partial, wraps
+from pathlib import Path
 from typing import Any, Callable, TypeVar
+from uuid import uuid4
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -20,6 +22,7 @@ from starlette.responses import JSONResponse
 from work_catalog_yaml.operation_progress import (
     DuplicateOperationId, OperationRegistry, execute_operation, normalize_operation_id,
 )
+from work_catalog_yaml.common.operation_logs import OperationLogStore
 
 
 T = TypeVar("T")
@@ -104,11 +107,11 @@ class ApiWorkQueue:
                 pass  # The request/recovery handler owns the operation outcome.
 
 
-def install_api_queues(app: Any) -> None:
+def install_api_queues(app: Any, *, operation_log_root: Path | None = None) -> None:
     app.state.api_disk_queue = ApiWorkQueue()
     app.state.api_network_queue = ApiWorkQueue(workers=2, name="nimda-provider")
     if not isinstance(getattr(app.state, "operation_registry", None), OperationRegistry):
-        app.state.operation_registry = OperationRegistry()
+        app.state.operation_registry = OperationRegistry(log_store=OperationLogStore(operation_log_root) if operation_log_root is not None else None)
 
 
 def api_work_queues(app: Any) -> tuple[ApiWorkQueue, ...]:
@@ -145,20 +148,23 @@ async def _dispatch(request: Request, function: Callable[..., T], value: Any, *,
     registry = request.app.state.operation_registry
     operation = None
     raw_operation_id = request.headers.get("x-nimda-operation-id")
-    if raw_operation_id is not None:
+    if raw_operation_id is not None or request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
         try:
-            operation_id = normalize_operation_id(raw_operation_id)
-            operation = registry.register(operation_id, request.url.path)
+            operation_id = normalize_operation_id(raw_operation_id) if raw_operation_id is not None else str(uuid4())
+            operation = await _register_operation(registry, operation_id, request.url.path)
         except DuplicateOperationId as exc:
             return JSONResponse({"ok": False, "error": str(exc), "code": "operation-id-exists"}, status_code=409)
         except ValueError as exc:
             return JSONResponse({"ok": False, "error": str(exc), "code": "invalid-operation-id"}, status_code=400)
     try:
         if operation is not None:
-            return await queue.run(
+            result = await queue.run(
                 execute_operation, registry, operation, function, value,
                 _on_cancelled=lambda: registry.finish(operation, "cancelled", "尚未开始的操作已取消"),
             )
+            if isinstance(result, JSONResponse):
+                result.headers["X-Nimda-Operation-Id"] = operation.id
+            return result
         return await queue.run(function, value)
     except WorkQueueClosed as exc:
         if operation is not None:
@@ -181,6 +187,38 @@ def query_endpoint(function: Callable[..., T]) -> Callable[..., Any]:
     return endpoint
 
 
+async def _register_operation(registry: OperationRegistry, operation_id: str, title: str):
+    if registry.log_store is None:
+        return registry.register(operation_id, title)
+    pending = asyncio.create_task(asyncio.to_thread(registry.register, operation_id, title))
+    try:
+        return await asyncio.shield(pending)
+    except asyncio.CancelledError:
+        row = await pending
+        await asyncio.to_thread(registry.finish, row, "cancelled", "请求在进入处理队列前已取消")
+        raise
+
+
+async def _invalid_request(request: Request, message: str) -> JSONResponse:
+    """Record parser failures before a worker exists without retaining the body."""
+    registry = request.app.state.operation_registry
+    raw_id = request.headers.get("x-nimda-operation-id")
+    try:
+        operation_id = normalize_operation_id(raw_id) if raw_id is not None else str(uuid4())
+        operation = await _register_operation(registry, operation_id, request.url.path)
+    except (DuplicateOperationId, ValueError):
+        # Invalid/reused supplied IDs must never overwrite another operation.
+        operation = await _register_operation(registry, str(uuid4()), request.url.path)
+    def record_failure():
+        registry.start(operation)
+        registry.finish(operation, "failed", message, result={"error": message})
+    if registry.log_store is not None:
+        await asyncio.to_thread(record_failure)
+    else:
+        record_failure()
+    return JSONResponse({"ok": False, "error": message}, status_code=400, headers={"X-Nimda-Operation-Id": operation.id})
+
+
 def json_endpoint(function: Callable[..., T] | None = None, *, network: bool = False):
     def decorate(handler: Callable[..., T]):
         @wraps(handler)
@@ -190,7 +228,7 @@ def json_endpoint(function: Callable[..., T] | None = None, *, network: bool = F
                 if not isinstance(body, dict):
                     raise ValueError("not an object")
             except (ValueError, UnicodeError):
-                return JSONResponse({"ok": False, "error": "请求体须为 JSON 对象"}, status_code=400)
+                return await _invalid_request(request, "请求体须为 JSON 对象")
             return await _dispatch(request, handler, body, network=network)
         return endpoint
     return decorate(function) if function is not None else decorate
@@ -207,8 +245,8 @@ def upload_endpoint(function: Callable[..., T]) -> Callable[..., Any]:
                     if hasattr(part, "filename") and callable(getattr(part, "read", None))
                 ]
         except Exception as exc:
-            return JSONResponse({"ok": False, "error": f"无法解析 multipart：{exc}"}, status_code=400)
+            return await _invalid_request(request, f"无法解析 multipart：{exc}")
         if not uploads:
-            return JSONResponse({"ok": False, "error": "请选择上传字段 file（.yaml），可一次上传多个"}, status_code=400)
+            return await _invalid_request(request, "请选择上传字段 file（.yaml），可一次上传多个")
         return await _dispatch(request, function, uploads)
     return endpoint

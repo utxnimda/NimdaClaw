@@ -30,9 +30,9 @@ nimda/
         backend/               收集情况 API/service code
         frontend/              收集情况 tab registration and UI behavior
         tests/
-      media-directory-organizer/
-        backend/               Read-only planning, classifiers and confirmed execution
-        frontend/              Directory preview and work landing UI
+      directory-organizer/
+        backend/               Per-child plans, strategy classes, safe execution
+        frontend/              Editable previews and explicit confirmations
         tests/
   config/
     framework/
@@ -42,8 +42,6 @@ nimda/
         config.yaml            作品数据 DB path and enum config
       collection-info/
         config.yaml            收集情况 finish-dir and DB/history paths
-      media-directory-organizer/
-        config.yaml            Organizer inference and classification settings
   data/
     source/                    Original hand-maintained source material
     framework/
@@ -53,7 +51,7 @@ nimda/
       collection-detail/
         db/
         history/
-        index/
+        db/index/              Derived shortcut index, not a work database
       collection-info/
         db/
         history/
@@ -68,17 +66,20 @@ The Vue shell in `apps/framework/frontend/src/App.js` owns:
 - top-level layout;
 - theme selector;
 - tab bar placement;
-- shared DOM anchors required by the current feature modules.
+- the feature-view components and their lifecycle coordination.
 
 Feature tabs are served from:
 
 - `/features/collection-detail/`
 - `/features/collection-info/`
-- `/features/media-directory-organizer/`
+- `/features/directory-organizer/`
 
 Each feature frontend registers itself through `window.JpTvBrowseFeatureRegistry`. The shell reads registered features, merges labels/order from `/api/config`, and switches tabs by each feature's `tabId` and `viewId`.
 
-The current Vue migration is incremental: Vue owns the app shell, while legacy tab behavior is still mounted from `apps/framework/frontend/src/legacy/shell.js`. Future work can move one feature at a time into Vue components without changing the workspace layout.
+Vue owns the app shell. The collection-page template and its DOM anchors live in
+`collection-detail/frontend/view.js`, and table behavior lives in
+`collection-detail/frontend/table-controller.js`. Shared `appearance.js` and
+`feature-host.js` receive explicit callbacks/context and contain no collection-table state.
 
 Feature lifecycle methods must preserve unsaved drafts when switching tabs or
 refreshing enum choices. `collection-info` uses lifecycle/load generations to
@@ -123,12 +124,15 @@ The backend app is built by `work_catalog_yaml.jp_tv.browse_app`.
 HTTP composition and scheduling are separated from feature behavior:
 
 - `jp_tv.browse_app`: routes, static mounts, local-origin security and lifespan.
-- `jp_tv.browse_api`: response builders and existing HTTP error contracts.
+- `collection_detail.web` / `collection_info.web` / `directory_organizer.web`: feature-owned HTTP contracts.
+- `jp_tv.browse_api`: legacy import bridge only, with no business implementation.
 - `api_runtime`: request parsing, upload resource cleanup and owned worker queues.
 
 Disk-backed API operations use one worker per app, preserving their ordering
-without blocking the ASGI event loop. Read-only provider suggestions have a
-separate two-worker queue. `/api/health` bypasses both queues and reports
+without blocking the ASGI event loop. A separate two-worker network queue is
+reserved for future read-only provider integrations; no current production route
+submits to it, and it starts no worker threads without a job. `/api/health`
+bypasses both queues and reports
 `ready`, `busy` or `stopping`, with running and queued counts. Database reads
 still wait behind active disk work; the queues are not a general background-job
 API and do not return durable job IDs.
@@ -162,32 +166,13 @@ Feature backend code lives under `apps/features/<feature-id>/backend`:
 
 - `collection_detail`: browse payloads, YAML save, enum edits.
 - `collection_info`: collection completion records and finish-dir year scanning.
-- `media_directory_organizer`: source inference, release-group classifiers,
-  preview/apply, and coordination of database records, media and shortcuts.
+- `directory_organizer`: disk-first child plans; pure organizer classes; safe media
+  execution composed with shared catalog edits and scoped shortcut generation.
+- `catalog_repository`: versioned work/press data independent of page and disk views.
+- `catalog_inventory`: DB binding relationships using shared, read-only disk facts.
+- `library_status`: read-only page aggregation with separate DB/tree counts.
+- `work_catalog_yaml.storage`: generic filesystem and Windows shortcut adapters.
 
-Organizer internals have narrower responsibilities:
-
-- `service`: read-only planning and source-to-target classification.
-- `execution`: confirmation, execution-time validation, moves, rollback and
-  empty-source cleanup. `service.apply_plan` remains an import-compatible alias.
-- `plan_identity`: deterministic plan IDs used by planning and execution.
-- `landing_drafts`: registration/repair inputs and source-title suggestions.
-- `landing_catalog`: catalog references, press identities and matching candidates.
-- `landing`: database/media/shortcut transaction coordination and retry receipts.
-
-Forward moves and rollback share a no-overwrite primitive in `execution`.
-Windows uses same-volume rename without `shutil.move`'s copy fallback; POSIX uses
-an exclusive hard link followed by source unlink. Cross-volume moves fail rather
-than silently copying media. Catchable interruptions and incomplete cleanup
-produce explicit recovery information; partial rollback preserves related
-catalog changes for reconciliation instead of reporting a clean rollback.
-
-`landing_catalog.CatalogReadSession` shares parsed entries and lazily built press
-records within one read-only preview/normalization phase. A record's content hash
-is computed from the same bytes that produced its entries; each incoming catalog
-reference still checks its own work name and expected hash, even on a cache hit.
-Sessions never cross a database write or preview-to-apply boundary. Execution
-continues to revalidate current state and compare expected pre-write hashes.
 
 Within `collection_detail`, `resource_tree` holds pure tree summaries and search
 projections. `resource_cache` writes each scan into a new generation and publishes
@@ -202,13 +187,42 @@ Tree summaries and cached payloads share one projection. Lazy nodes keep their
 unloaded counts, and `has_children` includes files as well as subdirectories.
 Compatible legacy cache nodes are reprojected on read, without a rescan/write.
 
+The two directory views have different source contracts:
+
+- The **index directory** joins current work/press DB records with actual shortcut
+  directory observations and target availability. Derived index/scan caches are
+  replaceable accelerators, never a second authority for work identity. DB-only
+  expected links and disk-only unassociated links remain distinguishable.
+- The **resource-library directory** is a physical-media scan tree only. It does
+  not insert DB-only works or turn directory names into work records. Its saved
+  snapshot remains usable while offline, with the scan time shown; an explicit
+  rescan updates physical observations.
+
+Refreshing an index view never registers works or saves inferred bindings.
+Shortcut creation is a separate saved-DB-only command, not an application of the
+display tree's unassociated observations or suggestions.
+
 Shared backend building blocks are kept independent of the web routes:
+
+The `common` boundary lives **inside `framework`**, not beside it: framework is
+the reusable foundation and features depend on it, while common must never
+import a feature. It does not become a third application or packaging root.
+
+- `apps/framework/backend/work_catalog_yaml/common/`: HTTP error responses,
+  operation-log storage, common `[date/time][level]` formatting, daily application logging and safe result projections. Web adapters share caught
+  exception reporting without importing sibling features.
+- `apps/framework/frontend/src/common/`: feature registration primitives, HTML
+  escaping, local preferences, request/error handling and operation-result
+  projections. The shell loads these before feature scripts.
+- Framework coordinators (`operation_progress`, `api_runtime`, `feature-host`
+  and `operation-center`) compose common primitives; domain catalog matching,
+  shortcut rules and collection state remain feature-owned.
 
 - `work_catalog_yaml.layout`: workspace/config path resolution and backend discovery.
 - `work_catalog_yaml.paths`: validated export paths shared by both materialization commands.
 - `work_catalog_yaml.persistence`: staged writes and rollback shared by collection features.
 - `work_catalog_yaml.input_validation`: strict non-negative record indices shared
-  by collection edits/deletes and organizer references; booleans and floats are
+  by collection edits/deletes and DB references; booleans and floats are
   rejected instead of silently selecting a different row through integer coercion.
 - `work_catalog_yaml.yaml_cache`: bounded content-keyed YAML parse reuse, consumed
   by `yaml_io`. File reads remain fresh and every consumer gets an isolated copy;
@@ -249,6 +263,9 @@ app:
     - id: collection-info
       label: 收集情况
       order: 20
+    - id: directory-organizer
+      label: 目录整理
+      order: 30
 ```
 
 Feature config lives in `config/features/<feature-id>/config.yaml`.
@@ -268,16 +285,18 @@ Feature data lives in `data/features/<feature-id>/`.
 
 Current feature data:
 
-- `collection-detail/db`: JP TV YAML database files.
+- `collection-detail/db`: JP/KR work collection YAML database files.
 - `collection-detail/history`: backups written before YAML saves and enum rename syncs.
 - `collection-detail` link-index mappings live inside each work YAML row:
-  `attributes/data/path` stores the work parent relative path, and each press item stores
-  `press_path` under `attributes/data/collectioned`.
+  `attributes/data/path` stores the work directory (absolute or configured-root-relative), and each press item stores
+  `press_path` under `attributes/data/collectioned` or each continuation's `collectioned`.
   The shortcut directory tree is a backend-generated view aggregated from all work YAML files.
   Link mapping is edited from the collection-detail list, on each row's press-summary item.
   The link-index tab is a read-only tree/check view over the full configured DB.
 - `collection-info/db/collection-info.yaml`: collection completion records.
 - `collection-info/history`: backups written before collection-info saves.
+- `directory-organizer/history`: append-only JSONL media execution receipts;
+  not a work database. The organizer shares collection-detail configuration.
 
 New rows in `collection-detail` are saved to the current calendar year's DB file, for example `[JP][TVInfo][2026].yaml`. This uses the current date, not the row content date.
 
@@ -293,6 +312,91 @@ unchanged historical errors do not block unrelated full-table edits.
 It preserves unrelated YAML bytes and reports invalid dates/reversed ranges.
 Files with YAML aliases are rejected to avoid modifying shared non-date data.
 
+## Three-layer data chain
+
+`页面展示聚合 → DB 数据 → 硬盘数据` is a dependency direction, not an
+automatic import or synchronization pipeline.
+
+1. Presentation/application: `collection_detail.web`, `payload`,
+   `work_detail`, `library_status` and feature frontend modules compose
+   view models and user commands. `collection_info.web` owns completion APIs.
+2. Database: `CatalogRepository` owns versioned YAML reads and work/press DTOs;
+   `CatalogInventoryRepository` joins saved bindings with explicit disk facts.
+   Save/repair services own validated, backed-up writes. DB-only records remain valid.
+3. Disk: `work_catalog_yaml.storage` owns ordinary-directory checks and Windows
+   shortcut I/O. This shared layer never imports feature or presentation modules.
+
+These data sources are deliberately different:
+
+| Source | Meaning | Authority |
+| --- | --- | --- |
+| `collection-detail/db/[JP\|KR][TVInfo][year].yaml` | Work records, dates, collection/press records, work `path` and `press_path` | Canonical |
+| `collection-info/db/collection-info.yaml` | Manually recorded annual completion state | Canonical, not a work list |
+| Resource scan manifest/node cache | Observed physical directories/files at scan time | Derived; may be stale/offline |
+| `collection-detail/db/index/link-index.yaml` | Shortcut/index projection of work records | Derived, not another catalog |
+| Media directories and `.lnk` files | Actual physical resources and generated references | Disk facts, not implicit DB records |
+
+A work record count, press record count, directory count and file count are
+separate metrics. Multiple works/broadcast seasons may share one directory;
+one work may have multiple press directories. Never infer one count from another.
+
+`GET /api/collection-detail/library-status` reads these relationships without
+scanning media, rewriting DBs, refreshing caches or creating shortcuts:
+
+- `both`: a saved binding and ordinary directory exist.
+- `db-only`: a saved binding is absent on disk while its resource root is online.
+- `unbound`: the DB has no directory binding; disk existence is unknown.
+- `offline`: root/target cannot be inspected; this is not proof of absence.
+- `unsafe/invalid`: unsafe or out-of-scope bindings; never traverse them.
+- `observed-unbound`: a cached, currently present directory has no saved path
+  binding. It may still have an unbound same-name DB record; no automatic matching
+  or insertion is performed.
+
+Shortcut creation uses only saved DB `path/press_path`, metadata and configured
+naming templates. Disk checks determine availability, not work identity. A missing
+binding is repaired/saved explicitly before generation; generation itself never
+adds work records or backfills inferred bindings. The UI incrementally creates
+missing shortcuts, retains existing files, and reports conflicts/skips. Legacy
+full-replacement requests must pass stricter preflight and confirmations.
+
+The old directory-organizer feature, its routes/config/CLI/classifiers and
+one-time Korean shortcut reorganization script were removed on 2026-10-03.
+The replacement `directory-organizer` is a separate feature. Historical review
+documents do not imply the retired APIs still exist.
+
+## Replacement directory organizer
+
+The selected root's actual direct children define the scope. Each child has an
+independent draft, disk fingerprint, complete DB record edits and expiring plan.
+DB-only works never become organizing tasks. A changed draft needs a new preview
+and confirmation; a batch reuses the single-child executor sequentially.
+
+`BaseOrganizer` supplies overridable directory filters and pure layout helpers;
+generic, VCB, Jsum and manual strategies never move media or save DB records.
+All automatic fields can be edited. Multiple DB works can share one physical
+release directory; one work can keep several independent press directories.
+
+`collection_detail.catalog_edit_service` exposes full versioned records and
+delegates every save to the original collection-list saver. Full records retain
+extension fields. `collection_detail.shortcut_service` delegates scoped commands
+to the same link-index planner/writer used by the index page. Scoped generation
+does not replace the full index cache or touch unrelated shortcuts.
+
+The execution coordinator checks disk/DB versions and cross-plan conflicts before
+moving files. Overlapping edits to one work are three-way merged; conflicting
+changes stop the batch. Only same-volume, ordinary, non-linked files are allowed,
+and existing files are never overwritten. Changes to unselected press bindings
+are rejected rather than silently retargeting other releases.
+
+Media moves have append-only intent/result receipts. Before DB commit, failures
+attempt to roll back this child's moves; after a confirmed or uncertain DB commit,
+media is not blindly rolled back. This is not a distributed transaction or an
+automatic crash-recovery mechanism. See the feature README for operational limits.
+
+After media and DB synchronization, scoped shortcuts are previewed against the
+saved authoritative data and require separate confirmation. The framework's
+queue, operation-details/log viewer and native folder-picker bridge are reused.
+
 ## Adding A Feature
 
 To add a new tab:
@@ -300,7 +404,7 @@ To add a new tab:
 1. Create `apps/features/<feature-id>/frontend/index.js`.
 2. Register the frontend module with `window.JpTvBrowseFeatureRegistry`.
 3. Create `apps/features/<feature-id>/backend/<package_name>/` if the feature needs APIs.
-4. Add `config/features/<feature-id>/config.yaml`.
+4. Add `config/features/<feature-id>/config.yaml` only when independent feature settings are needed.
 5. Add `data/features/<feature-id>/db` and `data/features/<feature-id>/history` if the feature persists data.
 6. Add the feature to `config/framework/app.yaml`.
 7. Mount its static frontend and API routes in the framework backend, or move that mounting into a future feature registry.
@@ -309,6 +413,7 @@ To add a new tab:
 
 - `collection-detail` is the 作品数据 feature.
 - `collection-info` is the 收集情况 feature.
+- `directory-organizer` is the 目录整理 feature, sharing canonical catalog/shortcut services.
 - The app shell is Vue, but feature internals are still plain JavaScript modules.
-- `apps/framework/frontend/src/legacy/shell.js` is transitional and should shrink as features become Vue components.
+- Framework frontend code owns shell/appearance/feature hosting; collection-table business behavior is owned by the collection-detail feature.
 - Runtime logs, `__pycache__`, and local process helpers are not part of the architecture and should be ignored or moved out of source-controlled project files.

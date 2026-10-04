@@ -42,6 +42,8 @@ for package_name in ("webview", "clr_loader", "pythonnet"):
     binaries += package_binaries
     hiddenimports += package_hidden
 hiddenimports += collect_submodules("uvicorn")
+# Legacy presentation exports are resolved lazily via import_module.
+hiddenimports += ["work_catalog_yaml.jp_tv.browse_payload"]
 for backend in backend_paths:
     if backend == framework_backend:
         continue
