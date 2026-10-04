@@ -1234,6 +1234,201 @@
     data: japan
   - type: name
     data: 11eyes
+  metadata:
+    summary: 失去姐姐而过著懒散生活的男主角・皋月驱和他的青梅竹马水奈瀬ゆか，突然一同被卷入一个染红的世界。然而，与另外4位来自相同世界少年少女一同被卷入到这个事件中，并且已打倒黑骑士们为目的。为了生存下去，并结束“赤之夜，他们与黑骑士们的战斗也就此开始
+    field_sources:
+      metadata.summary:
+        provider: bangumi
+        external_id: '2566'
+        snapshot_id: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+        scope: ''
+        episode_range:
+        imported_value_sha256: 452e20737048752906366acef3026b074f5078e012af49b0a07badd7edd2b42e
+      metadata.aliases:
+        provider: bangumi
+        external_id: '2566'
+        snapshot_id: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+        scope: ''
+        episode_range:
+        imported_value_sha256: c85a257c3ae2ff15ada407028a8ed98d00a07530fb40ff9a8bf04e65f31487ee
+      metadata.episodes:
+        provider: bangumi
+        external_id: '2566'
+        snapshot_id: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+        scope: ''
+        episode_range:
+        imported_value_sha256: 4c1f49fe84a6552367557ff2bdbbe5a4a69f022d9c50a8443eb18a420a7f5a37
+      metadata.cover:
+        provider: bangumi
+        external_id: '2566'
+        snapshot_id: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+        scope: ''
+        episode_range:
+        imported_value_sha256: 767a5ca94793aaf78756137aa59a95b5d1342d407f501a8a3dd7b9b473f1444b
+    aliases:
+    - 11眼
+    - 罪与罚与赎的少女
+    - イレブンアイズ
+    - 11eyes -罪と罰と贖いの少女-
+    episodes:
+    - id: bangumi:15713
+      source_id: 15713
+      title: 赤い夜~Piros éjszaka
+      name_cn: 赤月
+      air_date: '20091006'
+      duration: ''
+      type: 0
+      sort: 1
+      ep: 1
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15714
+      source_id: 15714
+      title: 水晶の少女~egy lány -ban kristály
+      name_cn: 水晶的少女
+      air_date: '20091013'
+      duration: ''
+      type: 0
+      sort: 2
+      ep: 2
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15715
+      source_id: 15715
+      title: 孤独な誇り~egyedülálló büszkeség
+      name_cn: 孤独的骄傲
+      air_date: '20091020'
+      duration: ''
+      type: 0
+      sort: 3
+      ep: 3
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15716
+      source_id: 15716
+      title: 仮面の微笑~a doboz mögött maszk～
+      name_cn: 假面的微笑
+      air_date: '20091027'
+      duration: ''
+      type: 0
+      sort: 4
+      ep: 4
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15717
+      source_id: 15717
+      title: 友と明日のために~barátoknak, holnapra～
+      name_cn: 为了朋友和明日
+      air_date: '20091103'
+      duration: ''
+      type: 0
+      sort: 5
+      ep: 5
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15718
+      source_id: 15718
+      title: 心乱れて~szíbtép fájdalom～
+      name_cn: 乱我心者
+      air_date: '20091110'
+      duration: ''
+      type: 0
+      sort: 6
+      ep: 6
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15719
+      source_id: 15719
+      title: 歪んだ覚醒~kanyargós ébredés～
+      name_cn: 扭曲的觉醒
+      air_date: '20091117'
+      duration: ''
+      type: 0
+      sort: 7
+      ep: 7
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15720
+      source_id: 15720
+      title: 逢魔が時~félhomály öv～
+      name_cn: 逢魔之时
+      air_date: '20091124'
+      duration: ''
+      type: 0
+      sort: 8
+      ep: 8
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15721
+      source_id: 15721
+      title: 壊れた絆~törött kötés
+      name_cn: 断裂的羁绊
+      air_date: '20091201'
+      duration: ''
+      type: 0
+      sort: 9
+      ep: 9
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15722
+      source_id: 15722
+      title: 魔女覚醒~bukott angyal
+      name_cn: 魔女觉醒
+      air_date: '20091208'
+      duration: ''
+      type: 0
+      sort: 10
+      ep: 10
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:15723
+      source_id: 15723
+      title: 滅亡という選択~válogatott-hoz kialvás~
+      name_cn: 名为灭亡的选择
+      air_date: '20091215'
+      duration: ''
+      type: 0
+      sort: 11
+      ep: 11
+      disc: 0
+      duration_seconds: 0
+    - id: bangumi:24958
+      source_id: 24958
+      title: 闇夜の晓~a sōtét hajnal
+      name_cn: 暗夜之晓
+      air_date: '20091222'
+      duration: ''
+      type: 0
+      sort: 12
+      ep: 12
+      disc: 0
+      duration_seconds: 0
+    cover:
+      extension: jpg
+      external_id: '2566'
+      height: 698
+      mime_type: image/jpeg
+      provider: bangumi
+      sha256: 16b225829bd36f275016d17b641c33e3202f16044e03b327fcf0fb5332dff37f
+      source_url: https://lain.bgm.tv/pic/cover/l/42/fe/2566_M2Bsq.jpg
+      width: 500
+  source_refs:
+  - provider: bangumi
+    external_id: '2566'
+    subject_id: 2566
+    snapshot_id: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+    snapshot_sha256: 07615c0e1066a57b728f9abf0d9aa3662d0bd0d1acf3448c1e16ecc983daa973
+    scope: ''
+    episode_range:
+    fetched_at: '2026-10-04T05:31:18+00:00'
+    fields:
+    - metadata.aliases
+    - metadata.cover
+    - metadata.episodes
+    - metadata.summary
+    import_id: 31491590850723fc2b59f00e8a09cd90e1a8a19594f4469c74214f19f99fac51
+  id: work_18ec7f6e4aab45f2bfd422eec2cd48ca
+  schema_version: 1
 - attributes:
   - type: date
     data:
